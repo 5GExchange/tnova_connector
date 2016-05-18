@@ -1,0 +1,168 @@
+{
+  "nsd": {
+    "id": "SG-request",
+    "name": "SG-name",
+    "version": "1.0",
+    "provider": "BME",
+    "provider_id": 15266,
+    "release": "UNIFY",
+    "description": "Service Graph request",
+    "descriptor_version": "1",
+    "vendor": "BME",
+    "vnfds": [
+      "1001",
+      "1002",
+      "1003"
+    ],
+    "connection_points": [
+      "sap1",
+      "sap2"
+    ],
+    "vnffgd": {
+      "vnffgs": [
+        {
+          "vnffg_id": "SG-request",
+          "number_of_endpoints": 2,
+          "number_of_virtual_links": 5,
+          "dependent_virtual_links": [
+            "1",
+            "2",
+            "3",
+            "4",
+            "5"
+          ],
+          "network_forwarding_path": [
+            {
+              "nfp_id": "sap1-comp-decomp-sap2",
+              "graph": [
+                "1",
+                "2",
+                "3"
+              ],
+              "connection_points": [
+                "sap1",
+                "VNF#1001:1",
+                "VNF#1002:1",
+                "sap2"
+              ],
+              "constituent_vnfs": [
+                {
+                  "vnf_ref_id": "1001"
+                },
+                {
+                  "vnf_ref_id": "1002"
+                }
+              ]
+            },
+            {
+              "nfp_id": "sap2-fwd-sap1",
+              "graph": [
+                "4",
+                "5"
+              ],
+              "connection_points": [
+                "sap2",
+                "VNF#1003:1",
+                "sap1"
+              ],
+              "constituent_vnfs": [
+                {
+                  "vnf_ref_id": "1003"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "vld": {
+      "vitual_links": [
+        {
+          "vld_id": "1",
+          "connectivity_type": "E-LINE",
+          "connections": [
+            "sap1",
+            "VNF#1001:1"
+          ],
+          "sla_ref_id": "e2e-req1"
+        },
+        {
+          "vld_id": "2",
+          "connectivity_type": "E-LINE",
+          "connections": [
+            "VNF#1001:1",
+            "VNF#1002:1"
+          ],
+          "sla_ref_id": "e2e-req1"
+        },
+        {
+          "vld_id": "3",
+          "connectivity_type": "E-LINE",
+          "connections": [
+            "VNF#1002:1",
+            "sap2"
+          ],
+          "sla_ref_id": "e2e-req1"
+        },
+        {
+          "vld_id": "4",
+          "connectivity_type": "E-LINE",
+          "connections": [
+            "sap2",
+            "VNF#1003:1"
+          ],
+          "sla_ref_id": "e2e-req2"
+        },
+        {
+          "vld_id": "5",
+          "connectivity_type": "E-LINE",
+          "connections": [
+            "VNF#1003:1",
+            "sap1"
+          ],
+          "sla_ref_id": "e2e-req2"
+        }
+      ]
+    },
+    "sla": [
+      {
+        "id": "e2e-req1",
+        "assurance_parameters": [
+          {
+            "id": "delay",
+            "name": "delay",
+            "value": "30",
+            "unit": "unit"
+          },
+          {
+            "id": "bandwidth",
+            "name": "delay",
+            "value": "4",
+            "unit": "unit"
+          }
+        ]
+      },
+      {
+        "id": "e2e-req2",
+        "assurance_parameters": [
+          {
+            "id": "delay",
+            "name": "delay",
+            "value": "30",
+            "unit": "unit"
+          },
+          {
+            "id": "bandwidth",
+            "name": "delay",
+            "value": "4",
+            "unit": "unit"
+          }
+        ]
+      }
+    ],
+    "vnf_depedency": [],
+    "auto_scale_policy": {},
+    "lifecycle_events": {},
+    "monitoring_parameters": []
+  }
+}

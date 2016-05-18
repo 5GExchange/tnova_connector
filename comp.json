@@ -1,5 +1,5 @@
 {
-  "id": 1002,
+  "id": 1001,
   "name": "COMPRESSOR",
   "type": "headerCompressor",
   "provider": "BME",
@@ -16,16 +16,15 @@
       "resource_requirements": {
         "vcpus": 1,
         "memory": 1,
-        "memory_unit": "value",
+        "memory_unit": "unit",
         "storage": {
           "size": 0,
-          "size_unit": "value"
+          "size_unit": "unit"
         }
       },
       "connection_points": [
         {
-          "id": "1",
-          "vlink_ref": "???"
+          "id": "1"
         }
       ]
     }
@@ -35,9 +34,5 @@
       "id": "deployment_type",
       "constraint": ""
     }
-  ],
-  "vlinks": [],
-  "trade": true,
-  "vnf_lifecycle_events": [],
-  "billing_model": {}
+  ]
 }
