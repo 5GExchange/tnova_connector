@@ -17,39 +17,9 @@ import os
 import pprint
 
 
-class VNFWrapper(object):
+class AbstractDescriptorWrapper(object):
   """
-  Wrapper class for VNFD data structure.
-  """
-
-  def __init__ (self, type, raw):
-    """
-    Constructor.
-
-    :param type: VNF name
-    :type type: str
-    :param raw: raw data parsed from JSON file
-    :type raw: dict
-    :return: None
-    """
-    self.__vnf_type = type
-    self.__data = raw
-
-  @property
-  def data (self):
-    return self.__data
-
-  @property
-  def type (self):
-    return self.__vnf_type
-
-  def __str__ (self):
-    return pprint.pformat(self.data)
-
-
-class NSWrapper(object):
-  """
-  Wrapper class for VNFD data structure.
+  Abstract Wrapper class for Descriptors.
   """
 
   def __init__ (self, raw):
@@ -68,6 +38,57 @@ class NSWrapper(object):
 
   def __str__ (self):
     return pprint.pformat(self.data)
+
+  def __process_metadata (self):
+    self.id = self.data['id']
+    self.name = self.data['name']
+    self.provider = self.data['provider']
+    self.provider_id = self.data['provider_id']
+    self.release = self.data['release']
+    self.description = self.data['description']
+    self.version = self.data['version']
+    self.descriptor_version = self.data['descriptor_version']
+    self.created_at = self.data['created_at']
+    self.modified_at = self.data['modified_at']
+
+
+class VNFWrapper(AbstractDescriptorWrapper):
+  """
+  Wrapper class for VNFD data structure.
+  """
+
+  def __init__ (self, type, raw):
+    """
+    Constructor.
+
+    :param type: VNF name
+    :type type: str
+    :param raw: raw data parsed from JSON file
+    :type raw: dict
+    :return: None
+    """
+    self.__vnf_type = type
+    super(VNFWrapper, self).__init__(raw)
+
+  @property
+  def type (self):
+    return self.__vnf_type
+
+
+class NSWrapper(AbstractDescriptorWrapper):
+  """
+  Wrapper class for VNFD data structure.
+  """
+
+  def __init__ (self, raw):
+    """
+    Constructor.
+
+    :param raw: raw data parsed from JSON file
+    :type raw: dict
+    :return: None
+    """
+    super(NSWrapper, self).__init__(raw)
 
 
 class VNFCatalogue(object):
