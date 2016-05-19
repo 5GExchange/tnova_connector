@@ -17,11 +17,11 @@
     "connection_points": [
       {
         "id": "sap1",
-        "vlink_ref": "1"
+        "vlink_ref": "???"
       },
       {
         "id": "sap2",
-        "vlink_ref": "5"
+        "vlink_ref": "???"
       }
     ],
     "vnffgd": {
