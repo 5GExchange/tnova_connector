@@ -163,16 +163,41 @@ class NSWrapper(AbstractDescriptorWrapper):
         "Missing required field for 'connection_endpoints' in data:\n%s!" %
         self)
 
-  def get_links (self):
+  def get_vlinks (self):
     try:
-      for vlink in self.data['vitual_links']:
+      hops = []
+      for vlink in self.data['vld']['vitual_links']:
         if vlink['connectivity_type'] != self.LINK_TYPE:
           self.log.warning(
             "Only Link type: %s is supported! Skip Virtual link "
             "processing:\n%s" % (self.LINK_TYPE, vlink))
           continue
-        ret = {}
-        ret['id'] = int(vlink['vld_id'])
+        hop = {}
+        try:
+          hop['id'] = int(vlink['vld_id'])
+        except ValueError:
+          hop['id'] = vlink['vld_id']
+        if len(vlink['connections']) != 2:
+          self.log.warning(
+            "VLink type: %s must have exactly 2 endpoint in connections:\n%s"
+            % (self.LINK_TYPE, vlink))
+          continue
+        # Check src node/port
+        src = vlink['connections'][0].split(':')
+        if src[0].startswith('VNF#'):
+          hop['src_node'], hop['src_port'] = int(src[0].lstrip('VNF#')), src[1]
+        else:
+          # Src Node is not a VNF, must be SAP
+          hop['src_node'], hop['src_port'] = src[0], None
+        # Check dst node/port
+        dst = vlink['connections'][1].split(':')
+        if dst[0].startswith('VNF#'):
+          hop['dst_node'], hop['dst_port'] = int(dst[0].lstrip('VNF#')), dst[1]
+        else:
+          # Dst Node is not a VNF, must be SAP
+          hop['dst_node'], hop['dst_port'] = dst[0], None
+        hops.append(hop)
+      return hops
     except KeyError:
       self.log.error("Missing required field for 'vld' in data:\n%s!" % self)
 
@@ -212,6 +237,7 @@ class TNOVAConverter(object):
   """
   # Default folder contains the VNFD files
   VNF_CATALOGUE = "vnf_catalogue"
+  DEFAULT_SAP_PORT_ID = None  # None = generated an UUID by defaults
 
   def __init__ (self, logger=None):
     self.log = logger if logger is not None else logging.getLogger(__name__)
@@ -258,18 +284,31 @@ class TNOVAConverter(object):
         self.log.error(
           "VNFD with id: %s is not found in the VNFCatalogue!" % nf_id)
         continue
-      nf = nffg.add_nf(id=vnf.get_vnf_id(),
-                       name=vnf.name,
-                       func_type=vnf.type,
-                       dep_type=vnf.get_deployment_type(),
-                       **vnf.get_resources())
+      node_nf = nffg.add_nf(id=vnf.get_vnf_id(),
+                            name=vnf.name,
+                            func_type=vnf.type,
+                            dep_type=vnf.get_deployment_type(),
+                            **vnf.get_resources())
       # Add ports to NF
       for port in vnf.get_ports():
         try:
           port_id = int(port['id'])
         except ValueError:
           port_id = port['id']
-        nf.add_port(id=port_id)
+        node_nf.add_port(id=port_id)
+    # Add SAPs
+    for cp in ns.get_saps():
+      try:
+        sap_id = int(cp['id'])
+      except ValueError:
+        sap_id = cp['id']
+      node_sap = nffg.add_sap(id=sap_id, name=sap_id)
+      # Add default port to SAP with random name
+      node_sap.add_port(id=self.DEFAULT_SAP_PORT_ID)
+    # Add SG hops
+    for vlink in ns.get_vlinks():
+      # src_node_id = vnfs.get_by_id(vlink['src_node']).get_vnf_id()
+      print vlink
     return nffg
 
 
