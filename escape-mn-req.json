@@ -15,8 +15,14 @@
       "1003"
     ],
     "connection_points": [
-      "sap1",
-      "sap2"
+      {
+        "id": "sap1",
+        "vlink_ref": "1"
+      },
+      {
+        "id": "sap2",
+        "vlink_ref": "5"
+      }
     ],
     "vnffgd": {
       "vnffgs": [
