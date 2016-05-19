@@ -277,6 +277,14 @@ class TNOVAConverter(object):
     self.log.debug("Registered VNFs: %s" % vnfs.catalogue.keys())
     # Create main NFFG object
     nffg = NFFG(id=ns.id, name=ns.name)
+    # Convert NFFG elements
+    self.__convert_nfs(nffg=nffg, ns=ns, vnfs=vnfs)
+    self.__convert_saps(nffg=nffg, ns=ns, vnfs=vnfs)
+    self.__convert_sg_hops(nffg=nffg, ns=ns, vnfs=vnfs)
+    # Return with assembled NFFG
+    return nffg
+
+  def __convert_nfs (self, nffg, ns, vnfs):
     # Add NFs
     for nf_id in ns.get_vnfs():
       vnf = vnfs.get_by_id(nf_id)
@@ -296,20 +304,55 @@ class TNOVAConverter(object):
         except ValueError:
           port_id = port['id']
         node_nf.add_port(id=port_id)
+        self.log.debug("Added NF: %s" % node_nf)
+
+  def __convert_saps (self, nffg, ns, vnfs):
     # Add SAPs
     for cp in ns.get_saps():
       try:
         sap_id = int(cp['id'])
       except ValueError:
         sap_id = cp['id']
-      node_sap = nffg.add_sap(id=sap_id, name=sap_id)
+      node_sap = nffg.add_sap(id=sap_id,
+                              name=sap_id)
       # Add default port to SAP with random name
       node_sap.add_port(id=self.DEFAULT_SAP_PORT_ID)
+      self.log.debug("Added SAP: %s" % node_sap)
+
+  def __convert_sg_hops (self, nffg, ns, vnfs):
     # Add SG hops
     for vlink in ns.get_vlinks():
       # src_node_id = vnfs.get_by_id(vlink['src_node']).get_vnf_id()
       print vlink
-    return nffg
+      # Parse src params
+      src_node = vnfs.get_by_id(vlink['src_node'])
+      if src_node is not None:
+        src_node_id = src_node.get_vnf_id()
+        try:
+          src_port_id = int(vlink['src_port'])
+        except ValueError:
+          src_port_id = vlink['src_port']
+        src_port = nffg[src_node_id].ports[src_port_id]
+      # If the id is not VNF Catalogue, it must be a SAP
+      else:
+        src_port = nffg[vlink['src_node']].ports.container[0]
+      # Parse dst params
+      dst_node = vnfs.get_by_id(vlink['dst_node'])
+      if dst_node is not None:
+        dst_node_id = dst_node.get_vnf_id()
+        try:
+          dst_port_id = int(vlink['dst_port'])
+        except ValueError:
+          dst_port_id = vlink['dst_port']
+        dst_port = nffg[dst_node_id].ports[dst_port_id]
+      # If the id is not VNF Catalogue, it must be a SAP
+      else:
+        dst_port = nffg[vlink['dst_node']].ports.container[0]
+      # Add SG hop
+      link_sg = nffg.add_sglink(id=vlink['id'],
+                                src_port=src_port,
+                                dst_port=dst_port)
+      self.log.debug("Added SG hop: %s" % link_sg)
 
 
 if __name__ == "__main__":
