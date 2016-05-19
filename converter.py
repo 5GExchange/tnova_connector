@@ -22,7 +22,7 @@ class AbstractDescriptorWrapper(object):
   Abstract Wrapper class for Descriptors.
   """
 
-  def __init__ (self, raw):
+  def __init__ (self, raw, logger=None):
     """
     Constructor.
 
@@ -31,6 +31,7 @@ class AbstractDescriptorWrapper(object):
     :return: None
     """
     self.__data = raw
+    self.log = logger if logger is not None else logging.getLogger(__name__)
 
   @property
   def data (self):
@@ -57,22 +58,62 @@ class VNFWrapper(AbstractDescriptorWrapper):
   Wrapper class for VNFD data structure.
   """
 
-  def __init__ (self, type, raw):
+  def __init__ (self, raw):
     """
     Constructor.
 
-    :param type: VNF name
-    :type type: str
     :param raw: raw data parsed from JSON file
     :type raw: dict
     :return: None
     """
-    self.__vnf_type = type
     super(VNFWrapper, self).__init__(raw)
+    self.type = self.data['type']
 
-  @property
-  def type (self):
-    return self.__vnf_type
+  def get_resources (self):
+    try:
+      if len(self.data['vdu']) > 1:
+        self.log.error(
+          "Multiple VDU element are detected! Conversion does only support "
+          "simple VNFs!")
+        return
+      res = self.data['vdu'][0]["resource_requirements"]
+      return {'cpu': res['vcpus'] if 'vcpus' in res else None,
+              'mem': res['memory'] if 'memory' in res else None,
+              'storage': res['storage']['size']
+              if 'storage' in res and 'size' in res['storage'] else None}
+    except KeyError:
+      self.log.error(
+        "Missing required field for 'resources' in data:\n%s!" % self)
+
+  def get_id (self):
+    try:
+      if len(self.data['vdu']) > 1:
+        self.log.error(
+          "Multiple VDU element are detected! Conversion does only support "
+          "simple VNFs!")
+        return
+      return self.data['vdu'][0]["id"]
+    except KeyError:
+      self.log.error("Missing required field for 'id' in data:\n%s!" % self)
+
+  def get_ports (self):
+    try:
+      if len(self.data['vdu']) > 1:
+        self.log.error(
+          "Multiple VDU element are detected! Conversion does only support "
+          "simple VNFs!")
+        return
+      return self.data['vdu']["connection_points"]
+    except KeyError:
+      self.log.error("Missing required field for 'ports' in data:\n%s!" % self)
+
+  def get_deployment_type (self):
+    try:
+      for deployment in self.data['deployment_flavours']:
+        if deployment['id'] == "deployment_type":
+          return deployment['constraint']
+    except KeyError:
+      self.log.error("Missing required field for 'ports' in data:\n%s!" % self)
 
 
 class NSWrapper(AbstractDescriptorWrapper):
@@ -99,8 +140,8 @@ class VNFCatalogue(object):
   def __init__ (self):
     self.catalogue = {}
 
-  def register (self, vnf, data):
-    self.catalogue[vnf] = data
+  def register (self, name, data):
+    self.catalogue[name] = data
 
   def iteritems (self):
     return self.catalogue.iteritems()
@@ -129,12 +170,12 @@ class TNOVAConverter(object):
       for vnf in os.listdir(catalogue_dir):
         with open(os.path.join(catalogue_dir, vnf)) as f:
           vnfd = json.load(f, object_hook=self.__vnfd_object_hook)
-          vnf_catalogue.register(vnf=vnf.rstrip(".json"), data=vnfd)
+          vnf_catalogue.register(name=vnf.rstrip(".json"), data=vnfd)
       return vnf_catalogue
 
   @staticmethod
   def __vnfd_object_hook (obj):
-    return VNFWrapper(type=obj['type'], raw=obj) if 'vdu' in obj.keys() else obj
+    return VNFWrapper(raw=obj) if 'vdu' in obj.keys() else obj
 
   def _parse_nsd (self, nsd_file):
     print nsd_file
