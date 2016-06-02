@@ -47,8 +47,8 @@ class AbstractDescriptorWrapper(object):
     :return: None
     """
     self.__data = raw
-    self.log = logger if logger is not None else logging.getLogger(__name__)
     self.__process_metadata()
+    self.log = logger if logger is not None else logging.getLogger(__name__)
 
   @property
   def data (self):
@@ -86,7 +86,8 @@ class VNFWrapper(AbstractDescriptorWrapper):
     :type raw: dict
     :return: None
     """
-    super(VNFWrapper, self).__init__(raw)
+    super(VNFWrapper, self).__init__(raw,
+                                     logging.getLogger("VNF#%s" % raw['id']))
     self.type = self.data['type']
     self.created_at = self.data['created_at']
     self.modified_at = self.data['modified_at']
@@ -128,9 +129,27 @@ class VNFWrapper(AbstractDescriptorWrapper):
           "Multiple VDU element are detected! Conversion does only support "
           "simple VNFs!")
         return
-      return self.data['vdu'][0]["alias"]
+      # return self.data['vdu'][0]["alias"]
+      return self.name
     except KeyError:
       self.log.error("Missing required field for 'id' in VNF: %s!" % self.id)
+
+  def get_vnf_type (self):
+    """
+    Get the type of the NF which comes from the VNFD name.
+
+    :return: NF id
+    :rtype: str
+    """
+    try:
+      if len(self.data['vdu']) > 1:
+        self.log.error(
+          "Multiple VDU element are detected! Conversion does only support "
+          "simple VNFs!")
+        return
+      return self.data['vdu'][0]["alias"]
+    except KeyError:
+      self.log.error("Missing required field for 'type' in VNF: %s!" % self.id)
 
   def get_ports (self):
     """
@@ -150,7 +169,7 @@ class VNFWrapper(AbstractDescriptorWrapper):
       # return self.data['vdu'][0]["connection_points"]
       for cp in self.data['vdu'][0]["connection_points"]:
         ref = cp['id']
-        for vlink in self.data['vdu'][0]["vlinks"]:
+        for vlink in self.data["vlinks"]:
           if ref in vlink['connection_points_reference']:
             ports.append(vlink['alias'])
             self.log.debug("Found VNF port: %s" % vlink['alias'])
@@ -172,7 +191,8 @@ class VNFWrapper(AbstractDescriptorWrapper):
         if deployment['id'] == "deployment_type":
           return deployment['constraint'] if deployment['constraint'] else None
     except KeyError:
-      self.log.error("Missing required field for 'ports' in VNF: %s!" % self.id)
+      self.log.error(
+        "Missing required field for 'deployment_type' in VNF: %s!" % self.id)
 
 
 class NSWrapper(AbstractDescriptorWrapper):
@@ -190,7 +210,7 @@ class NSWrapper(AbstractDescriptorWrapper):
     :type raw: dict
     :return: None
     """
-    super(NSWrapper, self).__init__(raw)
+    super(NSWrapper, self).__init__(raw, logging.getLogger("NS#%s" % raw['id']))
     self.vendor = self.data['vendor']
 
   def get_vnfs (self):
@@ -203,9 +223,9 @@ class NSWrapper(AbstractDescriptorWrapper):
     try:
       return [int(vnf) for vnf in self.data['vnfds']]
     except KeyError:
-      self.log.error("Missing required field for 'vnfds' in data:\n%s!" % self)
+      self.log.error("Missing required field for 'vnfds' in NSD: %s!" % self.id)
     except ValueError as e:
-      self.log.error("Listed VNF id in 'vnfds': %s is not a vlid integer!" % e)
+      self.log.error("Listed VNF id in 'vnfds': %s is not a valid integer!" % e)
 
   def get_saps (self):
     """
@@ -231,6 +251,13 @@ class NSWrapper(AbstractDescriptorWrapper):
         "Missing required field for SAPs in 'connection_points' in NSD: %s!" %
         self.id)
 
+  def __parse_vlink_connection (self, conn):
+    if conn.startswith('VNF#'):
+      parts = conn.split(':')
+      return int(parts[0].lstrip('VNF#')), parts[1].lstrip('ext_')
+    else:
+      self.log.error("Missing VNF prefix from connection: %s" % conn)
+
   def get_vlinks (self):
     """
     Get the list of processed Virtual links.
@@ -254,25 +281,45 @@ class NSWrapper(AbstractDescriptorWrapper):
           hop['id'] = int(vlink['vld_id'])
         except ValueError:
           hop['id'] = vlink['vld_id']
-        if len(vlink['connections']) != 2:
-          self.log.warning(
-            "VLink type: %s must have exactly 2 endpoint in connections:\n%s"
-            % (self.LINK_TYPE, vlink))
-          continue
-        # Check src node/port
-        src = vlink['connections'][0].split(':')
-        if src[0].startswith('VNF#'):
-          hop['src_node'], hop['src_port'] = int(src[0].lstrip('VNF#')), src[1]
+        # Inter-VNF link
+        if len(vlink['connections']) == 2:
+          self.log.debug("Detected inter-VNF link: %s" % hop['id'])
+          # Check src node/port
+          hop['src_node'], hop['src_port'] = self.__parse_vlink_connection(
+            vlink['connections'][0])
+          # Check dst node/port
+          hop['dst_node'], hop['dst_port'] = self.__parse_vlink_connection(
+            vlink['connections'][1])
+        # External link, one of the endpoint is a SAP
         else:
-          # Src Node is not a VNF, must be SAP
-          hop['src_node'], hop['src_port'] = src[0], None
-        # Check dst node/port
-        dst = vlink['connections'][1].split(':')
-        if dst[0].startswith('VNF#'):
-          hop['dst_node'], hop['dst_port'] = int(dst[0].lstrip('VNF#')), dst[1]
-        else:
-          # Dst Node is not a VNF, must be SAP
-          hop['dst_node'], hop['dst_port'] = dst[0], None
+          node, port = self.__parse_vlink_connection(vlink['connections'][0])
+          sap_node, sap_port = vlink['alias'], None
+          # Try to detect SAP role
+          cp_list = self.data['vnffgd']['vnffgs'][0][
+            'network_forwarding_path'][0]['connection_points']
+          graph_list = self.data['vnffgd']['vnffgs'][0][
+            'network_forwarding_path'][0]['graph']
+          # pos = cp_list.index(vlink['connections'][0])
+          pos = graph_list.index(vlink['vld_id']) * 2 + 1
+          # pos should be 1, 3, 5, ...
+          if pos < 2:
+            # First link of the chain started from the SAP
+            hop['src_node'], hop['src_port'] = sap_node, sap_port
+            hop['dst_node'], hop['dst_port'] = node, port
+            self.log.debug("Detected starting SAP")
+          elif cp_list[pos - 2] == vlink['connections'][0]:
+            # Destination endpoint of the previous link is the same as the
+            # current endpoint => link directed to the SAP
+            hop['src_node'], hop['src_port'] = node, port
+            hop['dst_node'], hop['dst_port'] = sap_node, sap_port
+            self.log.debug("Detected ending SAP")
+          else:
+            # not the same => it is the first link of a new chain
+            hop['src_node'], hop['src_port'] = sap_node, sap_port
+            hop['dst_node'], hop['dst_port'] = node, port
+            self.log.debug("Detected starting SAP of a new service chain")
+        self.log.debug("src: %s - %s" % (hop['src_node'], hop['src_port']))
+        self.log.debug("dst: %s - %s" % (hop['dst_node'], hop['dst_port']))
         hops.append(hop)
       return hops
     except KeyError:
@@ -280,7 +327,7 @@ class NSWrapper(AbstractDescriptorWrapper):
 
   def get_e2e_reqs (self):
     """
-    Get list of E2E requirement link params: id,delay,bandwidth which come
+    Get list of E2E requirement link params: id, delay, bandwidth which come
     from 'sla' fields.
 
     :return: list of requirement link params
@@ -333,8 +380,8 @@ class NSWrapper(AbstractDescriptorWrapper):
       return [nfp['graph'] for nfp in nfps]
     except KeyError:
       self.log.error(
-        "Missing required field for 'network_forwarding_path' in data:\n%s!"
-        % self)
+        "Missing required field for 'network_forwarding_path' in NFP: %s!"
+        % self.id)
 
   def get_port_from_vlink (self, vlink_id, index):
     """
@@ -355,20 +402,16 @@ class NSWrapper(AbstractDescriptorWrapper):
     try:
       for vld in self.data['vld']['virtual_links']:
         if vld['vld_id'] == vlink_id:
-          if len(vld['connections']) != 2:
-            self.log.warning(
-              "VLink type: %s must have exactly 2 endpoint in connections:\n%s"
-              % (self.LINK_TYPE, vld))
-            return
-          src = vld['connections'][index]
+          try:
+            src = vld['connections'][index]
+          except IndexError:
+            return vld['alias'], None
           # Get VNF node/port values
           if src.startswith('VNF#'):
-            return src.rstrip('VNF#').split(':')
-          else:
-            # It must be an endpoint (SAP)
-            return src, None
+            parts = src.split(':')
+            return parts[0].lstrip('VNF#'), parts[1].lstrip('ext_')
     except KeyError:
-      self.log.error("Missing required field for 'vlink' in data:\n%s!" % self)
+      self.log.error("Missing required field for 'vlink' in NSD: %s!" % self.id)
 
   def get_src_port (self, vlink_id):
     """
@@ -390,7 +433,7 @@ class NSWrapper(AbstractDescriptorWrapper):
     :return: the destination node,port of the given virtual link
     :rtype: tuple
     """
-    return self.get_port_from_vlink(vlink_id=vlink_id, index=-1)
+    return self.get_port_from_vlink(vlink_id=vlink_id, index=1)
 
 
 class VNFCatalogue(object):
@@ -556,15 +599,15 @@ class TNOVAConverter(object):
         continue
       node_nf = nffg.add_nf(id=vnf.get_vnf_id(),
                             name=vnf.name,
-                            func_type=vnf.type,
+                            func_type=vnf.get_vnf_type(),
                             dep_type=vnf.get_deployment_type(),
                             **vnf.get_resources())
       # Add ports to NF
       for port in vnf.get_ports():
         try:
-          port_id = int(port['id'])
+          port_id = int(port)
         except ValueError:
-          port_id = port['id']
+          port_id = port
         node_nf.add_port(id=port_id)
         self.log.debug("Added NF: %s" % node_nf)
 
@@ -663,7 +706,12 @@ class TNOVAConverter(object):
           "processing..." % (req_id, chain))
       else:
         req_id = req_id.pop()
-      self.log.debug("Detected Requirement link id: %s" % req_id)
+      self.log.debug("Detected Requirement link ref: %s" % req_id)
+      if req_id not in reqs:
+        self.log.error(
+          "SLA definition with id: %s was not found in detected SALs: %s!" % (
+            req_id, reqs))
+        # continue
       src_node, src_port = ns.get_src_port(vlink_id=chain[0])
       # If src_port is a valid port of a VNF
       if src_port is not None:
@@ -694,11 +742,6 @@ class TNOVAConverter(object):
       else:
         dst = nffg[dst_node].ports.container[0]
         self.log.debug("Found dst port object: %s" % dst)
-      if req_id not in reqs:
-        self.log.error(
-          "SLA definition with id: %s was not found in detected SALs: %s!" % (
-            req_id, reqs))
-        continue
       req_link = nffg.add_req(id=req_id,
                               src_port=src,
                               dst_port=dst,
