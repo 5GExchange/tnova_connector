@@ -88,7 +88,7 @@
         }
       ],
       "id": "vdu0",
-      "alias": "decomp",
+      "alias": "headerDecompressor",
       "controller": true,
       "connection_points": [
         {
