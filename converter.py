@@ -67,7 +67,7 @@ class AbstractDescriptorWrapper(object):
     self.name = self.data['name']
     self.provider = self.data['provider']
     self.provider_id = self.data['provider_id']
-    self.release = self.data['release']
+    # self.release = self.data['release']
     self.description = self.data['description']
     self.version = self.data['version']
     self.descriptor_version = self.data['descriptor_version']
@@ -128,9 +128,9 @@ class VNFWrapper(AbstractDescriptorWrapper):
           "Multiple VDU element are detected! Conversion does only support "
           "simple VNFs!")
         return
-      return self.data['vdu'][0]["id"]
+      return self.data['vdu'][0]["alias"]
     except KeyError:
-      self.log.error("Missing required field for 'id' in data:\n%s!" % self)
+      self.log.error("Missing required field for 'id' in VNF: %s!" % self.id)
 
   def get_ports (self):
     """
@@ -146,9 +146,17 @@ class VNFWrapper(AbstractDescriptorWrapper):
           "Multiple VDU element are detected! Conversion does only support "
           "simple VNFs!")
         return
-      return self.data['vdu'][0]["connection_points"]
+      ports = []
+      # return self.data['vdu'][0]["connection_points"]
+      for cp in self.data['vdu'][0]["connection_points"]:
+        ref = cp['id']
+        for vlink in self.data['vdu'][0]["vlinks"]:
+          if ref in vlink['connection_points_reference']:
+            ports.append(vlink['alias'])
+            self.log.debug("Found VNF port: %s" % vlink['alias'])
+      return ports
     except KeyError:
-      self.log.error("Missing required field for 'ports' in data:\n%s!" % self)
+      self.log.error("Missing required field for 'ports' in VNF: %s!" % self.id)
       return ()
 
   def get_deployment_type (self):
@@ -164,7 +172,7 @@ class VNFWrapper(AbstractDescriptorWrapper):
         if deployment['id'] == "deployment_type":
           return deployment['constraint'] if deployment['constraint'] else None
     except KeyError:
-      self.log.error("Missing required field for 'ports' in data:\n%s!" % self)
+      self.log.error("Missing required field for 'ports' in VNF: %s!" % self.id)
 
 
 class NSWrapper(AbstractDescriptorWrapper):
@@ -225,7 +233,7 @@ class NSWrapper(AbstractDescriptorWrapper):
     """
     try:
       hops = []
-      for vlink in self.data['vld']['vitual_links']:
+      for vlink in self.data['vld']['virtual_links']:
         if vlink['connectivity_type'] != self.LINK_TYPE:
           self.log.warning(
             "Only Link type: %s is supported! Skip Virtual link "
@@ -295,7 +303,7 @@ class NSWrapper(AbstractDescriptorWrapper):
     :return:  id of SLA entry aka e2e requirement link
     :rtype: 3str
     """
-    for vld in self.data['vld']['vitual_links']:
+    for vld in self.data['vld']['virtual_links']:
       if vld['vld_id'] == id:
         return vld['sla_ref_id']
 
@@ -335,7 +343,7 @@ class NSWrapper(AbstractDescriptorWrapper):
     :rtype: tuple
     """
     try:
-      for vld in self.data['vld']['vitual_links']:
+      for vld in self.data['vld']['virtual_links']:
         if vld['vld_id'] == vlink_id:
           if len(vld['connections']) != 2:
             self.log.warning(
@@ -456,7 +464,7 @@ class TNOVAConverter(object):
       self.VNF_CATALOGUE = catalogue_dir
     self._full_catalogue_path = None
 
-  def _parse_vnf_catalogue (self, catalogue_dir=None):
+  def _parse_vnf_catalogue_from_folder (self, catalogue_dir=None):
     """
     Parse the given VNFDs as :any:`VNFWrapper` from files under the directory
     given by 'catalogue_dir' into a :any:`VNFCatalogue` instance.
@@ -473,14 +481,14 @@ class TNOVAConverter(object):
       self._full_catalogue_path = catalogue_dir
       # Create new Catalogue instance
       vnf_catalogue = VNFCatalogue()
-      # Iterate over cataloge dir
+      # Iterate over catalogue dir
       for vnf in os.listdir(catalogue_dir):
         vnfd_file = os.path.join(catalogue_dir, vnf)
         with open(vnfd_file) as f:
           # Parse VNFD from JSOn files as VNFWrapper class
           vnfd = json.load(f, object_hook=self.__vnfd_object_hook)
           vnfd.vnfd_file = vnfd_file
-          # Register VNF inot catalogue
+          # Register VNF into catalogue
           vnf_catalogue.register(name=vnf.rstrip(".json"), data=vnfd)
       return vnf_catalogue
 
@@ -492,7 +500,7 @@ class TNOVAConverter(object):
     """
     return VNFWrapper(raw=obj) if 'vdu' in obj.keys() else obj
 
-  def _parse_nsd (self, nsd_file):
+  def _parse_nsd_from_file (self, nsd_file):
     """
     Parse the given NFD as :any`NSWrapper` from file given by nsd_file.
     nsd_path can be relative to $PWD.
@@ -565,9 +573,9 @@ class TNOVAConverter(object):
     # Add SAPs
     for cp in ns.get_saps():
       try:
-        sap_id = int(cp['id'])
+        sap_id = int(cp)
       except ValueError:
-        sap_id = cp['id']
+        sap_id = cp
       node_sap = nffg.add_sap(id=sap_id,
                               name=sap_id)
       # Add default port to SAP with random name
@@ -701,9 +709,9 @@ class TNOVAConverter(object):
     """
     # Parse required descriptors
     self.log.info("Parse Network Service (NS) from NSD file: %s" % nsd_file)
-    ns = self._parse_nsd(nsd_file)
+    ns = self._parse_nsd_from_file(nsd_file)
     self.log.info("Parse VNFs from VNFD files under: %s" % self.VNF_CATALOGUE)
-    vnfs = self._parse_vnf_catalogue()
+    vnfs = self._parse_vnf_catalogue_from_folder()
     self.log.debug("Registered VNFs: %s" % vnfs.catalogue.keys())
     # Create main NFFG object
     nffg = NFFG(id=ns.id, name=ns.name)
