@@ -215,11 +215,21 @@ class NSWrapper(AbstractDescriptorWrapper):
     :rtype: list
     """
     try:
-      return self.data['connection_points']
+      # return self.data['connection_points']
+      # return self.data['connection_points']
+      saps = []
+      for cp in self.data['vnffgd']['vnffgs'][0]['network_forwarding_path'][0][
+        'connection_points']:
+        if cp.startswith('ns_ext'):
+          ext_point = cp.lstrip('ns_ext_')
+          if ext_point not in saps:
+            saps.append(ext_point)
+            self.log.debug("Found SAP: %s" % ext_point)
+      return saps
     except KeyError:
       self.log.error(
-        "Missing required field for 'connection_endpoints' in data:\n%s!" %
-        self)
+        "Missing required field for SAPs in 'connection_points' in NSD: %s!" %
+        self.id)
 
   def get_vlinks (self):
     """
