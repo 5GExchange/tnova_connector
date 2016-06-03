@@ -711,7 +711,7 @@ class TNOVAConverter(object):
         self.log.error(
           "SLA definition with id: %s was not found in detected SALs: %s!" % (
             req_id, reqs))
-        # continue
+        continue
       src_node, src_port = ns.get_src_port(vlink_id=chain[0])
       # If src_port is a valid port of a VNF
       if src_port is not None:
