@@ -63,14 +63,14 @@ class AbstractDescriptorWrapper(object):
 
     :return: None
     """
-    self.id = self.data['id']
-    self.name = self.data['name']
-    self.provider = self.data['provider']
-    self.provider_id = self.data['provider_id']
-    # self.release = self.data['release']
-    self.description = self.data['description']
-    self.version = self.data['version']
-    self.descriptor_version = self.data['descriptor_version']
+    self.id = self.data.get('id')
+    self.name = self.data.get('name')
+    self.provider = self.data.get('provider')
+    self.provider_id = self.data.get('provider_id')
+    self.release = self.data.get('release')
+    self.description = self.data.get('description')
+    self.version = self.data.get('version')
+    self.descriptor_version = self.data.get('descriptor_version')
 
 
 class VNFWrapper(AbstractDescriptorWrapper):
@@ -211,7 +211,7 @@ class NSWrapper(AbstractDescriptorWrapper):
     :return: None
     """
     super(NSWrapper, self).__init__(raw, logging.getLogger("NS#%s" % raw['id']))
-    self.vendor = self.data['vendor']
+    self.vendor = self.data.get('vendor')
 
   def get_vnfs (self):
     """
