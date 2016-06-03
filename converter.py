@@ -19,6 +19,8 @@ import os
 import pprint
 import sys
 
+import requests
+
 try:
   # Import from ESCAPEv2
   from escape.nffg_lib.nffg import NFFG
@@ -440,9 +442,14 @@ class VNFCatalogue(object):
   """
   Container class for VNFDs.
   """
+  # VNF_STORE_ENABLED = False
+  VNF_STORE_ENABLED = True
 
-  def __init__ (self):
+  def __init__ (self, remote_store=False, url=None):
     self.catalogue = {}
+    if remote_store:
+      self.VNF_STORE_ENABLED = True
+    self.vnf_store_url = url
 
   def register (self, name, data):
     """
@@ -480,6 +487,8 @@ class VNFCatalogue(object):
     :return: registered VNF
     :rtype: :any:`VNFWrapper`
     """
+    if self.VNF_STORE_ENABLED:
+      self.__request_vnf_from_remote_store(id)
     for vnf in self.catalogue.itervalues():
       if vnf.id == id:
         return vnf
@@ -494,6 +503,9 @@ class VNFCatalogue(object):
 
   def __iter__ (self):
     return self.catalogue.__iter__()
+
+  def __request_vnf_from_remote_store (self, id):
+    ret = requests.post(url=self.vnf_store_url, )
 
 
 class TNOVAConverter(object):

@@ -26,7 +26,7 @@ PWD = os.path.realpath(os.path.dirname(__file__))
 CATALOGUE_DIR = "vnf_catalogue"
 NSD_DIR = "nsds"
 SERVICE_NFFG_DIR = "sg"
-ESCAPE_URL = "http://localhost:8008/escape/sg"
+ESCAPE_URL_SG = "http://localhost:8008/escape/sg"
 
 app = Flask("T-NOVA_Connector")
 
@@ -65,7 +65,7 @@ def nsd ():
     app.logger.exception("Received data is not valid JSON!")
     abort(500)
   except KeyError:
-    app.logger.exception("Received data is not a valid NSD!")
+    app.logger.exception("Received data is not valid NSD!")
     abort(500)
 
 
@@ -83,7 +83,7 @@ def vnfd ():
     app.logger.error("Received data is not valid JSON!")
     abort(500)
   except KeyError:
-    app.logger.error("Received data is not a valid VNFD!")
+    app.logger.error("Received data is not valid VNFD!")
     abort(500)
 
 
@@ -93,9 +93,9 @@ def initiate_service (sg_id):
   sg_path = "%s/%s/%s.json" % (PWD, SERVICE_NFFG_DIR, sg_id)
   with open(sg_path) as f:
     sg = json.load(f)
-  ret = requests.post(url=ESCAPE_URL, json=sg)
+  ret = requests.post(url=ESCAPE_URL_SG, json=sg)
   app.logger.info(
-    "Service initiation has benn forwarded with result: %s" % ret.status_code)
+    "Service initiation has been forwarded with result: %s" % ret.status_code)
 
 
 if __name__ == "__main__":
