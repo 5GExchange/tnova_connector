@@ -1,0 +1,170 @@
+{
+  "nsd": {
+    "id": "57513912e4b0118efc8ad92f",
+    "name": "ESCAPE2",
+    "vendor": "3",
+    "version": "1",
+    "vnfds": [
+      "1650",
+      "1751"
+    ],
+    "vnffgd": {
+      "vnffgs": [
+        {
+          "vnffg_id": "vnffg0",
+          "number_of_endpoints": 2,
+          "number_of_virtual_links": 3,
+          "dependent_virtual_links": [
+            "vld0",
+            "vld1",
+            "vld2"
+          ],
+          "network_forwarding_path": [
+            {
+              "nfp_id": "nfp0",
+              "graph": [
+                "vld0",
+                "vld1",
+                "vld2"
+              ],
+              "connection_points": [
+                "ns_ext_SAP1",
+                "VNF#1650:ext_1",
+                "VNF#1650:ext_1",
+                "VNF#1751:ext_1",
+                "ns_ext_SAP1",
+                "VNF#1751:ext_1"
+              ],
+              "constituent_vnfs": [
+                {
+                  "vnf_ref_id": "1650",
+                  "vnf_flavor_key_ref": "gold"
+                },
+                {
+                  "vnf_ref_id": "1751",
+                  "vnf_flavor_key_ref": "gold"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "lifecycle_events": {
+      "start": [],
+      "stop": [],
+      "scale_out": []
+    },
+    "vnf_depedency": [],
+    "monitoring_parameters": [
+      {
+        "desc": "Availability",
+        "metric": "availability",
+        "unit": "%"
+      },
+      {
+        "desc": "End-to-End Bandwidth",
+        "metric": "end-to-end bandwidth",
+        "unit": "Mbps"
+      }
+    ],
+    "vld": {
+      "number_of_endpoints": 0,
+      "virtual_links": [
+        {
+          "vld_id": "vld0",
+          "alias": "SAP1",
+          "root_requirements": "100Mbps",
+          "leaf_requirement": "100Mbps",
+          "qos": {
+            "average": "",
+            "peak": "",
+            "burst": ""
+          },
+          "connections": [
+            "VNF#1650:ext_1"
+          ],
+          "connectivity_type": "E-LINE",
+          "external_access": true,
+          "merge": false,
+          "sla_ref_id": "sla0"
+        },
+        {
+          "vld_id": "vld1",
+          "alias": "WS_DPI",
+          "root_requirements": "1Gbps",
+          "leaf_requirement": "1Gbps",
+          "qos": {
+            "average": "",
+            "peak": "",
+            "burst": ""
+          },
+          "connections": [
+            "VNF#1650:ext_1",
+            "VNF#1751:ext_1"
+          ],
+          "connectivity_type": "E-LINE",
+          "external_access": false,
+          "merge": false,
+          "sla_ref_id": "sla0"
+        },
+        {
+          "vld_id": "vld2",
+          "alias": "SAP1",
+          "root_requirements": "1Gbps",
+          "leaf_requirement": "1Gbps",
+          "qos": {
+            "average": "",
+            "peak": "",
+            "burst": ""
+          },
+          "connections": [
+            "VNF#1751:ext_1"
+          ],
+          "connectivity_type": "E-LINE",
+          "external_access": true,
+          "merge": false,
+          "sla_ref_id": "sla0"
+        }
+      ]
+    },
+    "sla": [
+      {
+        "id": "sla0",
+        "assurance_parameters": [],
+        "billing": {
+          "model": "PAYG",
+          "price": {
+            "price_per_period": 1,
+            "setup": 1,
+            "unit": "EUR"
+          }
+        },
+        "constituent_vnf": [
+          {
+            "number_of_instances": 1,
+            "redundancy_model": "Active",
+            "vnf_flavour_id_reference": "gold",
+            "vnf_reference": "1650"
+          },
+          {
+            "number_of_instances": 1,
+            "redundancy_model": "Active",
+            "vnf_flavour_id_reference": "gold",
+            "vnf_reference": "1751"
+          }
+        ],
+        "sla_key": "Basic"
+      }
+    ],
+    "auto_scale_policy": {
+      "criteria": []
+    },
+    "connection_points": [],
+    "vnf_dependency": [],
+    "provider": "T-Nova",
+    "description": "ESCAPE2",
+    "provider_id": "3",
+    "descriptor_version": "1"
+  }
+}
