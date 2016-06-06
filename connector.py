@@ -31,12 +31,13 @@ SERVICE_NFFG_DIR = "sg"
 ESCAPE_URL = "http://localhost:8008"
 ESCAPE_PREFIX = "escape/sg"
 
+# Create REST-API handler app
 app = Flask("T-NOVA_Connector")
+# Create converter
+converter = TNOVAConverter(logger=app.logger, vnf_catalogue=CATALOGUE_DIR)
 
 
 def convert_service (nsd_file):
-  # Create converter
-  converter = TNOVAConverter(logger=app.logger, catalogue_dir=CATALOGUE_DIR)
   # Convert the NSD given by file name
   sg = converter.convert(nsd_file=nsd_file)
   if sg is None:
@@ -96,7 +97,7 @@ def initiate_service (sg_id):
   sg_path = "%s/%s/%s.json" % (PWD, SERVICE_NFFG_DIR, sg_id)
   with open(sg_path) as f:
     sg = json.load(f)
-  ret = requests.post(url=ESCAPE_URL_SG, json=sg)
+  ret = requests.post(url=ESCAPE_URL + ESCAPE_PREFIX, json=sg)
   app.logger.info(
     "Service initiation has been forwarded with result: %s" % ret.status_code)
 

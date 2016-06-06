@@ -442,6 +442,8 @@ class VNFCatalogue(object):
   """
   Container class for VNFDs.
   """
+  # Default folder contains the VNFD files
+  VNF_CATALOGUE_DIR = "vnf_catalogue"
   # VNF_STORE_ENABLED = False
   VNF_STORE_ENABLED = True
 
@@ -450,6 +452,7 @@ class VNFCatalogue(object):
     if remote_store:
       self.VNF_STORE_ENABLED = True
     self.vnf_store_url = url
+    self._full_catalogue_path = None
 
   def register (self, name, data):
     """
@@ -493,6 +496,41 @@ class VNFCatalogue(object):
       if vnf.id == id:
         return vnf
 
+  def parse_vnf_catalogue_from_folder (self, catalogue_dir=None):
+    """
+    Parse the given VNFDs as :any:`VNFWrapper` from files under the
+    directory
+    given by 'catalogue_dir' into a :any:`VNFCatalogue` instance.
+    catalogue_dir can be relative to $PWD.
+
+    :param catalogue_dir: VNF folder
+    :type catalogue_dir: str
+    :return: created VNFCatalogue instance
+    :rtype: :any:`VNFCatalogue`
+    """
+    if catalogue_dir is None:
+      catalogue_dir = os.path.realpath(
+        os.path.join(os.path.dirname(__file__), self.VNF_CATALOGUE_DIR))
+      self._full_catalogue_path = catalogue_dir
+      # Iterate over catalogue dir
+      for vnf in os.listdir(catalogue_dir):
+        vnfd_file = os.path.join(catalogue_dir, vnf)
+        with open(vnfd_file) as f:
+          # Parse VNFD from JSOn files as VNFWrapper class
+          vnfd = json.load(f, object_hook=self.__vnfd_object_hook)
+          vnfd.vnfd_file = vnfd_file
+          # Register VNF into catalogue
+          self.register(name=vnf.rstrip(".json"), data=vnfd)
+      return self
+
+  @staticmethod
+  def __vnfd_object_hook (obj):
+    """
+    Object hook function for converting top dict into :any:`VNFWrapper`
+    instance.
+    """
+    return VNFWrapper(raw=obj) if 'vdu' in obj.keys() else obj
+
   # Container-like magic functions
 
   def iteritems (self):
@@ -512,12 +550,10 @@ class TNOVAConverter(object):
   """
   Converter class for NSD --> NFFG conversion.
   """
-  # Default folder contains the VNFD files
-  VNF_CATALOGUE = "vnf_catalogue"
   # DEFAULT_SAP_PORT_ID = None  # None = generated an UUID by defaults
   DEFAULT_SAP_PORT_ID = 1
 
-  def __init__ (self, logger=None, catalogue_dir=None):
+  def __init__ (self, logger=None, vnf_catalogue=None):
     """
     Constructor.
 
@@ -525,47 +561,10 @@ class TNOVAConverter(object):
     """
     self.log = logger if logger is not None else logging.getLogger(
       self.__class__.__name__)
-    if catalogue_dir:
-      self.VNF_CATALOGUE = catalogue_dir
-    self._full_catalogue_path = None
+    if vnf_catalogue is not None:
+      self.catalogue = vnf_catalogue
 
-  def _parse_vnf_catalogue_from_folder (self, catalogue_dir=None):
-    """
-    Parse the given VNFDs as :any:`VNFWrapper` from files under the directory
-    given by 'catalogue_dir' into a :any:`VNFCatalogue` instance.
-    catalogue_dir can be relative to $PWD.
-
-    :param catalogue_dir: VNF folder
-    :type catalogue_dir: str
-    :return: created VNFCatalogue instance
-    :rtype: :any:`VNFCatalogue`
-    """
-    if catalogue_dir is None:
-      catalogue_dir = os.path.realpath(
-        os.path.join(os.path.dirname(__file__), self.VNF_CATALOGUE))
-      self._full_catalogue_path = catalogue_dir
-      # Create new Catalogue instance
-      vnf_catalogue = VNFCatalogue()
-      # Iterate over catalogue dir
-      for vnf in os.listdir(catalogue_dir):
-        vnfd_file = os.path.join(catalogue_dir, vnf)
-        with open(vnfd_file) as f:
-          # Parse VNFD from JSOn files as VNFWrapper class
-          vnfd = json.load(f, object_hook=self.__vnfd_object_hook)
-          vnfd.vnfd_file = vnfd_file
-          # Register VNF into catalogue
-          vnf_catalogue.register(name=vnf.rstrip(".json"), data=vnfd)
-      return vnf_catalogue
-
-  @staticmethod
-  def __vnfd_object_hook (obj):
-    """
-    Object hook function for converting top dict into :any:`VNFWrapper`
-    instance.
-    """
-    return VNFWrapper(raw=obj) if 'vdu' in obj.keys() else obj
-
-  def _parse_nsd_from_file (self, nsd_file):
+  def parse_nsd_from_file (self, nsd_file):
     """
     Parse the given NFD as :any`NSWrapper` from file given by nsd_file.
     nsd_path can be relative to $PWD.
@@ -774,9 +773,10 @@ class TNOVAConverter(object):
     """
     # Parse required descriptors
     self.log.info("Parse Network Service (NS) from NSD file: %s" % nsd_file)
-    ns = self._parse_nsd_from_file(nsd_file)
-    self.log.info("Parse VNFs from VNFD files under: %s" % self.VNF_CATALOGUE)
-    vnfs = self._parse_vnf_catalogue_from_folder()
+    ns = self.parse_nsd_from_file(nsd_file)
+    self.log.info(
+      "Parse VNFs from VNFD files under: %s" % self.catalogue.VNF_CATALOGUE_DIR)
+    vnfs = self.catalogue.parse_vnf_catalogue_from_folder()
     self.log.debug("Registered VNFs: %s" % vnfs.catalogue.keys())
     # Create main NFFG object
     nffg = NFFG(id=ns.id, name=ns.name)
