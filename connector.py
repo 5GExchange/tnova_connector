@@ -24,9 +24,12 @@ from converter import TNOVAConverter
 
 PWD = os.path.realpath(os.path.dirname(__file__))
 CATALOGUE_DIR = "vnf_catalogue"
+CATALOGUE_URL = "http://http://172.16.178.128:8080"
+CATALOGUE_PREFIX = "NFS/vnfds"
 NSD_DIR = "nsds"
 SERVICE_NFFG_DIR = "sg"
-ESCAPE_URL_SG = "http://localhost:8008/escape/sg"
+ESCAPE_URL = "http://localhost:8008"
+ESCAPE_PREFIX = "escape/sg"
 
 app = Flask("T-NOVA_Connector")
 
