@@ -455,7 +455,9 @@ class VNFCatalogue(object):
   Container class for VNFDs.
   """
   # VNF_STORE_ENABLED = False
+  VNF_CATALOGUE_DIR = "vnf_catalogue"
   VNF_STORE_ENABLED = True
+  STORE_VNFD_LOCALLY = True
 
   def __init__ (self, remote_store=False, url=None, catalogue_dir=None,
                 logger=None):
@@ -474,20 +476,23 @@ class VNFCatalogue(object):
     self.vnf_store_url = url
     self._full_catalogue_path = None
 
-  def register (self, id, data):
+  def register (self, id, vnfd):
     """
     Add a VNF as a VNFWrapper class with the given name.
     Return if the registering was successful.
 
     :param id: id of the VNF
     :type id: str
-    :param data: VNFD as a :any:`VNFWrapper` class
+    :param vnfd: VNFD as a :any:`VNFWrapper` class
     :return: result of registering
     :rtype: bool
     """
-    if isinstance(data, VNFWrapper):
-      self.catalogue[id] = data
-      self.log.info("VNFD is registered with id: %s" % id)
+    if isinstance(vnfd, VNFWrapper):
+      if id not in self.catalogue:
+        self.catalogue[id] = vnfd
+        self.log.info("Register VNFD with id: %s" % id)
+      else:
+        self.log.debug("VNFD has been already registered with id: %s!" % id)
       return True
     else:
       return False
@@ -514,7 +519,7 @@ class VNFCatalogue(object):
     :rtype: :any:`VNFWrapper`
     """
     if self.VNF_STORE_ENABLED:
-      return self.__request_vnf_from_remote_store(id)
+      return self.request_vnf_from_remote_store(id)
     for vnf in self.catalogue.itervalues():
       if vnf.id == id:
         return vnf
@@ -535,25 +540,43 @@ class VNFCatalogue(object):
       catalogue_dir = os.path.realpath(
         os.path.join(os.path.dirname(__file__), self.VNF_CATALOGUE_DIR))
       self._full_catalogue_path = catalogue_dir
-      # Iterate over catalogue dir
-      for vnf in os.listdir(catalogue_dir):
-        if vnf.startswith('.'):
-          continue
-        vnfd_file = os.path.join(catalogue_dir, vnf)
-        with open(vnfd_file) as f:
-          # Parse VNFD from JSOn files as VNFWrapper class
-          vnfd = json.load(f, object_hook=self.__vnfd_object_hook)
-          vnfd.vnfd_file = vnfd_file
-          # Register VNF into catalogue
-          self.register(id=os.path.splitext(vnf)[0], data=vnfd)
+    self.log.debug(
+      "Parse VNFDs from local folder: %s ..." % self._full_catalogue_path)
+    # Iterate over catalogue dir
+    for vnf in os.listdir(self._full_catalogue_path):
+      if vnf.startswith('.'):
+        continue
+      vnfd_file = os.path.join(catalogue_dir, vnf)
+      with open(vnfd_file) as f:
+        # Parse VNFD from JSOn files as VNFWrapper class
+        vnfd = json.load(f, object_hook=self.__vnfd_object_hook)
+        vnfd.vnfd_file = vnfd_file
+        # Register VNF into catalogue
+        self.register(id=os.path.splitext(vnf)[0], vnfd=vnfd)
       return self
 
-  def __request_vnf_from_remote_store (self, vnf_id):
+  def request_vnf_from_remote_store (self, vnf_id):
+    if all((self.VNF_STORE_ENABLED, self.STORE_VNFD_LOCALLY,
+            vnf_id in self.catalogue)):
+      self.log.debug("Return with cached VNFD(id: %s)" % vnf_id)
+      return self.catalogue[vnf_id]
+    self.log.debug("Request VNFD with id: %s from VNF Store..." % vnf_id)
+    if not self.vnf_store_url:
+      self.log.error("Missing VNF Store URL from %s" % self.__class__.__name__)
+      return
+    url = os.path.join(self.vnf_store_url, str(vnf_id))
+    self.log.debug("Used URL for VNFD request: %s" % url)
     response = requests.get(url=os.path.join(self.vnf_store_url, str(vnf_id)))
     if not response.ok:
-      self.log.error("Got error during VNFD request")
+      if response.status_code == 404:
+        self.log.debug(
+          "Got HTTP 404! VNFD (id: %s) is missing from VNF Store!" % vnf_id)
+      else:
+        self.log.error("Got error during requesting VNFD with id: %s!" % vnf_id)
       return None
     vnfd = json.loads(response.text, object_hook=self.__vnfd_object_hook)
+    if self.STORE_VNFD_LOCALLY:
+      self.register(id=vnf_id, vnfd=vnfd)
     return vnfd
 
   @staticmethod
@@ -593,6 +616,9 @@ class TNOVAConverter(object):
       self.__class__.__name__)
     if vnf_catalogue is not None:
       self.catalogue = vnf_catalogue
+    else:
+      self.catalogue = VNFCatalogue(logger=logger)
+      self.catalogue.parse_vnf_catalogue_from_folder()
 
   def parse_nsd_from_file (self, nsd_file):
     """
@@ -804,22 +830,23 @@ class TNOVAConverter(object):
     # Parse required descriptors
     self.log.info("Parse Network Service (NS) from NSD file: %s" % nsd_file)
     ns = self.parse_nsd_from_file(nsd_file)
-    self.log.info(
-      "Parse VNFs from VNFD files under: %s" % self.catalogue.VNF_CATALOGUE_DIR)
-    vnfs = self.catalogue.parse_vnf_catalogue_from_folder()
-    self.log.debug("Registered VNFs: %s" % vnfs.catalogue.keys())
+    if not self.catalogue.VNF_STORE_ENABLED:
+      self.log.info("Parse VNFs from VNFD files under: %s" %
+                    self.catalogue.VNF_CATALOGUE_DIR)
+      vnfs = self.catalogue.parse_vnf_catalogue_from_folder()
+      self.log.debug("Registered VNFs: %s" % vnfs.catalogue.keys())
     # Create main NFFG object
     nffg = NFFG(id=ns.id, name=ns.name)
     # Convert NFFG elements
     try:
       self.log.debug("Convert NF nodes...")
-      self.__convert_nfs(nffg=nffg, ns=ns, vnfs=vnfs)
+      self.__convert_nfs(nffg=nffg, ns=ns, vnfs=self.catalogue)
       self.log.debug("Convert SAP nodes...")
-      self.__convert_saps(nffg=nffg, ns=ns, vnfs=vnfs)
+      self.__convert_saps(nffg=nffg, ns=ns, vnfs=self.catalogue)
       self.log.debug("Convert Service Graph hop edges...")
-      self.__convert_sg_hops(nffg=nffg, ns=ns, vnfs=vnfs)
+      self.__convert_sg_hops(nffg=nffg, ns=ns, vnfs=self.catalogue)
       self.log.debug("Convert E2E Requirement edges...")
-      self.__convert_e2e_reqs(nffg=nffg, ns=ns, vnfs=vnfs)
+      self.__convert_e2e_reqs(nffg=nffg, ns=ns, vnfs=self.catalogue)
     except MissingVNFDException as e:
       self.log.exception(e)
     except:
@@ -849,8 +876,9 @@ if __name__ == "__main__":
   log = logging.getLogger()
   logging.basicConfig(level=args.loglevel)
   catalogue = VNFCatalogue(remote_store=False, logger=log,
-                           catalogue_dir=args.catalogue)
-  catalogue.VNF_STORE_ENABLED = False
+                           catalogue_dir=args.catalogue,
+                           url="http://172.16.178.128:8080/NFS/vnfds")
+  catalogue.VNF_STORE_ENABLED = True
   converter = TNOVAConverter(logger=log, vnf_catalogue=catalogue)
   log.info("Start converting NS: %s..." % args.nsd)
   nffg = converter.convert(nsd_file=args.nsd)
