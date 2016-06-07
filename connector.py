@@ -20,31 +20,39 @@ import os
 import requests
 from flask import Flask, Response, request, abort
 
-from converter import TNOVAConverter
+from converter import TNOVAConverter, VNFCatalogue
 
-PWD = os.path.realpath(os.path.dirname(__file__))
+# Configuration parameters
 CATALOGUE_DIR = "vnf_catalogue"
-CATALOGUE_URL = "http://http://172.16.178.128:8080"
+USE_VNF_STORE = True
+CATALOGUE_URL = "http://172.16.178.128:8080"
 CATALOGUE_PREFIX = "NFS/vnfds"
-NSD_DIR = "nsds"
-SERVICE_NFFG_DIR = "sg"
 ESCAPE_URL = "http://localhost:8008"
 ESCAPE_PREFIX = "escape/sg"
+NSD_DIR = "nsds"
+SERVICE_NFFG_DIR = "services"
+
+# Other constants
+PWD = os.path.realpath(os.path.dirname(__file__))
+POST_HEADERS = {"Content-Type": "application/json"}
 
 # Create REST-API handler app
 app = Flask("T-NOVA_Connector")
+# create Catalogue for VNFDs
+catalogue = VNFCatalogue(remote_store=USE_VNF_STORE, url=CATALOGUE_URL,
+                         catalogue_dir=CATALOGUE_DIR, logger=app.logger)
 # Create converter
-converter = TNOVAConverter(logger=app.logger, vnf_catalogue=CATALOGUE_DIR)
+converter = TNOVAConverter(vnf_catalogue=catalogue, logger=app.logger)
 
 
 def convert_service (nsd_file):
   # Convert the NSD given by file name
   sg = converter.convert(nsd_file=nsd_file)
   if sg is None:
-    app.logger.error("Service conversion was failed!")
+    app.logger.error("Service conversion was failed! Service is not saved!")
     return
   # Save result NFFG into a file
-  sg_path = nsd_file.replace(NSD_DIR, SERVICE_NFFG_DIR)
+  sg_path = os.path.join(PWD, SERVICE_NFFG_DIR, "%s.json" % sg.id)
   with open(sg_path, 'w') as f:
     f.write(sg.dump())
 
@@ -55,7 +63,7 @@ def nsd ():
     # Parse data as JSON
     data = json.loads(request.data)
     filename = data['nsd']['id']
-    path = "%s/%s/%s.json" % (PWD, NSD_DIR, filename)
+    path = os.path.join(PWD, NSD_DIR, "%s.json" % filename)
     with open(path, 'w') as f:
       f.write(json.dumps(data))
     app.logger.info("Received NSD has been saved: %s!" % path)
@@ -78,7 +86,7 @@ def vnfd ():
   try:
     data = json.loads(request.data)
     filename = data['id']
-    path = "%s/%s/%s.json" % (PWD, CATALOGUE_DIR, filename)
+    path = os.path.join(PWD, CATALOGUE_DIR, "%s.nffg" % filename)
     with open(path, 'w') as f:
       f.write(json.dumps(data))
     app.logger.info("Received VNFD has been saved: %s!" % path)
@@ -94,10 +102,11 @@ def vnfd ():
 @app.route("/service/<sg_id>", methods=['POST'])
 def initiate_service (sg_id):
   app.logger.info("Received service initiation with id: %s" % sg_id)
-  sg_path = "%s/%s/%s.json" % (PWD, SERVICE_NFFG_DIR, sg_id)
+  sg_path = os.path.join(PWD, SERVICE_NFFG_DIR, "%s.nffg" % sg_id)
   with open(sg_path) as f:
     sg = json.load(f)
-  ret = requests.post(url=ESCAPE_URL + ESCAPE_PREFIX, json=sg)
+  esc_url = os.path.join(ESCAPE_URL, ESCAPE_PREFIX)
+  ret = requests.post(url=esc_url, headers=POST_HEADERS, json=sg)
   app.logger.info(
     "Service initiation has been forwarded with result: %s" % ret.status_code)
 

@@ -438,48 +438,71 @@ class NSWrapper(AbstractDescriptorWrapper):
     return self.get_port_from_vlink(vlink_id=vlink_id, index=1)
 
 
+class MissingVNFDException(Exception):
+  """
+  Exception class signaling missing VNFD from Catalogue.
+  """
+
+  def __init__ (self, vnf_id=None):
+    self.vnf_id = vnf_id
+
+  def __str__ (self):
+    return "Missing VNF id: %s from Catalogue!" % self.vnf_id
+
+
 class VNFCatalogue(object):
   """
   Container class for VNFDs.
   """
-  # Default folder contains the VNFD files
-  VNF_CATALOGUE_DIR = "vnf_catalogue"
   # VNF_STORE_ENABLED = False
   VNF_STORE_ENABLED = True
 
-  def __init__ (self, remote_store=False, url=None):
+  def __init__ (self, remote_store=False, url=None, catalogue_dir=None,
+                logger=None):
+    """
+    Constructor.
+
+    :param logger: optional logger
+    """
+    self.log = logger if logger is not None else logging.getLogger(
+      self.__class__.__name__)
     self.catalogue = {}
+    if catalogue_dir:
+      self.VNF_CATALOGUE_DIR = catalogue_dir
     if remote_store:
       self.VNF_STORE_ENABLED = True
     self.vnf_store_url = url
     self._full_catalogue_path = None
 
-  def register (self, name, data):
+  def register (self, id, data):
     """
     Add a VNF as a VNFWrapper class with the given name.
     Return if the registering was successful.
 
-    :param name: name of the VNF
-    :type name: str
+    :param id: id of the VNF
+    :type id: str
     :param data: VNFD as a :any:`VNFWrapper` class
     :return: result of registering
     :rtype: bool
     """
     if isinstance(data, VNFWrapper):
-      self.catalogue[name] = data
+      self.catalogue[id] = data
+      self.log.info("VNFD is registered with id: %s" % id)
       return True
     else:
       return False
 
-  def unregister (self, name):
+  def unregister (self, id):
     """
     Remove a VNF from the catalogue given by name.
 
-    :param name: removed VNF
-    :type name: str
+    :param id: removed VNF
+    :type id: str
     :return: None
     """
-    del self.catalogue[name]
+    del self.catalogue[id]
+    self.log.info(
+      "VNFD with id: %s is removed from %s" % (id, self.__class__.__name__))
 
   def get_by_id (self, id):
     """
@@ -487,11 +510,11 @@ class VNFCatalogue(object):
 
     :param id: VNF id
     :type id: str
-    :return: registered VNF
+    :return: registered VNF or None
     :rtype: :any:`VNFWrapper`
     """
     if self.VNF_STORE_ENABLED:
-      self.__request_vnf_from_remote_store(id)
+      return self.__request_vnf_from_remote_store(id)
     for vnf in self.catalogue.itervalues():
       if vnf.id == id:
         return vnf
@@ -514,14 +537,24 @@ class VNFCatalogue(object):
       self._full_catalogue_path = catalogue_dir
       # Iterate over catalogue dir
       for vnf in os.listdir(catalogue_dir):
+        if vnf.startswith('.'):
+          continue
         vnfd_file = os.path.join(catalogue_dir, vnf)
         with open(vnfd_file) as f:
           # Parse VNFD from JSOn files as VNFWrapper class
           vnfd = json.load(f, object_hook=self.__vnfd_object_hook)
           vnfd.vnfd_file = vnfd_file
           # Register VNF into catalogue
-          self.register(name=vnf.rstrip(".json"), data=vnfd)
+          self.register(id=os.path.splitext(vnf)[0], data=vnfd)
       return self
+
+  def __request_vnf_from_remote_store (self, vnf_id):
+    response = requests.get(url=os.path.join(self.vnf_store_url, str(vnf_id)))
+    if not response.ok:
+      self.log.error("Got error during VNFD request")
+      return None
+    vnfd = json.loads(response.text, object_hook=self.__vnfd_object_hook)
+    return vnfd
 
   @staticmethod
   def __vnfd_object_hook (obj):
@@ -541,9 +574,6 @@ class VNFCatalogue(object):
 
   def __iter__ (self):
     return self.catalogue.__iter__()
-
-  def __request_vnf_from_remote_store (self, id):
-    ret = requests.post(url=self.vnf_store_url, )
 
 
 class TNOVAConverter(object):
@@ -607,7 +637,7 @@ class TNOVAConverter(object):
       if vnf is None:
         self.log.error(
           "VNFD with id: %s is not found in the VNFCatalogue!" % nf_id)
-        continue
+        raise MissingVNFDException(nf_id)
       node_nf = nffg.add_nf(id=vnf.get_vnf_id(),
                             name=vnf.name,
                             func_type=vnf.get_vnf_type(),
@@ -620,7 +650,7 @@ class TNOVAConverter(object):
         except ValueError:
           port_id = port
         node_nf.add_port(id=port_id)
-        self.log.debug("Added NF: %s" % node_nf)
+        self.log.info("Added NF: %s" % node_nf)
 
   def __convert_saps (self, nffg, ns, vnfs):
     """
@@ -644,7 +674,7 @@ class TNOVAConverter(object):
                               name=sap_id)
       # Add default port to SAP with random name
       node_sap.add_port(id=self.DEFAULT_SAP_PORT_ID)
-      self.log.debug("Added SAP: %s" % node_sap)
+      self.log.info("Added SAP: %s" % node_sap)
 
   def __convert_sg_hops (self, nffg, ns, vnfs):
     """
@@ -688,7 +718,7 @@ class TNOVAConverter(object):
       link_sg = nffg.add_sglink(id=vlink['id'],
                                 src_port=src_port,
                                 dst_port=dst_port)
-      self.log.debug("Added SG hop: %s" % link_sg)
+      self.log.info("Added SG hop: %s" % link_sg)
 
   def __convert_e2e_reqs (self, nffg, ns, vnfs):
     """
@@ -719,7 +749,7 @@ class TNOVAConverter(object):
         req_id = req_id.pop()
       self.log.debug("Detected Requirement link ref: %s" % req_id)
       if req_id not in reqs:
-        self.log.error(
+        self.log.warning(
           "SLA definition with id: %s was not found in detected SALs: %s!" % (
             req_id, reqs))
         continue
@@ -759,7 +789,7 @@ class TNOVAConverter(object):
                               delay=reqs[req_id]['delay'],
                               bandwidth=reqs[req_id]['bandwidth'],
                               sg_path=[int(id) for id in chain])
-      self.log.debug("Added requirement link: %s" % req_link)
+      self.log.info("Added requirement link: %s" % req_link)
 
   def convert (self, nsd_file):
     """
@@ -781,14 +811,20 @@ class TNOVAConverter(object):
     # Create main NFFG object
     nffg = NFFG(id=ns.id, name=ns.name)
     # Convert NFFG elements
-    self.log.debug("Convert NF nodes...")
-    self.__convert_nfs(nffg=nffg, ns=ns, vnfs=vnfs)
-    self.log.debug("Convert SAP nodes...")
-    self.__convert_saps(nffg=nffg, ns=ns, vnfs=vnfs)
-    self.log.debug("Convert Service Graph hop edges...")
-    self.__convert_sg_hops(nffg=nffg, ns=ns, vnfs=vnfs)
-    self.log.debug("Convert E2E Requirement edges...")
-    self.__convert_e2e_reqs(nffg=nffg, ns=ns, vnfs=vnfs)
+    try:
+      self.log.debug("Convert NF nodes...")
+      self.__convert_nfs(nffg=nffg, ns=ns, vnfs=vnfs)
+      self.log.debug("Convert SAP nodes...")
+      self.__convert_saps(nffg=nffg, ns=ns, vnfs=vnfs)
+      self.log.debug("Convert Service Graph hop edges...")
+      self.__convert_sg_hops(nffg=nffg, ns=ns, vnfs=vnfs)
+      self.log.debug("Convert E2E Requirement edges...")
+      self.__convert_e2e_reqs(nffg=nffg, ns=ns, vnfs=vnfs)
+    except MissingVNFDException as e:
+      self.log.exception(e)
+    except:
+      self.log.exception(
+        "Got unexpected exception during NSD -> NFFG conversion!")
     # Return with assembled NFFG
     return nffg
 
@@ -812,7 +848,10 @@ if __name__ == "__main__":
   args = parser.parse_args()
   log = logging.getLogger()
   logging.basicConfig(level=args.loglevel)
-  converter = TNOVAConverter(catalogue_dir=args.catalogue)
+  catalogue = VNFCatalogue(remote_store=False, logger=log,
+                           catalogue_dir=args.catalogue)
+  catalogue.VNF_STORE_ENABLED = False
+  converter = TNOVAConverter(logger=log, vnf_catalogue=catalogue)
   log.info("Start converting NS: %s..." % args.nsd)
   nffg = converter.convert(nsd_file=args.nsd)
   log.info("Generated NFFG:\n%s" % nffg.dump())
