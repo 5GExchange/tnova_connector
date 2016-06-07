@@ -5,9 +5,9 @@
     "vendor": "3",
     "version": "1",
     "vnfds": [
-      "1647",
-      "1648",
-      "1649"
+      "9991",
+      "9992",
+      "9994"
     ],
     "vnffgd": {
       "vnffgs": [
@@ -34,15 +34,15 @@
               ],
               "connection_points": [
                 "ns_ext_SAP1",
-                "VNF#1649:ext_1",
-                "VNF#1649:ext_1",
-                "VNF#1648:ext_1",
+                "VNF#9991:ext_1",
+                "VNF#9991:ext_1",
+                "VNF#9992:ext_1",
                 "ns_ext_SAP2",
-                "VNF#1648:ext_1",
+                "VNF#9992:ext_1",
                 "ns_ext_SAP2",
-                "VNF#1647:ext_1",
+                "VNF#9994:ext_1",
                 "ns_ext_SAP1",
-                "VNF#1647:ext_1"
+                "VNF#9994:ext_1"
               ],
               "constituent_vnfs": [
                 {
@@ -95,7 +95,7 @@
             "burst": ""
           },
           "connections": [
-            "VNF#1649:ext_1"
+            "VNF#9991:ext_1"
           ],
           "connectivity_type": "E-LINE",
           "external_access": true,
@@ -113,8 +113,8 @@
             "burst": ""
           },
           "connections": [
-            "VNF#1649:ext_1",
-            "VNF#1648:ext_1"
+            "VNF#9991:ext_1",
+            "VNF#9992:ext_1"
           ],
           "connectivity_type": "E-LINE",
           "external_access": false,
@@ -132,7 +132,7 @@
             "burst": ""
           },
           "connections": [
-            "VNF#1648:ext_1"
+            "VNF#9992:ext_1"
           ],
           "connectivity_type": "E-LINE",
           "external_access": true,
@@ -150,7 +150,7 @@
             "burst": ""
           },
           "connections": [
-            "VNF#1647:ext_1"
+            "VNF#9994:ext_1"
           ],
           "connectivity_type": "E-LINE",
           "external_access": true,
@@ -168,7 +168,7 @@
             "burst": ""
           },
           "connections": [
-            "VNF#1647:ext_1"
+            "VNF#9994:ext_1"
           ],
           "connectivity_type": "E-LINE",
           "external_access": true,

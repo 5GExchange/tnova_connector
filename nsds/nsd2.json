@@ -5,8 +5,8 @@
     "vendor": "3",
     "version": "1",
     "vnfds": [
-      "1650",
-      "1751"
+      "9995",
+      "9993"
     ],
     "vnffgd": {
       "vnffgs": [
@@ -29,19 +29,19 @@
               ],
               "connection_points": [
                 "ns_ext_SAP1",
-                "VNF#1650:ext_1",
-                "VNF#1650:ext_1",
-                "VNF#1751:ext_1",
+                "VNF#9995:ext_1",
+                "VNF#9995:ext_1",
+                "VNF#9993:ext_1",
                 "ns_ext_SAP1",
-                "VNF#1751:ext_1"
+                "VNF#9993:ext_1"
               ],
               "constituent_vnfs": [
                 {
-                  "vnf_ref_id": "1650",
+                  "vnf_ref_id": "9995",
                   "vnf_flavor_key_ref": "gold"
                 },
                 {
-                  "vnf_ref_id": "1751",
+                  "vnf_ref_id": "9993",
                   "vnf_flavor_key_ref": "gold"
                 }
               ]
@@ -82,7 +82,7 @@
             "burst": ""
           },
           "connections": [
-            "VNF#1650:ext_1"
+            "VNF#9995:ext_1"
           ],
           "connectivity_type": "E-LINE",
           "external_access": true,
@@ -100,8 +100,8 @@
             "burst": ""
           },
           "connections": [
-            "VNF#1650:ext_1",
-            "VNF#1751:ext_1"
+            "VNF#9995:ext_1",
+            "VNF#9993:ext_1"
           ],
           "connectivity_type": "E-LINE",
           "external_access": false,
@@ -119,7 +119,7 @@
             "burst": ""
           },
           "connections": [
-            "VNF#1751:ext_1"
+            "VNF#9993:ext_1"
           ],
           "connectivity_type": "E-LINE",
           "external_access": true,
@@ -145,13 +145,13 @@
             "number_of_instances": 1,
             "redundancy_model": "Active",
             "vnf_flavour_id_reference": "gold",
-            "vnf_reference": "1650"
+            "vnf_reference": "9995"
           },
           {
             "number_of_instances": 1,
             "redundancy_model": "Active",
             "vnf_flavour_id_reference": "gold",
-            "vnf_reference": "1751"
+            "vnf_reference": "9993"
           }
         ],
         "sla_key": "Basic"
