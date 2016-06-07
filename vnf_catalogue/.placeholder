@@ -1,0 +1,2 @@
+Subdirectory for storing predefined VNFD files with the name of the VNF ID
+If VNFD is not found in the directory it will be requested from VNFStore through REST-API
