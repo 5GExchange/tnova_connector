@@ -849,9 +849,11 @@ class TNOVAConverter(object):
       self.__convert_e2e_reqs(nffg=nffg, ns=ns, vnfs=self.catalogue)
     except MissingVNFDException as e:
       self.log.exception(e)
+      return None
     except:
       self.log.exception(
         "Got unexpected exception during NSD -> NFFG conversion!")
+      return None
     # Return with assembled NFFG
     return nffg
 

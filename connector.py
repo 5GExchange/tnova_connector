@@ -19,8 +19,9 @@ import os
 
 import requests
 from flask import Flask, Response, request, abort
+from requests.exceptions import ConnectionError
 
-from converter import TNOVAConverter, VNFCatalogue
+from converter import TNOVAConverter, VNFCatalogue, MissingVNFDException
 
 # Configuration parameters
 CATALOGUE_DIR = "vnf_catalogue"
@@ -39,22 +40,26 @@ POST_HEADERS = {"Content-Type": "application/json"}
 # Create REST-API handler app
 app = Flask("T-NOVA_Connector")
 # create Catalogue for VNFDs
-catalogue = VNFCatalogue(remote_store=USE_VNF_STORE, url=CATALOGUE_URL,
+catalogue = VNFCatalogue(remote_store=USE_VNF_STORE,
+                         url=os.path.join(CATALOGUE_URL, CATALOGUE_PREFIX),
                          catalogue_dir=CATALOGUE_DIR, logger=app.logger)
 # Create converter
 converter = TNOVAConverter(vnf_catalogue=catalogue, logger=app.logger)
 
 
 def convert_service (nsd_file):
+  app.logger.info("Start converting received NSD...")
   # Convert the NSD given by file name
   sg = converter.convert(nsd_file=nsd_file)
+  app.logger.info("NSD conversion has been ended!")
   if sg is None:
     app.logger.error("Service conversion was failed! Service is not saved!")
     return
   # Save result NFFG into a file
-  sg_path = os.path.join(PWD, SERVICE_NFFG_DIR, "%s.json" % sg.id)
+  sg_path = os.path.join(PWD, SERVICE_NFFG_DIR, "%s.nffg" % sg.id)
   with open(sg_path, 'w') as f:
     f.write(sg.dump())
+  app.logger.info("Converted NFFG has been saved! Path: %s" % sg_path)
 
 
 @app.route("/nsd", methods=['POST'])
@@ -65,7 +70,7 @@ def nsd ():
     filename = data['nsd']['id']
     path = os.path.join(PWD, NSD_DIR, "%s.json" % filename)
     with open(path, 'w') as f:
-      f.write(json.dumps(data))
+      f.write(json.dumps(data, indent=2, sort_keys=True))
     app.logger.info("Received NSD has been saved: %s!" % path)
     # Initiate service conversion in a thread
     # t = Thread(target=convert_service, name="SERVICE_CONVERTER", args=(path,))
@@ -78,6 +83,13 @@ def nsd ():
     abort(500)
   except KeyError:
     app.logger.exception("Received data is not valid NSD!")
+    abort(500)
+  except MissingVNFDException:
+    app.logger.exception("Unrecognisable VNFD is in NSD!")
+    abort(500)
+  except:
+    app.logger.exception(
+      "Got unexpected exception during NSD -> NFFG conversion!")
     abort(500)
 
 
@@ -99,17 +111,33 @@ def vnfd ():
     abort(500)
 
 
-@app.route("/service/<sg_id>", methods=['POST'])
-def initiate_service (sg_id):
-  app.logger.info("Received service initiation with id: %s" % sg_id)
+@app.route("/service", methods=['POST'])
+def initiate_service ():
+  try:
+    params = json.loads(request.data)
+    if "ns-id" not in params:
+      app.logger.error("Missing NSD id from service initiation request!")
+      abort(404)
+    sg_id = params['ns-id']
+    app.logger.info("Received service initiation with id: %s" % sg_id)
+  except ValueError:
+    app.logger.error("Received POST params are not valid JSON!")
+    abort(415)
   sg_path = os.path.join(PWD, SERVICE_NFFG_DIR, "%s.nffg" % sg_id)
   with open(sg_path) as f:
     sg = json.load(f)
   esc_url = os.path.join(ESCAPE_URL, ESCAPE_PREFIX)
-  ret = requests.post(url=esc_url, headers=POST_HEADERS, json=sg)
-  app.logger.info(
-    "Service initiation has been forwarded with result: %s" % ret.status_code)
-
+  try:
+    ret = requests.post(url=esc_url, headers=POST_HEADERS, json=sg)
+    app.logger.info(
+      "Service initiation has been forwarded with result: %s" % ret.status_code)
+    return Response(status=httplib.ACCEPTED)
+  except ConnectionError:
+    app.logger.error("ESCAPE is not available!")
+    abort(500)
+  except:
+    app.logger.exception("Got unexpected exception during service initiation!")
+    abort(400)
 
 if __name__ == "__main__":
   # app.run(debug=True, port=5000)
