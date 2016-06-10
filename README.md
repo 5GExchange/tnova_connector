@@ -9,6 +9,14 @@ resource domain.
 ## Installation
 
 Connector module is implemented entirely in Python.
+
+### Dependencies
+
+```bash
+sudo apt install python-pip
+sudo -H pip install flask requests 
+```
+
 To clone the repository use the following command:
 
 ```bash
