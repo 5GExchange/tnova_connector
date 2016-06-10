@@ -19,7 +19,7 @@ import logging
 import os
 
 import requests
-from flask import Flask, Response, request, abort
+from flask import Flask, Response, request
 from requests.exceptions import ConnectionError
 
 from converter import TNOVAConverter, VNFCatalogue, MissingVNFDException
@@ -55,7 +55,8 @@ def convert_service (nsd_file):
 
   :param nsd_file: path of the stored NSD file
   :type nsd_file: str
-  :return: None
+  :return: conversion was successful or not
+  :rtype: bool
   """
   app.logger.info("Start converting received NSD...")
   # Convert the NSD given by file name
@@ -63,12 +64,13 @@ def convert_service (nsd_file):
   app.logger.info("NSD conversion has been ended!")
   if sg is None:
     app.logger.error("Service conversion was failed! Service is not saved!")
-    return
+    return False
   # Save result NFFG into a file
   sg_path = os.path.join(PWD, SERVICE_NFFG_DIR, "%s.nffg" % sg.id)
   with open(sg_path, 'w') as f:
     f.write(sg.dump())
   app.logger.info("Converted NFFG has been saved! Path: %s" % sg_path)
+  return True
 
 
 @app.route("/nsd", methods=['POST'])
@@ -94,22 +96,23 @@ def nsd ():
     # Initiate service conversion in a thread
     # t = Thread(target=convert_service, name="SERVICE_CONVERTER", args=(path,))
     # t.start()
-    convert_service(nsd_file=path)
+    if not convert_service(nsd_file=path):
+      return Response(status=httplib.INTERNAL_SERVER_ERROR)
     # Response with 200 OK
     return Response(status=httplib.ACCEPTED)
   except ValueError:
     app.logger.exception("Received data is not valid JSON!")
-    abort(500)
+    return Response(status=httplib.INTERNAL_SERVER_ERROR)
   except KeyError:
     app.logger.exception("Received data is not valid NSD!")
-    abort(500)
+    return Response(status=httplib.INTERNAL_SERVER_ERROR)
   except MissingVNFDException:
     app.logger.exception("Unrecognisable VNFD has been found in NSD!")
-    abort(500)
+    return Response(status=httplib.INTERNAL_SERVER_ERROR)
   except:
     app.logger.exception(
       "Got unexpected exception during NSD -> NFFG conversion!")
-    abort(500)
+    return Response(status=httplib.INTERNAL_SERVER_ERROR)
 
 
 @app.route("/vnfd", methods=['POST'])
@@ -135,10 +138,10 @@ def vnfd ():
     return Response(status=httplib.ACCEPTED)
   except ValueError:
     app.logger.error("Received data is not valid JSON!")
-    abort(500)
+    return Response(status=httplib.INTERNAL_SERVER_ERROR)
   except KeyError:
     app.logger.error("Received data is not valid VNFD!")
-    abort(500)
+    return Response(status=httplib.INTERNAL_SERVER_ERROR)
 
 
 @app.route("/service", methods=['POST'])
@@ -159,12 +162,12 @@ def initiate_service ():
     params = json.loads(request.data)
     if "ns-id" not in params:
       app.logger.error("Missing NSD id from service initiation request!")
-      abort(404)
+      return Response(status=httplib.NOT_FOUND)
     sg_id = params['ns-id']
     app.logger.info("Received service initiation with id: %s" % sg_id)
   except ValueError:
     app.logger.error("Received POST params are not valid JSON!")
-    abort(415)
+    return Response(status=httplib.UNSUPPORTED_MEDIA_TYPE)
   sg_path = os.path.join(PWD, SERVICE_NFFG_DIR, "%s.nffg" % sg_id)
   with open(sg_path) as f:
     sg = json.load(f)
@@ -176,10 +179,10 @@ def initiate_service ():
     return Response(status=httplib.ACCEPTED)
   except ConnectionError:
     app.logger.error("ESCAPE is not available!")
-    abort(500)
+    return Response(status=httplib.INTERNAL_SERVER_ERROR)
   except:
     app.logger.exception("Got unexpected exception during service initiation!")
-    abort(400)
+    return Response(status=httplib.BAD_REQUEST)
 
 
 if __name__ == "__main__":
