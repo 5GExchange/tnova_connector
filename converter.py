@@ -19,6 +19,7 @@ import os
 import pprint
 import sys
 
+import re
 import requests
 from requests.exceptions import ConnectionError
 
@@ -624,6 +625,7 @@ class TNOVAConverter(object):
     else:
       self.catalogue = VNFCatalogue(logger=logger)
       self.catalogue.parse_vnf_catalogue_from_folder()
+    self.vlan_register = {}
 
   def parse_nsd_from_file (self, nsd_file):
     """
@@ -707,6 +709,67 @@ class TNOVAConverter(object):
       node_sap.add_port(id=self.DEFAULT_SAP_PORT_ID)
       self.log.info("Added SAP: %s" % node_sap)
 
+  def __process_tag (self, abstract_id):
+    """
+    Generate a valid VLAN id from the raw_id data which derived from directly
+    an SG hop link id.
+
+    Moved from: escape.adapt.managers.InternalDomainManager#__process_tag
+
+    :param abstract_id: raw link id
+    :type abstract_id: str or int
+    :return: valid VLAN id
+    :rtype: int
+    """
+    # Check if the abstract tag has already processed
+    if abstract_id in self.vlan_register:
+      self.log.debug("Found already register TAG ID: %s ==> %s" % (
+        abstract_id, self.vlan_register[abstract_id]))
+      return self.vlan_register[abstract_id]
+    # Check if the raw_id is a valid number
+    try:
+      vlan_id = int(abstract_id)
+      # Check if the raw_id is free
+      if 0 < vlan_id < 4095 and vlan_id not in self.vlan_register.itervalues():
+        self.vlan_register[abstract_id] = vlan_id
+        self.log.debug(
+          "Abstract ID a valid not-taken VLAN ID! Register %s ==> %s" % (
+            abstract_id, vlan_id))
+        return vlan_id
+    except ValueError:
+      # Cant be converted to int, continue with raw_id processing
+      pass
+    trailer_num = re.search(r'\d+$', abstract_id)
+    # If the raw_id ends with number
+    if trailer_num is not None:
+      # Check if the trailing number is a valid VLAN id (0 and 4095 are
+      # reserved)
+      trailer_num = int(trailer_num.group())  # Get matched data from Match obj
+      # Check if the VLAN candidate is free
+      if 0 < trailer_num < 4095 and \
+            trailer_num not in self.vlan_register.itervalues():
+        self.vlan_register[abstract_id] = trailer_num
+        self.log.debug(
+          "Trailing number is a valid non-taken VLAN ID! Register %s ==> "
+          "%s..." % (abstract_id, trailer_num))
+        return trailer_num
+        # else Try to find a free VLAN
+      else:
+        self.log.debug(
+          "Detected trailing number: %s is not a valid VLAN or already "
+          "taken!" % trailer_num)
+    # No valid VLAN number has found from abstract_id, try to find a free VLAN
+    for vlan in xrange(1, 4094):
+      if vlan not in self.vlan_register.itervalues():
+        self.vlan_register[abstract_id] = vlan
+        self.log.debug(
+          "Generated and registered VLAN id %s ==> %s" % (abstract_id, vlan))
+        return vlan
+    # For loop is exhausted
+    else:
+      self.log.error("No available VLAN id found!")
+      return None
+
   def __convert_sg_hops (self, nffg, ns, vnfs):
     """
     Create SG hop edges in given NFFG based on given NF and VNFs.
@@ -745,8 +808,10 @@ class TNOVAConverter(object):
       # If the id is not VNF Catalogue, it must be a SAP
       else:
         dst_port = nffg[vlink['dst_node']].ports.container[0]
+      # Generate SG link id compatible with ESCAPE's naming convention
+      link_id = self.__process_tag(vlink['id'])
       # Add SG hop
-      link_sg = nffg.add_sglink(id=vlink['id'],
+      link_sg = nffg.add_sglink(id=link_id,
                                 src_port=src_port,
                                 dst_port=dst_port)
       self.log.info("Added SG hop: %s" % link_sg)

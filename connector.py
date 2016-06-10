@@ -199,4 +199,5 @@ if __name__ == "__main__":
   logging.basicConfig(level=logging.DEBUG if args.debug else logging.INFO)
   app.logger.info("Logging level: %s",
                   logging.getLevelName(app.logger.getEffectiveLevel()))
-  app.run(port=args.port, debug=args.debug, use_reloader=False)
+  # app.run(port=args.port, debug=args.debug, use_reloader=False)
+  app.run(port=args.port)
