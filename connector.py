@@ -191,7 +191,7 @@ if __name__ == "__main__":
   parser.add_argument("-p", "--port", action="store", default=5000,
                       type=int, help="REST-API port (default: 5000)")
   parser.add_argument("-d", "--debug", action="store_true", default=False,
-                      help="run in debug mode")
+                      help="run in debug mode (default logging level: INFO)")
   args = parser.parse_args()
   logging.basicConfig(level=logging.DEBUG if args.debug else logging.INFO)
   app.logger.info("Logging level: %s",
