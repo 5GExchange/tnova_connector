@@ -20,6 +20,7 @@ import pprint
 import sys
 
 import requests
+from requests.exceptions import ConnectionError
 
 try:
   # Import from ESCAPEv2
@@ -566,7 +567,11 @@ class VNFCatalogue(object):
       return
     url = os.path.join(self.vnf_store_url, str(vnf_id))
     self.log.debug("Used URL for VNFD request: %s" % url)
-    response = requests.get(url=os.path.join(self.vnf_store_url, str(vnf_id)))
+    try:
+      response = requests.get(url=os.path.join(self.vnf_store_url, str(vnf_id)))
+    except ConnectionError as e:
+      self.log.error(str(e))
+      raise MissingVNFDException(vnf_id=vnf_id)
     if not response.ok:
       if response.status_code == 404:
         self.log.debug(
@@ -848,7 +853,7 @@ class TNOVAConverter(object):
       self.log.debug("Convert E2E Requirement edges...")
       self.__convert_e2e_reqs(nffg=nffg, ns=ns, vnfs=self.catalogue)
     except MissingVNFDException as e:
-      self.log.exception(e)
+      self.log.error(e)
       return None
     except:
       self.log.exception(

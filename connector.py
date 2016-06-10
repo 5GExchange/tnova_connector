@@ -104,7 +104,7 @@ def nsd ():
     app.logger.exception("Received data is not valid NSD!")
     abort(500)
   except MissingVNFDException:
-    app.logger.exception("Unrecognisable VNFD is in NSD!")
+    app.logger.exception("Unrecognisable VNFD has been found in NSD!")
     abort(500)
   except:
     app.logger.exception(
