@@ -12,6 +12,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import argparse
 import httplib
 import json
 import logging
@@ -23,15 +24,16 @@ from requests.exceptions import ConnectionError
 
 from converter import TNOVAConverter, VNFCatalogue, MissingVNFDException
 
-# Configuration parameters
-CATALOGUE_DIR = "vnf_catalogue"
-USE_VNF_STORE = True
-CATALOGUE_URL = "http://172.16.178.128:8080"
-CATALOGUE_PREFIX = "NFS/vnfds"
-ESCAPE_URL = "http://localhost:8008"
-ESCAPE_PREFIX = "escape/sg"
-NSD_DIR = "nsds"
-SERVICE_NFFG_DIR = "services"
+### Connector configuration parameters
+CATALOGUE_URL = "http://172.16.178.128:8080"  # VNF Store URL as <host>:<port>
+CATALOGUE_PREFIX = "NFS/vnfds"  # static prefix used in REST calls
+USE_VNF_STORE = True  # enable dynamic VNFD acquiring from VNF Store
+CATALOGUE_DIR = "vnf_catalogue"  # read VNFDs from dir if VNF Store is disabled
+ESCAPE_URL = "http://localhost:8008"  # ESCAPE's top level REST-API
+ESCAPE_PREFIX = "escape/sg"  # static prefix for service request calls
+NSD_DIR = "nsds"  # dir name used for storing received NSD files
+SERVICE_NFFG_DIR = "services"  # dir name used for storing converted services
+### Connector configuration parameters
 
 # Other constants
 PWD = os.path.realpath(os.path.dirname(__file__))
@@ -48,6 +50,13 @@ converter = TNOVAConverter(vnf_catalogue=catalogue, logger=app.logger)
 
 
 def convert_service (nsd_file):
+  """
+  Perform the conversion of the received NSD and save the NFFG.
+
+  :param nsd_file: path of the stored NSD file
+  :type nsd_file: str
+  :return: None
+  """
   app.logger.info("Start converting received NSD...")
   # Convert the NSD given by file name
   sg = converter.convert(nsd_file=nsd_file)
@@ -64,6 +73,16 @@ def convert_service (nsd_file):
 
 @app.route("/nsd", methods=['POST'])
 def nsd ():
+  """
+  REST-API function for NSD conversion and storing.
+
+  Rule: /nsd
+  Method: POST
+  Body: NSD in JSON
+
+  :return: HTTP Response
+  :rtype: :any:`flask.Response`
+  """
   try:
     # Parse data as JSON
     data = json.loads(request.data)
@@ -95,6 +114,17 @@ def nsd ():
 
 @app.route("/vnfd", methods=['POST'])
 def vnfd ():
+  """
+  REST-API function for VNFD storing. This function is defined for backward
+  compatibility.
+
+  Rule: /vnfd
+  Method: POST
+  Body: VNFD in JSON
+
+  :return: HTTP Response
+  :rtype: :any:`flask.Response`
+  """
   try:
     data = json.loads(request.data)
     filename = data['id']
@@ -113,6 +143,18 @@ def vnfd ():
 
 @app.route("/service", methods=['POST'])
 def initiate_service ():
+  """
+  REST-API function for service initiation. The request contains the
+  previously defined and converted NSD id. The stored NFFG will be send to
+  ESCAPE's REST-API.
+
+  Rule: /service
+  Method: POST
+  Body: service request id in JSON object with key: "ns-id"
+
+  :return: HTTP Response
+  :rtype: :any:`flask.Response`
+  """
   try:
     params = json.loads(request.data)
     if "ns-id" not in params:
@@ -139,7 +181,19 @@ def initiate_service ():
     app.logger.exception("Got unexpected exception during service initiation!")
     abort(400)
 
+
 if __name__ == "__main__":
-  # app.run(debug=True, port=5000)
-  logging.basicConfig(level=logging.DEBUG)
-  app.run(port=5000)
+  parser = argparse.ArgumentParser(
+    description="TNOVAConnector: Middleware component which make the "
+                "connection between Marketplace and ESCAPE with automatic "
+                "request conversion",
+    add_help=True)
+  parser.add_argument("-p", "--port", action="store", default=5000,
+                      type=int, help="REST-API port (default: 5000)")
+  parser.add_argument("-d", "--debug", action="store_true", default=False,
+                      help="run in debug mode")
+  args = parser.parse_args()
+  logging.basicConfig(level=logging.DEBUG if args.debug else logging.INFO)
+  app.logger.info("Logging level: %s",
+                  logging.getLevelName(app.logger.getEffectiveLevel()))
+  app.run(port=args.port, debug=args.debug, use_reloader=False)
