@@ -21,7 +21,7 @@ import sys
 
 import re
 import requests
-from requests.exceptions import ConnectionError
+from requests.exceptions import ConnectionError, Timeout
 
 try:
   # Import from ESCAPEv2
@@ -460,6 +460,7 @@ class VNFCatalogue(object):
   VNF_CATALOGUE_DIR = "vnf_catalogue"
   VNF_STORE_ENABLED = True
   STORE_VNFD_LOCALLY = True
+  REQUEST_TIMEOUT = 1
 
   def __init__ (self, remote_store=False, url=None, catalogue_dir=None,
                 logger=None):
@@ -569,7 +570,14 @@ class VNFCatalogue(object):
     url = os.path.join(self.vnf_store_url, str(vnf_id))
     self.log.debug("Used URL for VNFD request: %s" % url)
     try:
-      response = requests.get(url=os.path.join(self.vnf_store_url, str(vnf_id)))
+      response = requests.get(url=os.path.join(self.vnf_store_url, str(vnf_id)),
+                              timeout=self.REQUEST_TIMEOUT)
+
+    except Timeout:
+      self.log.error(
+        "Request timeout: %ss exceeded! VNF Store: %s is unreachable!" % (
+          self.REQUEST_TIMEOUT, self.vnf_store_url))
+      raise MissingVNFDException(vnf_id=vnf_id)
     except ConnectionError as e:
       self.log.error(str(e))
       raise MissingVNFDException(vnf_id=vnf_id)
