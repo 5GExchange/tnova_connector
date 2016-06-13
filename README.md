@@ -67,3 +67,10 @@ optional arguments:
   -d, --debug           run in debug mode (default logging level: INFO)
 ```
 
+## REST-API
+
+| Path | Params | HTTP verb | Description |
+|---|
+| /nsd | NSD desc. in JSON | POST | Send an NSD to the connector, convert to NFFG using local VNFDs or a remote VNF Store and store it |
+| /vnfd  | VNFD desc. in JSON| POST | Send a VNFD to the connector and store it locally |
+| /service | NSD id  in JSON with key: "ns-id" | POST | Initiate a pre-defined NSD with the NSD id by sending the converted NFFG to ESCAPE |
