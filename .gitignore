@@ -1,2 +1,4 @@
 *.pyc
 */.placeholder
+services/*.nffg
+nsds/*.json
