@@ -102,9 +102,11 @@ def nsd ():
     return Response(status=httplib.ACCEPTED)
   except ValueError:
     app.logger.exception("Received data is not valid JSON!")
+    app.logger.debug("Received body:\n%s" % request.data)
     return Response(status=httplib.INTERNAL_SERVER_ERROR)
   except KeyError:
     app.logger.exception("Received data is not valid NSD!")
+    app.logger.debug("Received body:\n%s" % request.data)
     return Response(status=httplib.INTERNAL_SERVER_ERROR)
   except MissingVNFDException:
     app.logger.exception("Unrecognisable VNFD has been found in NSD!")
@@ -138,9 +140,11 @@ def vnfd ():
     return Response(status=httplib.ACCEPTED)
   except ValueError:
     app.logger.error("Received data is not valid JSON!")
+    app.logger.debug("Received body:\n%s" % request.data)
     return Response(status=httplib.INTERNAL_SERVER_ERROR)
   except KeyError:
     app.logger.error("Received data is not valid VNFD!")
+    app.logger.debug("Received body:\n%s" % request.data)
     return Response(status=httplib.INTERNAL_SERVER_ERROR)
 
 
@@ -167,6 +171,7 @@ def initiate_service ():
     app.logger.info("Received service initiation with id: %s" % sg_id)
   except ValueError:
     app.logger.error("Received POST params are not valid JSON!")
+    app.logger.debug("Received body:\n%s" % request.data)
     return Response(status=httplib.UNSUPPORTED_MEDIA_TYPE)
   sg_path = os.path.join(PWD, SERVICE_NFFG_DIR, "%s.nffg" % sg_id)
   with open(sg_path) as f:
