@@ -164,10 +164,11 @@ def initiate_service ():
   """
   try:
     params = json.loads(request.data)
-    if "ns-id" not in params:
+    if "ns_id" not in params:
       app.logger.error("Missing NSD id from service initiation request!")
+      app.logger.debug("Received body:\n%s" % request.data)
       return Response(status=httplib.NOT_FOUND)
-    sg_id = params['ns-id']
+    sg_id = params['ns_id']
     app.logger.info("Received service initiation with id: %s" % sg_id)
   except ValueError:
     app.logger.error("Received POST params are not valid JSON!")
