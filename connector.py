@@ -191,6 +191,76 @@ def initiate_service ():
     return Response(status=httplib.BAD_REQUEST)
 
 
+class ColoredLogger(logging.Logger):
+  """
+  Main Logger class for coloured logging.
+
+  Usage:
+    logging.setLoggerClass(ColoredLogger)
+  """
+
+  class ColorFormatter(logging.Formatter):
+    """
+    Main Formatter class for implementing the coloured message formatting.
+    """
+    # Line format
+    # FORMAT = ("[$BOLD%(name)-20s$RESET][%(levelname)-18s]  "
+    #           "%(message)s "
+    #           "($BOLD%(filename)s$RESET:%(lineno)d)")
+    FORMAT = logging.BASIC_FORMAT
+    # Colouring constants
+    BLACK, RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, WHITE = range(8)
+    RESET_SEQ = "\033[0m"
+    COLOR_SEQ = "\033[1;%dm"
+    BOLD_SEQ = "\033[1m"
+    # Level - color binding
+    COLORS = {
+      'DEBUG': CYAN,
+      'INFO': GREEN,
+      'WARNING': YELLOW,
+      'ERROR': RED,
+      'CRITICAL': RED,
+    }
+
+    def __init__ (self, use_color=True):
+      msg = self.formatter_msg(self.FORMAT, use_color)
+      logging.Formatter.__init__(self, msg)
+      self.use_color = use_color
+
+    def formatter_msg (self, msg, use_color=True):
+      if use_color:
+        msg = msg.replace("$RESET", self.RESET_SEQ).replace("$BOLD",
+                                                            self.BOLD_SEQ)
+      else:
+        msg = msg.replace("$RESET", "").replace("$BOLD", "")
+      return msg
+
+    def format (self, record):
+      levelname = record.levelname
+      if self.use_color and levelname in self.COLORS:
+        fore_color = 30 + self.COLORS[levelname]
+        levelname_color = self.COLOR_SEQ % fore_color + levelname + \
+                          self.RESET_SEQ
+        record.levelname = levelname_color
+      return logging.Formatter.format(self, record)
+
+  def __init__ (self, name, level=logging.INFO):
+    # Configure the logger internally
+    logging.Logger.__init__(self, name, level)
+    console = logging.StreamHandler()
+    console.setFormatter(self.ColorFormatter())
+    console.setLevel(level)
+    self.addHandler(console)
+    return
+
+  @classmethod
+  def createHandler (cls, level=logging.DEBUG):
+    handler = logging.StreamHandler()
+    handler.setFormatter(cls.ColorFormatter())
+    handler.setLevel(level)
+    return handler
+
+
 if __name__ == "__main__":
   parser = argparse.ArgumentParser(
     description="TNOVAConnector: Middleware component which make the "
@@ -202,7 +272,11 @@ if __name__ == "__main__":
   parser.add_argument("-d", "--debug", action="store_true", default=False,
                       help="run in debug mode (default logging level: INFO)")
   args = parser.parse_args()
-  logging.basicConfig(level=logging.DEBUG if args.debug else logging.INFO)
+  logging.setLoggerClass(ColoredLogger)
+  level = logging.DEBUG if args.debug else logging.INFO
+  app.logger.addHandler(ColoredLogger.createHandler(level=level))
+  app.logger.setLevel(level)
+  # logging.basicConfig(level=logging.DEBUG if args.debug else logging.INFO)
   app.logger.info("Logging level: %s",
                   logging.getLevelName(app.logger.getEffectiveLevel()))
   # app.run(port=args.port, debug=args.debug, use_reloader=False)
