@@ -209,7 +209,9 @@ class ColoredLogger(logging.Logger):
     #           "%(message)s "
     #           "($BOLD%(filename)s$RESET:%(lineno)d)")
     # FORMAT = logging.BASIC_FORMAT
-    FORMAT = "[$BOLD%(name)-15s$RESET][%(levelname)-18s] %(message)s "
+    # FORMAT = "[$BOLD%(name)-15s$RESET][%(levelname)-18s] %(message)s"
+    FORMAT = "[$BOLD%(levelname)-15s$RESET][$BOLD%(name)-18s$RESET] %(" \
+             "message)s"
 
     # Colouring constants
     BLACK, RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, WHITE = range(8)
