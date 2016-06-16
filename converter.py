@@ -469,8 +469,11 @@ class VNFCatalogue(object):
 
     :param logger: optional logger
     """
-    self.log = logger if logger is not None else logging.getLogger(
-      self.__class__.__name__)
+    if logger is not None:
+      self.log = logger.getChild("VNFCatalogue")
+      self.log.name = "VNFCatalogue"
+    else:
+      logging.getLogger(self.__class__.__name__)
     self.catalogue = {}
     if catalogue_dir:
       self.VNF_CATALOGUE_DIR = catalogue_dir
@@ -626,8 +629,11 @@ class TNOVAConverter(object):
 
     :param logger: optional logger
     """
-    self.log = logger if logger is not None else logging.getLogger(
-      self.__class__.__name__)
+    if logger is not None:
+      self.log = logger.getChild("TNOVAConverter")
+      self.log.name = "TNOVAConverter"
+    else:
+      logging.getLogger(self.__class__.__name__)
     if vnf_catalogue is not None:
       self.catalogue = vnf_catalogue
     else:
@@ -854,7 +860,7 @@ class TNOVAConverter(object):
       self.log.debug("Detected Requirement link ref: %s" % req_id)
       if req_id not in reqs:
         self.log.warning(
-          "SLA definition with id: %s was not found in detected SALs: %s!" % (
+          "SLA definition with id: %s was not found in detected SLAs: %s!" % (
             req_id, reqs))
         continue
       src_node, src_port = ns.get_src_port(vlink_id=chain[0])

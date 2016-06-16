@@ -40,11 +40,12 @@ PWD = os.path.realpath(os.path.dirname(__file__))
 POST_HEADERS = {"Content-Type": "application/json"}
 
 # Create REST-API handler app
-app = Flask("T-NOVA_Connector")
+app = Flask("Connector")
 # create Catalogue for VNFDs
 catalogue = VNFCatalogue(remote_store=USE_VNF_STORE,
                          url=os.path.join(CATALOGUE_URL, CATALOGUE_PREFIX),
-                         catalogue_dir=CATALOGUE_DIR, logger=app.logger)
+                         catalogue_dir=CATALOGUE_DIR,
+                         logger=app.logger)
 # Create converter
 converter = TNOVAConverter(vnf_catalogue=catalogue, logger=app.logger)
 
@@ -207,7 +208,9 @@ class ColoredLogger(logging.Logger):
     # FORMAT = ("[$BOLD%(name)-20s$RESET][%(levelname)-18s]  "
     #           "%(message)s "
     #           "($BOLD%(filename)s$RESET:%(lineno)d)")
-    FORMAT = logging.BASIC_FORMAT
+    # FORMAT = logging.BASIC_FORMAT
+    FORMAT = "[$BOLD%(name)-15s$RESET][%(levelname)-18s] %(message)s "
+
     # Colouring constants
     BLACK, RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, WHITE = range(8)
     RESET_SEQ = "\033[0m"
@@ -276,6 +279,7 @@ if __name__ == "__main__":
   level = logging.DEBUG if args.debug else logging.INFO
   app.logger.addHandler(ColoredLogger.createHandler(level=level))
   app.logger.setLevel(level)
+  app.logger.propagate = False
   # logging.basicConfig(level=logging.DEBUG if args.debug else logging.INFO)
   app.logger.info("Logging level: %s",
                   logging.getLevelName(app.logger.getEffectiveLevel()))
