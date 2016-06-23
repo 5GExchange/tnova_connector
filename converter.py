@@ -23,6 +23,8 @@ import re
 import requests
 from requests.exceptions import ConnectionError, Timeout
 
+from colored_logger import ColoredLogger
+
 try:
   # Import from ESCAPEv2
   from escape.nffg_lib.nffg import NFFG
@@ -962,8 +964,11 @@ if __name__ == "__main__":
                       help="work offline and read the VNFDs from files"
                            "(default: False)")
   args = parser.parse_args()
-  log = logging.getLogger()
-  logging.basicConfig(level=args.loglevel)
+  # logging.setLoggerClass(ColoredLogger)
+  # logging.basicConfig(level=args.loglevel)
+  # log = logging.getLogger(__name__)
+  # log.setLevel(args.loglevel)
+  log = ColoredLogger.configure(level=args.loglevel)
   catalogue = VNFCatalogue(remote_store=False, logger=log,
                            catalogue_dir=args.catalogue,
                            url="http://172.16.178.128:8080/NFS/vnfds")
