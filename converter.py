@@ -954,18 +954,23 @@ if __name__ == "__main__":
   parser.add_argument("-d", "--debug", action="store_const", dest="loglevel",
                       const=logging.DEBUG, default=logging.INFO,
                       help="run in debug mode")
-  parser.add_argument("-n", "--nsd", metavar="npath", default="nsd.json",
+  parser.add_argument("-n", "--nsd", metavar="npath",
+                      default="nsds/nsd_from_folder.json",
                       help="path of NSD file contains the Service Request "
-                           "(default: ./nsd.json)")
-
+                           "(default: ./nsds/nsd_from_folder.json)")
+  parser.add_argument("-o", "--offline", action="store_true", default=False,
+                      help="work offline and read the VNFDs from files"
+                           "(default: False)")
   args = parser.parse_args()
   log = logging.getLogger()
   logging.basicConfig(level=args.loglevel)
   catalogue = VNFCatalogue(remote_store=False, logger=log,
                            catalogue_dir=args.catalogue,
                            url="http://172.16.178.128:8080/NFS/vnfds")
-  catalogue.VNF_STORE_ENABLED = True
+  # catalogue.VNF_STORE_ENABLED = True
+  catalogue.VNF_STORE_ENABLED = not args.offline
   converter = TNOVAConverter(logger=log, vnf_catalogue=catalogue)
   log.info("Start converting NS: %s..." % args.nsd)
   nffg = converter.convert(nsd_file=args.nsd)
-  log.info("Generated NFFG:\n%s" % nffg.dump())
+  if nffg is not None:
+    log.info("Generated NFFG:\n%s" % nffg.dump())
