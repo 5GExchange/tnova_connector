@@ -559,7 +559,7 @@ class VNFCatalogue(object):
         vnfd.vnfd_file = vnfd_file
         # Register VNF into catalogue
         self.register(id=os.path.splitext(vnf)[0], vnfd=vnfd)
-      return self
+    return self
 
   def request_vnf_from_remote_store (self, vnf_id):
     if all((self.VNF_STORE_ENABLED, self.STORE_VNFD_LOCALLY,
