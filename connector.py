@@ -22,8 +22,8 @@ import requests
 from flask import Flask, Response, request
 from requests.exceptions import ConnectionError
 
-from converter import TNOVAConverter, VNFCatalogue, MissingVNFDException
 from colored_logger import ColoredLogger
+from converter import TNOVAConverter, VNFCatalogue, MissingVNFDException
 
 ### Connector configuration parameters
 CATALOGUE_URL = "http://172.16.178.128:8080"  # VNF Store URL as <host>:<port>
@@ -76,7 +76,7 @@ def convert_service (nsd_file):
 
 
 @app.route("/nsd", methods=['POST'])
-def nsd ():
+def add_nsd ():
   """
   REST-API function for NSD conversion and storing.
 
@@ -120,7 +120,7 @@ def nsd ():
 
 
 @app.route("/vnfd", methods=['POST'])
-def vnfd ():
+def add_vnfd ():
   """
   REST-API function for VNFD storing. This function is defined for backward
   compatibility.
@@ -184,6 +184,49 @@ def initiate_service ():
     ret = requests.post(url=esc_url, headers=POST_HEADERS, json=sg)
     app.logger.info(
       "Service initiation has been forwarded with result: %s" % ret.status_code)
+    return Response(status=httplib.ACCEPTED)
+  except ConnectionError:
+    app.logger.error("ESCAPE is not available!")
+    return Response(status=httplib.INTERNAL_SERVER_ERROR)
+  except:
+    app.logger.exception("Got unexpected exception during service initiation!")
+    return Response(status=httplib.BAD_REQUEST)
+
+
+@app.route("/service", methods=['DELETE'])
+def remove_service ():
+  """
+  REST-API function for service deletion. The request contains the
+  previously initiated NSD id. The stored NFFG will be send to
+  ESCAPE's REST-API.
+
+  Rule: /service
+  Method: POST
+  Body: service request id in JSON object with key: "ns-id"
+
+  :return: HTTP Response
+  :rtype: :any:`flask.Response`
+  """
+  try:
+    params = json.loads(request.data)
+    if "ns_id" not in params:
+      app.logger.error("Missing NSD id from service deletion request!")
+      app.logger.debug("Received body:\n%s" % request.data)
+      return Response(status=httplib.NOT_FOUND)
+    sg_id = params['ns_id']
+    app.logger.info("Received service deletion with id: %s" % sg_id)
+  except ValueError:
+    app.logger.error("Received POST params are not valid JSON!")
+    app.logger.debug("Received body:\n%s" % request.data)
+    return Response(status=httplib.UNSUPPORTED_MEDIA_TYPE)
+  sg_path = os.path.join(PWD, SERVICE_NFFG_DIR, "%s.nffg" % sg_id)
+  with open(sg_path) as f:
+    sg = json.load(f)
+  esc_url = os.path.join(ESCAPE_URL, ESCAPE_PREFIX)
+  try:
+    ret = requests.delete(url=esc_url, headers=POST_HEADERS, json=sg)
+    app.logger.info(
+      "Service deletion has been forwarded with result: %s" % ret.status_code)
     return Response(status=httplib.ACCEPTED)
   except ConnectionError:
     app.logger.error("ESCAPE is not available!")
