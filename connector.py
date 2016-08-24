@@ -193,20 +193,60 @@ def initiate_service ():
     return Response(status=httplib.BAD_REQUEST)
 
 
-@app.route("/service", methods=['DELETE'])
-def remove_service ():
+@app.route("/ns-instances", methods=['GET'])
+def list_service ():
   """
-  REST-API function for service deletion. The request contains the
-  previously initiated NSD id. The stored NFFG will be send to
-  ESCAPE's REST-API.
+  REST-API function for service listing.
 
-  Rule: /service
-  Method: POST
-  Body: service request id in JSON object with key: "ns-id"
+  Rule: /ns-instances
+  Method: GET
+  Body: None
+
+  Sample response:
+  [
+    {
+      "id":"456",
+      "name":"name of the ns",
+      "status":"stopped
+    }
+  ]
 
   :return: HTTP Response
   :rtype: :any:`flask.Response`
   """
+  # TODO implement
+  return Response(status=httplib.OK)
+
+
+@app.route("/ns-instances/<service_id>", methods=['PUT'])
+def remove_service (service_id):
+  """
+  REST-API function for service deletion. The request URL contains the
+  previously initiated NSD id. The stored NFFG will be send to
+  ESCAPE's REST-API.
+
+  Rule: /ns-instances/{id}
+  Method: PUT
+  Body: required service status
+  {
+    "status": "stopped"
+  }
+
+  Sample response: 200 OK
+  {
+     "id":"456",
+     "ns-id":"987",
+     "status":"stopped",
+     "created_at":"2014-11-21T14:18:09Z",
+     "updated_at":"2014-11-25T10:01:52Z"
+  }
+
+  :param id: service ID
+  :type id: str
+  :return: HTTP Response 200 OK
+  :rtype: :any:`flask.Response`
+  """
+  # TODO FIX
   try:
     params = json.loads(request.data)
     if "ns_id" not in params:
