@@ -13,19 +13,38 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import argparse
+import datetime
 import httplib
 import json
 import logging
 import os
+import sys
+import uuid
 
 import requests
 from flask import Flask, Response, request
 from requests.exceptions import ConnectionError
 
 from colored_logger import ColoredLogger
-from converter import TNOVAConverter, VNFCatalogue, MissingVNFDException
+from converter import TNOVAConverter
+from service_mgr import ServiceManager
+from vnf_catalogue import VNFCatalogue, MissingVNFDException
+
+try:
+  # Import from ESCAPEv2
+  from escape.nffg_lib.nffg import NFFG
+except (ImportError, AttributeError):
+  try:
+    # Import from locally in case of separately distributed version
+    from nffg_lib.nffg import NFFG
+  except ImportError:
+    # At last try to import from original place in escape git repo
+    sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__),
+                                                 "../escape/escape/nffg_lib/")))
+    from nffg import NFFG
 
 ### Connector configuration parameters
+
 CATALOGUE_URL = "http://172.16.178.128:8080"  # VNF Store URL as <host>:<port>
 CATALOGUE_PREFIX = "NFS/vnfds"  # static prefix used in REST calls
 USE_VNF_STORE = True  # enable dynamic VNFD acquiring from VNF Store
@@ -41,14 +60,23 @@ PWD = os.path.realpath(os.path.dirname(__file__))
 POST_HEADERS = {"Content-Type": "application/json"}
 
 # Create REST-API handler app
+root_logger = logging.getLogger()
+root_logger.addHandler(ColoredLogger.createHandler())
+root_logger.setLevel(logging.DEBUG)
+
 app = Flask("Connector")
 # create Catalogue for VNFDs
 catalogue = VNFCatalogue(remote_store=USE_VNF_STORE,
                          url=os.path.join(CATALOGUE_URL, CATALOGUE_PREFIX),
                          catalogue_dir=CATALOGUE_DIR,
-                         logger=app.logger)
+                         logger=root_logger)
 # Create converter
-converter = TNOVAConverter(vnf_catalogue=catalogue, logger=app.logger)
+converter = TNOVAConverter(vnf_catalogue=catalogue,
+                           logger=root_logger)
+# Create Service manager
+service_mgr = ServiceManager(service_dir=os.path.join(PWD, SERVICE_NFFG_DIR),
+                             escape_url=ESCAPE_URL,
+                             logger=root_logger)
 
 
 def convert_service (nsd_file):
@@ -100,6 +128,7 @@ def add_nsd ():
     # t.start()
     if not convert_service(nsd_file=path):
       return Response(status=httplib.INTERNAL_SERVER_ERROR)
+    service_mgr.add_service(service_id=filename)
     # Response with 200 OK
     return Response(status=httplib.ACCEPTED)
   except ValueError:
@@ -181,9 +210,13 @@ def initiate_service ():
     sg = json.load(f)
   esc_url = os.path.join(ESCAPE_URL, ESCAPE_PREFIX)
   try:
-    ret = requests.post(url=esc_url, headers=POST_HEADERS, json=sg)
+    ret = requests.post(url=esc_url,
+                        headers=POST_HEADERS,
+                        json=sg)
     app.logger.info(
       "Service initiation has been forwarded with result: %s" % ret.status_code)
+    service_mgr.set_service_status(service_id=sg_id,
+                                   status=ServiceManager.STATUS_RUNNING)
     return Response(status=httplib.ACCEPTED)
   except ConnectionError:
     app.logger.error("ESCAPE is not available!")
@@ -214,8 +247,11 @@ def list_service ():
   :return: HTTP Response
   :rtype: :any:`flask.Response`
   """
-  # TODO implement
-  return Response(status=httplib.OK)
+  services = service_mgr.get_running_services()
+  resp = [{"id": s.id, "name": s.name, "status": "running"} for s in services]
+  return Response(status=httplib.OK,
+                  content_type="application/json",
+                  response=json.dumps(resp))
 
 
 @app.route("/ns-instances/<service_id>", methods=['PUT'])
@@ -241,39 +277,59 @@ def remove_service (service_id):
      "updated_at":"2014-11-25T10:01:52Z"
   }
 
-  :param id: service ID
-  :type id: str
+  :param service_id: service ID
+  :type service_id: str
   :return: HTTP Response 200 OK
   :rtype: :any:`flask.Response`
   """
-  # TODO FIX
+  if request.data is None:
+    return Response(status=httplib.NO_CONTENT)
   try:
     params = json.loads(request.data)
-    if "ns_id" not in params:
-      app.logger.error("Missing NSD id from service deletion request!")
+    if "status" not in params:
+      app.logger.error("Missing NSD id from service request!")
       app.logger.debug("Received body:\n%s" % request.data)
       return Response(status=httplib.NOT_FOUND)
-    sg_id = params['ns_id']
-    app.logger.info("Received service deletion with id: %s" % sg_id)
+    status = params['status']
   except ValueError:
     app.logger.error("Received POST params are not valid JSON!")
     app.logger.debug("Received body:\n%s" % request.data)
     return Response(status=httplib.UNSUPPORTED_MEDIA_TYPE)
-  sg_path = os.path.join(PWD, SERVICE_NFFG_DIR, "%s.nffg" % sg_id)
-  with open(sg_path) as f:
-    sg = json.load(f)
+  if status != 'stopped':
+    app.logger.error("Service status request: %s is not supported yet!" %
+                     status)
+    return Response(status=httplib.NOT_IMPLEMENTED)
+  app.logger.info("Received service deletion with id: %s" % service_id)
+  # Load NFFG from file
+  sg_path = os.path.join(PWD, SERVICE_NFFG_DIR, "%s.nffg" % service_id)
+  sg = NFFG.parse_from_file(path=sg_path)
+  # Set DELETE mode
+  sg.mode = NFFG.MODE_DEL
   esc_url = os.path.join(ESCAPE_URL, ESCAPE_PREFIX)
   try:
-    ret = requests.delete(url=esc_url, headers=POST_HEADERS, json=sg)
-    app.logger.info(
-      "Service deletion has been forwarded with result: %s" % ret.status_code)
-    return Response(status=httplib.ACCEPTED)
+    ret = requests.put(url=esc_url,
+                       headers=POST_HEADERS,
+                       json=sg)
+    app.logger.info("Service deletion has been forwarded with result: %s" %
+                    ret.status_code)
+    service_mgr.set_service_status(service_id=service_id,
+                                   status=ServiceManager.STATUS_STOPPED)
   except ConnectionError:
     app.logger.error("ESCAPE is not available!")
     return Response(status=httplib.INTERNAL_SERVER_ERROR)
   except:
     app.logger.exception("Got unexpected exception during service initiation!")
     return Response(status=httplib.BAD_REQUEST)
+  # Create and send Response
+  resp = {"id": uuid.uuid1(),
+          "ns-id": sg.id,
+          "status": "stopped",
+          "created_at": datetime.datetime.fromtimestamp(
+            os.path.getctime(sg_path)).isoformat(),
+          "updated_at": datetime.datetime.now().isoformat()}
+  return Response(status=httplib.OK,
+                  content_type="application/json",
+                  response=json.dumps(resp))
 
 
 if __name__ == "__main__":
@@ -290,9 +346,9 @@ if __name__ == "__main__":
   # logging.setLoggerClass(ColoredLogger)
   # logging.basicConfig(level=logging.DEBUG if args.debug else logging.INFO)
   level = logging.DEBUG if args.debug else logging.INFO
-  app.logger.addHandler(ColoredLogger.createHandler())
-  # app.logger.handlers[:] = [ColoredLogger.createHandler()]
-  app.logger.setLevel(level)
+  # app.logger.addHandler(ColoredLogger.createHandler())
+  # # app.logger.handlers[:] = [ColoredLogger.createHandler()]
+  root_logger.setLevel(level)
   app.logger.propagate = False
   app.logger.info("Logging level: %s",
                   logging.getLevelName(app.logger.getEffectiveLevel()))
