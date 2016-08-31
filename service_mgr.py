@@ -49,7 +49,7 @@ class ServiceManager(object):
     self.services = {}
     if logger is not None:
       self.log = logger.getChild(self.LOGGER_NAME)
-      self.log.name = self.LOGGER_NAME
+      # self.log.name = self.LOGGER_NAME
     else:
       logging.getLogger(self.__class__.__name__)
     self.initialize()

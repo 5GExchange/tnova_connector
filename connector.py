@@ -69,14 +69,14 @@ app = Flask("Connector")
 catalogue = VNFCatalogue(remote_store=USE_VNF_STORE,
                          url=os.path.join(CATALOGUE_URL, CATALOGUE_PREFIX),
                          catalogue_dir=CATALOGUE_DIR,
-                         logger=root_logger)
+                         logger=app.logger)
 # Create converter
 converter = TNOVAConverter(vnf_catalogue=catalogue,
-                           logger=root_logger)
+                           logger=app.logger)
 # Create Service manager
 service_mgr = ServiceManager(service_dir=os.path.join(PWD, SERVICE_NFFG_DIR),
                              escape_url=ESCAPE_URL,
-                             logger=root_logger)
+                             logger=app.logger)
 
 
 def convert_service (nsd_file):
@@ -115,6 +115,7 @@ def add_nsd ():
   :return: HTTP Response
   :rtype: :any:`flask.Response`
   """
+  app.logger.info("Call add_nsd() with path: POST /nsd")
   try:
     # Parse data as JSON
     data = json.loads(request.data)
@@ -161,6 +162,7 @@ def add_vnfd ():
   :return: HTTP Response
   :rtype: :any:`flask.Response`
   """
+  app.logger.info("Call add_vnfd() with path: POST /vnfd")
   try:
     data = json.loads(request.data)
     filename = data['id']
@@ -193,6 +195,7 @@ def initiate_service ():
   :return: HTTP Response
   :rtype: :any:`flask.Response`
   """
+  app.logger.info("Call initiate_service() with path: POST /service")
   try:
     params = json.loads(request.data)
     if "ns_id" not in params:
@@ -247,6 +250,7 @@ def list_service ():
   :return: HTTP Response
   :rtype: :any:`flask.Response`
   """
+  app.logger.info("Call list_service() with path: GET /ns-instances")
   services = service_mgr.get_running_services()
   resp = [{"id": s.id, "name": s.name, "status": "running"} for s in services]
   return Response(status=httplib.OK,
@@ -255,7 +259,7 @@ def list_service ():
 
 
 @app.route("/ns-instances/<service_id>", methods=['PUT'])
-def remove_service (service_id):
+def update_service (service_id):
   """
   REST-API function for service deletion. The request URL contains the
   previously initiated NSD id. The stored NFFG will be send to
@@ -282,6 +286,8 @@ def remove_service (service_id):
   :return: HTTP Response 200 OK
   :rtype: :any:`flask.Response`
   """
+  app.logger.info("Call update_service() with path: PUT /ns-instances/<id>")
+  app.logger.debug("Detected service id: %s" % service_id)
   if request.data is None:
     return Response(status=httplib.NO_CONTENT)
   try:
@@ -347,10 +353,9 @@ if __name__ == "__main__":
   # logging.basicConfig(level=logging.DEBUG if args.debug else logging.INFO)
   level = logging.DEBUG if args.debug else logging.INFO
   # app.logger.addHandler(ColoredLogger.createHandler())
-  # # app.logger.handlers[:] = [ColoredLogger.createHandler()]
-  root_logger.setLevel(level)
+  app.logger.handlers[:] = [ColoredLogger.createHandler()]
+  app.logger.setLevel(level)
   app.logger.propagate = False
-  app.logger.info("Logging level: %s",
+  app.logger.info("Set logging level: %s",
                   logging.getLevelName(app.logger.getEffectiveLevel()))
-  # app.run(port=args.port, debug=args.debug, use_reloader=False)
-  app.run(host='0.0.0.0', port=args.port)
+  app.run(host='0.0.0.0', port=args.port, debug=args.debug, use_reloader=False)
