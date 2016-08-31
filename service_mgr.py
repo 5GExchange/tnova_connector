@@ -15,6 +15,7 @@
 import logging
 import os
 import sys
+import uuid
 
 try:
   # Import from ESCAPEv2
@@ -30,15 +31,34 @@ except (ImportError, AttributeError):
     from nffg import NFFG
 
 
+class ServiceInstance(object):
+  """
+  Container class for a service instance.
+  """
+  # Status constants
+  STATUS_INIT = "init"  # between instantiation request and the provisioning
+  STATUS_INSTANTIATED = "instantiated"  # provisioned, instantiated but not
+  # running yet
+  STATUS_START = "start"  # when everything worked as it should be
+  STATUS_ERROR = "error_creating"  # in case of any error
+  STATUS_STOPPED = "stopped"
+
+  def __init__ (self, service_id, instance_id=None, name=None, status=None,
+                path=None):
+    self.service_id = service_id  # Converted NFFG the service created from
+    # The id of the service instance
+    self.instance_id = instance_id if instance_id else str(uuid.uuid1())
+    self.name = name
+    self.status = status if status else self.STATUS_INIT
+    self.path = path
+
+
 class ServiceManager(object):
   """
   Manager class for NSD instances.
   Very primitive.
   """
   LOGGER_NAME = "ServiceManager"
-  # Status constants
-  STATUS_RUNNING = "RUNNING"
-  STATUS_STOPPED = "STOPPED"
   # Default ESCAPE RUL
   ESCAPE_URL = "http://localhost:8008"
 
@@ -60,65 +80,106 @@ class ServiceManager(object):
 
     :return: None
     """
-    self.log.info("Read saved services from location: %s" % self.service_dir)
+    self.log.info("Read default services from location: %s" % self.service_dir)
     for filename in os.listdir(self.service_dir):
       if not filename.startswith('.') and filename.endswith('.nffg'):
         service_id = os.path.splitext(filename)[0]
         self.log.debug("Detected service NFFG: %s" % service_id)
-        self.services[service_id] = {}
 
-  def add_service (self, service_id, status=None):
+  def add_service (self, service_id, path=None, name=None,
+                   status=ServiceInstance.STATUS_INIT):
     """
     Add service with optional status.
 
     :param service_id: service id
     :type service_id: str
+    :param name: service name
+    :type name: str
     :param status: service status (optional)
-    :return: None
+    :param path: path of the service NFFG
+    :type path: str
+    :return: instance id if success else None
+    :rtype: str
     """
-    if service_id in self.services:
-      self.log.warning("Service: %s is already in ServiceManager! "
-                       "Skip adding..." % service_id)
-    if status is None:
-      self.services[service_id] = {}
-      self.log.info("Add managed service: %s" % service_id)
-    else:
-      self.services[service_id]['status'] = status
-      self.log.info(
-        "Add managed service: %s with status: %s " % (service_id, status))
+    try:
+      sg = NFFG.parse_from_file(path)
+    except IOError:
+      self.log.warning("NFFG file for service instance creation is not found in"
+                       " %s! Skip service processing..." % self.service_dir)
+      return None
+    si = ServiceInstance(service_id=service_id,
+                         name=name if name else sg.name,
+                         status=status,
+                         path=path)
+    self.services[si.instance_id] = si
+    self.log.info("Add managed service: %s with instance id: %s " % (
+      service_id, si.instance_id))
+    return si.instance_id
 
-  def set_service_status (self, service_id, status):
+  def set_service_status (self, instance_id, status):
     """
     Add status for service with given id.
 
-    :param service_id: service id
-    :type service_id: str
+    :param instance_id: service id
+    :type instance_id: str
     :param status: service status
     :type status: str
     :return: None
     """
-    if service_id not in self.services:
-      self.log.warning("Missing service: %s from ServiceManager!" % service_id)
+    if instance_id not in self.services:
+      self.log.warning("Missing service instance: %s from ServiceManager!" %
+                       instance_id)
     else:
-      self.services[service_id]['status'] = status
+      self.services[instance_id].status = status
       self.log.info("Status for service: %s updated with value: %s" %
-                    (service_id, status))
+                    (instance_id, status))
 
-  def get_service (self, service_id):
+  def get_service (self, instance_id):
     """
     Return with service information given by id.
 
-    :param service_id: service id
-    :type service_id: str
+    :param instance_id: service id
+    :type instance_id: str
     :return: service description dict
     :rtype: dict
     """
-    if service_id in self.services:
-      return self.services[service_id]
+    if instance_id in self.services:
+      return self.services[instance_id]
     else:
-      self.log.warning("Missing service: %s from ServiceManager!" % service_id)
+      self.log.warning("Missing service instance: %s from ServiceManager!" %
+                       instance_id)
 
-  def get_running_services (self):
+  def get_service_status (self, instance_id):
+    """
+    Return with service information given by id.
+
+    :param instance_id: service id
+    :type instance_id: str
+    :return: service status
+    :rtype: str
+    """
+    if instance_id in self.services:
+      return self.services[instance_id].status
+    else:
+      self.log.warning("Missing service instance: %s from ServiceManager!" %
+                       instance_id)
+
+  def get_service_name (self, instance_id):
+    """
+    Return with service information given by id.
+
+    :param instance_id: service id
+    :type instance_id: str
+    :return: service name
+    :rtype: str
+    """
+    if instance_id in self.services:
+      return self.services[instance_id].name
+    else:
+      self.log.warning("Missing service instance: %s from ServiceManager!" %
+                       instance_id)
+
+  def get_running_services_status (self):
     """
     Return with the running services.
 
@@ -126,9 +187,25 @@ class ServiceManager(object):
     :rtype: list
     """
     self.log.info("Collect running services from ServiceManager...")
-    return [NFFG.parse_from_file(
-      "%s.nffg" % os.path.join(self.service_dir, service_id))
-            for service_id in self.services
-            if 'status' in self.services[service_id] and
-            self.services[service_id]['status'] ==
-            ServiceManager.STATUS_RUNNING]
+    ret = []
+    for instance_id in self.services:
+      if self.services[instance_id].status == ServiceInstance.STATUS_START:
+        ret.append({"id": instance_id,
+                    "name": self.get_service_name(instance_id),
+                    "status": self.get_service_status(instance_id)})
+    return ret
+
+  def get_services_status (self):
+    """
+    Return with the managed services.
+
+    :return: all managed services
+    :rtype: list
+    """
+    self.log.info("Collect managed services from ServiceManager...")
+    ret = []
+    for instance_id in self.services:
+      ret.append({"id": instance_id,
+                  "name": self.get_service_name(instance_id),
+                  "status": self.get_service_status(instance_id)})
+    return ret
