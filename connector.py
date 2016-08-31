@@ -315,7 +315,7 @@ def update_service (service_id):
   try:
     ret = requests.put(url=esc_url,
                        headers=POST_HEADERS,
-                       json=sg)
+                       json=sg.dump())
     app.logger.info("Service deletion has been forwarded with result: %s" %
                     ret.status_code)
     service_mgr.set_service_status(service_id=service_id,
