@@ -101,7 +101,8 @@ class ServiceManager(object):
       self.log.warning("Missing service: %s from ServiceManager!" % service_id)
     else:
       self.services[service_id]['status'] = status
-      self.log.info("Service status updated with value: %s" % status)
+      self.log.info("Status for service: %s updated with value: %s" %
+                    (service_id, status))
 
   def get_service (self, service_id):
     """
@@ -125,7 +126,9 @@ class ServiceManager(object):
     :rtype: list
     """
     self.log.info("Collect running services from ServiceManager...")
-    return [NFFG.parse_from_file("%s%s.nffg" % (self.service_dir, service_id))
+    return [NFFG.parse_from_file(
+      "%s.nffg" % os.path.join(self.service_dir, service_id))
             for service_id in self.services
             if 'status' in self.services[service_id] and
-            service_id['status'] == ServiceManager.STATUS_RUNNING]
+            self.services[service_id]['status'] ==
+            ServiceManager.STATUS_RUNNING]
