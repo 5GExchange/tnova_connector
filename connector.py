@@ -59,11 +59,14 @@ SERVICE_NFFG_DIR = "services"  # dir name used for storing converted services
 PWD = os.path.realpath(os.path.dirname(__file__))
 POST_HEADERS = {"Content-Type": "application/json"}
 
-# Create REST-API handler app
+# Logging config
+VERBOSE = 5
+logging.addLevelName(VERBOSE, "VERBOSE")
 root_logger = logging.getLogger()
 root_logger.addHandler(ColoredLogger.createHandler())
 root_logger.setLevel(logging.DEBUG)
 
+# Create REST-API handler app
 app = Flask("Connector")
 # create Catalogue for VNFDs
 catalogue = VNFCatalogue(remote_store=USE_VNF_STORE,
@@ -95,6 +98,7 @@ def convert_service (nsd_file):
   if sg is None:
     app.logger.error("Service conversion was failed! Service is not saved!")
     return False
+  app.logger.log(VERBOSE, "Converted service:\n%s" % sg.dump())
   # Save result NFFG into a file
   sg_path = os.path.join(PWD, SERVICE_NFFG_DIR, "%s.nffg" % sg.id)
   with open(sg_path, 'w') as f:
@@ -119,6 +123,7 @@ def add_nsd ():
   try:
     # Parse data as JSON
     data = json.loads(request.data)
+    app.logger.log(VERBOSE, "Received body:\n%s" % data)
     filename = data['nsd']['id']
     path = os.path.join(PWD, NSD_DIR, "%s.json" % filename)
     with open(path, 'w') as f:
@@ -165,6 +170,7 @@ def add_vnfd ():
   app.logger.info("Call add_vnfd() with path: POST /vnfd")
   try:
     data = json.loads(request.data)
+    app.logger.log(VERBOSE, "Received body:\n%s" % data)
     filename = data['id']
     path = os.path.join(PWD, CATALOGUE_DIR, "%s.nffg" % filename)
     with open(path, 'w') as f:
@@ -198,6 +204,7 @@ def initiate_service ():
   app.logger.info("Call initiate_service() with path: POST /service")
   try:
     params = json.loads(request.data)
+    app.logger.log(VERBOSE, "Received body:\n%s" % params)
     if "ns_id" not in params:
       app.logger.error("Missing NSD id from service initiation request!")
       app.logger.debug("Received body:\n%s" % request.data)
@@ -292,6 +299,7 @@ def update_service (service_id):
     return Response(status=httplib.NO_CONTENT)
   try:
     params = json.loads(request.data)
+    app.logger.log(VERBOSE, "Received body:\n%s" % params)
     if "status" not in params:
       app.logger.error("Missing NSD id from service request!")
       app.logger.debug("Received body:\n%s" % request.data)
@@ -308,18 +316,28 @@ def update_service (service_id):
   app.logger.info("Received service deletion with id: %s" % service_id)
   # Load NFFG from file
   sg_path = os.path.join(PWD, SERVICE_NFFG_DIR, "%s.nffg" % service_id)
+  app.logger.debug("Loading service request from file: %s..." % sg_path)
   sg = NFFG.parse_from_file(path=sg_path)
   # Set DELETE mode
   sg.mode = NFFG.MODE_DEL
+  app.logger.debug("Set mapping mode: %s" % sg.mode)
   esc_url = os.path.join(ESCAPE_URL, ESCAPE_PREFIX)
+  app.logger.debug("Send request to ESCAPE on: %s" % esc_url)
+  app.logger.log(VERBOSE, "Forwarded deletion request:\n%s" % sg.dump())
   try:
     ret = requests.put(url=esc_url,
                        headers=POST_HEADERS,
                        json=sg.dump())
-    app.logger.info("Service deletion has been forwarded with result: %s" %
-                    ret.status_code)
-    service_mgr.set_service_status(service_id=service_id,
-                                   status=ServiceManager.STATUS_STOPPED)
+    if ret.status_code == requests.codes.ok:
+      app.logger.info("Service deletion has been forwarded with result: %s" %
+                      ret.status_code)
+      service_mgr.set_service_status(service_id=service_id,
+                                     status=ServiceManager.STATUS_STOPPED)
+    else:
+      app.logger.error(
+        "Got error from ESCAPE during service deletion! Status: %s" %
+        ret.status_code)
+      return Response(status=ret.status_code)
   except ConnectionError:
     app.logger.error("ESCAPE is not available!")
     return Response(status=httplib.INTERNAL_SERVER_ERROR)
@@ -327,12 +345,13 @@ def update_service (service_id):
     app.logger.exception("Got unexpected exception during service initiation!")
     return Response(status=httplib.BAD_REQUEST)
   # Create and send Response
-  resp = {"id": uuid.uuid1(),
+  resp = {"id": str(uuid.uuid1()),
           "ns-id": sg.id,
           "status": "stopped",
           "created_at": datetime.datetime.fromtimestamp(
             os.path.getctime(sg_path)).isoformat(),
           "updated_at": datetime.datetime.now().isoformat()}
+  app.logger.log(VERBOSE, "Response:\n%s" % resp)
   return Response(status=httplib.OK,
                   content_type="application/json",
                   response=json.dumps(resp))
@@ -346,12 +365,18 @@ if __name__ == "__main__":
     add_help=True)
   parser.add_argument("-p", "--port", action="store", default=5000,
                       type=int, help="REST-API port (default: 5000)")
-  parser.add_argument("-d", "--debug", action="store_true", default=False,
-                      help="run in debug mode (default logging level: INFO)")
+  parser.add_argument("-d", "--debug", action="count", default=0,
+                      help="run in debug mode (can use multiple times for more "
+                           "verbose logging, default logging level: INFO)")
   args = parser.parse_args()
   # logging.setLoggerClass(ColoredLogger)
   # logging.basicConfig(level=logging.DEBUG if args.debug else logging.INFO)
-  level = logging.DEBUG if args.debug else logging.INFO
+  if args.debug == 0:
+    level = logging.INFO
+  elif args.debug == 1:
+    level = logging.DEBUG
+  else:
+    level = VERBOSE
   # app.logger.addHandler(ColoredLogger.createHandler())
   app.logger.handlers[:] = [ColoredLogger.createHandler()]
   app.logger.setLevel(level)
