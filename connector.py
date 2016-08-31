@@ -18,6 +18,7 @@ import httplib
 import json
 import logging
 import os
+import pprint
 import sys
 import uuid
 
@@ -123,7 +124,7 @@ def add_nsd ():
   try:
     # Parse data as JSON
     data = json.loads(request.data)
-    app.logger.log(VERBOSE, "Received body:\n%s" % data)
+    app.logger.log(VERBOSE, "Received body:\n%s" % pprint.pformat(data))
     filename = data['nsd']['id']
     path = os.path.join(PWD, NSD_DIR, "%s.json" % filename)
     with open(path, 'w') as f:
@@ -170,7 +171,7 @@ def add_vnfd ():
   app.logger.info("Call add_vnfd() with path: POST /vnfd")
   try:
     data = json.loads(request.data)
-    app.logger.log(VERBOSE, "Received body:\n%s" % data)
+    app.logger.log(VERBOSE, "Received body:\n%s" % pprint.pformat(data))
     filename = data['id']
     path = os.path.join(PWD, CATALOGUE_DIR, "%s.nffg" % filename)
     with open(path, 'w') as f:
@@ -204,11 +205,10 @@ def initiate_service ():
   app.logger.info("Call initiate_service() with path: POST /service")
   try:
     params = json.loads(request.data)
-    app.logger.log(VERBOSE, "Received body:\n%s" % params)
+    app.logger.log(VERBOSE, "Received body:\n%s" % pprint.pformat(params))
     if "ns_id" not in params:
       app.logger.error("Missing NSD id from service initiation request!")
-      app.logger.debug("Received body:\n%s" % request.data)
-      return Response(status=httplib.NOT_FOUND)
+      return Response(status=httplib.BAD_REQUEST)
     sg_id = params['ns_id']
     app.logger.info("Received service initiation with id: %s" % sg_id)
   except ValueError:
@@ -216,18 +216,35 @@ def initiate_service ():
     app.logger.debug("Received body:\n%s" % request.data)
     return Response(status=httplib.UNSUPPORTED_MEDIA_TYPE)
   sg_path = os.path.join(PWD, SERVICE_NFFG_DIR, "%s.nffg" % sg_id)
-  with open(sg_path) as f:
-    sg = json.load(f)
+  app.logger.debug("Loading service request from file: %s..." % sg_path)
+  try:
+    sg = NFFG.parse_from_file(path=sg_path)
+  except IOError:
+    app.logger.error("Service with id: %s is not found!" % sg_id)
+    return Response(status=httplib.NOT_FOUND)
+  # Set DELETE mode
+  sg.mode = NFFG.MODE_ADD
+  app.logger.debug("Set mapping mode: %s" % sg.mode)
+  esc_url = os.path.join(ESCAPE_URL, ESCAPE_PREFIX)
+  app.logger.debug("Send request to ESCAPE on: %s" % esc_url)
+  app.logger.log(VERBOSE, "Forwarded request:\n%s" % sg.dump())
   esc_url = os.path.join(ESCAPE_URL, ESCAPE_PREFIX)
   try:
     ret = requests.post(url=esc_url,
                         headers=POST_HEADERS,
-                        json=sg)
-    app.logger.info(
-      "Service initiation has been forwarded with result: %s" % ret.status_code)
-    service_mgr.set_service_status(service_id=sg_id,
-                                   status=ServiceManager.STATUS_RUNNING)
-    return Response(status=httplib.ACCEPTED)
+                        json=sg.dump_to_json())
+    if ret.status_code == httplib.ACCEPTED:
+      app.logger.info(
+        "Service initiation has been forwarded with result: %s" %
+        ret.status_code)
+      service_mgr.set_service_status(service_id=sg_id,
+                                     status=ServiceManager.STATUS_RUNNING)
+    else:
+      app.logger.error(
+        "Service initiation has been failed! Got status code: %s" %
+        ret.status_code)
+    # Return the status code from ESCAPE
+    return Response(status=ret.status_code)
   except ConnectionError:
     app.logger.error("ESCAPE is not available!")
     return Response(status=httplib.INTERNAL_SERVER_ERROR)
@@ -260,6 +277,7 @@ def list_service ():
   app.logger.info("Call list_service() with path: GET /ns-instances")
   services = service_mgr.get_running_services()
   resp = [{"id": s.id, "name": s.name, "status": "running"} for s in services]
+  app.logger.log(VERBOSE, "Sent response:\n%s" % pprint.pformat(resp))
   return Response(status=httplib.OK,
                   content_type="application/json",
                   response=json.dumps(resp))
@@ -302,7 +320,7 @@ def update_service (service_id):
     app.logger.log(VERBOSE, "Received body:\n%s" % params)
     if "status" not in params:
       app.logger.error("Missing NSD id from service request!")
-      app.logger.debug("Received body:\n%s" % request.data)
+      app.logger.debug("Received body:\n%s" % pprint.pformat(params))
       return Response(status=httplib.NOT_FOUND)
     status = params['status']
   except ValueError:
@@ -317,7 +335,11 @@ def update_service (service_id):
   # Load NFFG from file
   sg_path = os.path.join(PWD, SERVICE_NFFG_DIR, "%s.nffg" % service_id)
   app.logger.debug("Loading service request from file: %s..." % sg_path)
-  sg = NFFG.parse_from_file(path=sg_path)
+  try:
+    sg = NFFG.parse_from_file(path=sg_path)
+  except IOError:
+    app.logger.error("Service with id: %s is not found!" % service_id)
+    return Response(status=httplib.NOT_FOUND)
   # Set DELETE mode
   sg.mode = NFFG.MODE_DEL
   app.logger.debug("Set mapping mode: %s" % sg.mode)
@@ -327,15 +349,15 @@ def update_service (service_id):
   try:
     ret = requests.put(url=esc_url,
                        headers=POST_HEADERS,
-                       json=sg.dump())
-    if ret.status_code == requests.codes.ok:
+                       json=sg.dump_to_json())
+    if ret.status_code == httplib.ACCEPTED:
       app.logger.info("Service deletion has been forwarded with result: %s" %
                       ret.status_code)
       service_mgr.set_service_status(service_id=service_id,
                                      status=ServiceManager.STATUS_STOPPED)
     else:
       app.logger.error(
-        "Got error from ESCAPE during service deletion! Status: %s" %
+        "Got error from ESCAPE during service deletion! Got status code: %s" %
         ret.status_code)
       return Response(status=ret.status_code)
   except ConnectionError:
@@ -351,7 +373,7 @@ def update_service (service_id):
           "created_at": datetime.datetime.fromtimestamp(
             os.path.getctime(sg_path)).isoformat(),
           "updated_at": datetime.datetime.now().isoformat()}
-  app.logger.log(VERBOSE, "Response:\n%s" % resp)
+  app.logger.log(VERBOSE, "Sent response:\n%s" % pprint.pformat(resp))
   return Response(status=httplib.OK,
                   content_type="application/json",
                   response=json.dumps(resp))
