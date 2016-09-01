@@ -297,7 +297,7 @@ def list_service_instances ():
   :return: HTTP Response
   :rtype: :any:`flask.Response`
   """
-  app.logger.info("Call list_service() with path: GET /ns-instances")
+  app.logger.info("Call list_service_instances() with path: GET /ns-instances")
   # services = service_mgr.get_running_services()
   resp = service_mgr.get_services_status()
   app.logger.log(VERBOSE, "Sent response:\n%s" % pprint.pformat(resp))

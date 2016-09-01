@@ -17,7 +17,6 @@ import logging
 import os
 import sys
 import uuid
-from __builtin__ import property
 
 try:
   # Import from ESCAPEv2
