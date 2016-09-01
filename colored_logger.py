@@ -30,6 +30,7 @@ class ColoredLogger(logging.Logger):
     BOLD_SEQ = "\033[1m"
     # Level - color binding
     COLORS = {
+      'VERBOSE': WHITE,
       'DEBUG': CYAN,
       'INFO': GREEN,
       'WARNING': YELLOW,

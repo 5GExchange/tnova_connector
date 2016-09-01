@@ -13,14 +13,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import argparse
-import datetime
 import httplib
 import json
 import logging
 import os
 import pprint
 import sys
-import uuid
 
 import requests
 from flask import Flask, Response, request
@@ -28,7 +26,7 @@ from requests.exceptions import ConnectionError
 
 from colored_logger import ColoredLogger
 from converter import TNOVAConverter
-from service_mgr import ServiceManager
+from service_mgr import ServiceManager, ServiceInstance
 from vnf_catalogue import VNFCatalogue, MissingVNFDException
 
 try:
@@ -109,9 +107,11 @@ def convert_service (nsd_file):
 
 
 @app.route("/nsd", methods=['POST'])
-def add_nsd ():
+def register_nsd ():
   """
   REST-API function for NSD conversion and storing.
+  Receive the defined NS from Marketplace, convert it into NFFG and store both
+  description persistently.
 
   Rule: /nsd
   Method: POST
@@ -120,13 +120,15 @@ def add_nsd ():
   :return: HTTP Response
   :rtype: :any:`flask.Response`
   """
-  app.logger.info("Call add_nsd() with path: POST /nsd")
+  app.logger.info("Call register_nsd() with path: POST /nsd")
   try:
     # Parse data as JSON
     data = json.loads(request.data)
     app.logger.log(VERBOSE, "Received body:\n%s" % pprint.pformat(data))
+    # Filename based on the service ID
     filename = data['nsd']['id']
     path = os.path.join(PWD, NSD_DIR, "%s.json" % filename)
+    # Write into file
     with open(path, 'w') as f:
       f.write(json.dumps(data, indent=2, sort_keys=True))
     app.logger.info("Received NSD has been saved: %s!" % path)
@@ -135,7 +137,6 @@ def add_nsd ():
     # t.start()
     if not convert_service(nsd_file=path):
       return Response(status=httplib.INTERNAL_SERVER_ERROR)
-    service_mgr.add_service(service_id=filename)
     # Response with 200 OK
     return Response(status=httplib.ACCEPTED)
   except ValueError:
@@ -156,10 +157,16 @@ def add_nsd ():
 
 
 @app.route("/vnfd", methods=['POST'])
-def add_vnfd ():
+def register_vnfd ():
   """
   REST-API function for VNFD storing. This function is defined for backward
   compatibility.
+  Receives the defined VNF from Marcetplace?? and store it persistently.
+  NSD conversion could use these VNFD to convert the NSD, but currently the
+  conversion use the remote VNFStore to aqcuire the necessary VNFD on-line.
+
+  .. deprecated:: 2.0
+    Use on-line VNFStore insted.
 
   Rule: /vnfd
   Method: POST
@@ -168,15 +175,18 @@ def add_vnfd ():
   :return: HTTP Response
   :rtype: :any:`flask.Response`
   """
-  app.logger.info("Call add_vnfd() with path: POST /vnfd")
+  app.logger.info("Call register_vnfd() with path: POST /vnfd")
   try:
     data = json.loads(request.data)
     app.logger.log(VERBOSE, "Received body:\n%s" % pprint.pformat(data))
+    # Filename based on the VNF ID
     filename = data['id']
     path = os.path.join(PWD, CATALOGUE_DIR, "%s.nffg" % filename)
+    # Write into file
     with open(path, 'w') as f:
       f.write(json.dumps(data))
     app.logger.info("Received VNFD has been saved: %s!" % path)
+    # Response with success
     return Response(status=httplib.ACCEPTED)
   except ValueError:
     app.logger.error("Received data is not valid JSON!")
@@ -202,48 +212,60 @@ def initiate_service ():
   :return: HTTP Response
   :rtype: :any:`flask.Response`
   """
+  ns_id_name = "ns_id"
   app.logger.info("Call initiate_service() with path: POST /service")
   try:
     params = json.loads(request.data)
     app.logger.log(VERBOSE, "Received body:\n%s" % pprint.pformat(params))
-    if "ns_id" not in params:
-      app.logger.error("Missing NSD id from service initiation request!")
+    if ns_id_name not in params:
+      app.logger.error(
+        "Missing NSD id (%s) from service initiation request!" % ns_id_name)
       return Response(status=httplib.BAD_REQUEST)
-    sg_id = params['ns_id']
-    app.logger.info("Received service initiation with id: %s" % sg_id)
+    ns_id = params[ns_id_name]
+    app.logger.info("Received service initiation with id: %s" % ns_id)
   except ValueError:
     app.logger.error("Received POST params are not valid JSON!")
     app.logger.debug("Received body:\n%s" % request.data)
     return Response(status=httplib.UNSUPPORTED_MEDIA_TYPE)
-  sg_path = os.path.join(PWD, SERVICE_NFFG_DIR, "%s.nffg" % sg_id)
-  app.logger.debug("Loading service request from file: %s..." % sg_path)
-  try:
-    sg = NFFG.parse_from_file(path=sg_path)
-  except IOError:
-    app.logger.error("Service with id: %s is not found!" % sg_id)
+  ns_path = os.path.join(PWD, SERVICE_NFFG_DIR, "%s.nffg" % ns_id)
+  # Create the service instantiation request, status->instantiated
+  si = service_mgr.instantiate_ns(ns_id=ns_id,
+                                  path=ns_path,
+                                  status=ServiceInstance.STATUS_INST)
+  if si is None:
+    app.logger.error("Service instance creation has been failed!")
+    return Response(status=httplib.INTERNAL_SERVER_ERROR)
+  app.logger.debug("Loading Service Descriptor from file: %s..." % ns_path)
+  sg = si.load_sg_from_file()
+  if sg is None:
+    app.logger.error("Service with id: %s is not found!" % ns_id)
     return Response(status=httplib.NOT_FOUND)
-  # Set DELETE mode
+  # Set ADD mode
   sg.mode = NFFG.MODE_ADD
   app.logger.debug("Set mapping mode: %s" % sg.mode)
-  esc_url = os.path.join(ESCAPE_URL, ESCAPE_PREFIX)
-  app.logger.debug("Send request to ESCAPE on: %s" % esc_url)
+  escape_url = os.path.join(ESCAPE_URL, ESCAPE_PREFIX)
+  app.logger.debug("Send service request to ESCAPE on: %s" % escape_url)
   app.logger.log(VERBOSE, "Forwarded request:\n%s" % sg.dump())
-  esc_url = os.path.join(ESCAPE_URL, ESCAPE_PREFIX)
+  # Try to orchestrate the service instance
   try:
-    ret = requests.post(url=esc_url,
+    ret = requests.post(url=escape_url,
                         headers=POST_HEADERS,
                         json=sg.dump_to_json())
+    # Check result
     if ret.status_code == httplib.ACCEPTED:
-      app.logger.info(
-        "Service initiation has been forwarded with result: %s" %
-        ret.status_code)
-      service_mgr.set_service_status(service_id=sg_id,
-                                     status=ServiceManager.STATUS_RUNNING)
+      app.logger.info("Service initiation has been forwarded with result: %s" %
+                      ret.status_code)
+      # Due to the limitation of the current ESCAPE version, we can assume
+      # that the service request was successful, status->running
+      service_mgr.set_service_status(id=si.id,
+                                     status=ServiceInstance.STATUS_START)
     else:
-      app.logger.error(
-        "Service initiation has been failed! Got status code: %s" %
-        ret.status_code)
-    # Return the status code from ESCAPE
+      app.logger.error("Service initiation has been failed! "
+                       "Got status code: %s" % ret.status_code)
+      # Something went wrong, status->error_creating
+      service_mgr.set_service_status(id=si.id,
+                                     status=ServiceInstance.STATUS_ERROR)
+    # Return the status code received from ESCAPE
     return Response(status=ret.status_code)
   except ConnectionError:
     app.logger.error("ESCAPE is not available!")
@@ -254,7 +276,7 @@ def initiate_service ():
 
 
 @app.route("/ns-instances", methods=['GET'])
-def list_service ():
+def list_service_instances ():
   """
   REST-API function for service listing.
 
@@ -268,23 +290,24 @@ def list_service ():
       "id":"456",
       "name":"name of the ns",
       "status":"stopped
-    }
+    },
+    ...
   ]
 
   :return: HTTP Response
   :rtype: :any:`flask.Response`
   """
   app.logger.info("Call list_service() with path: GET /ns-instances")
-  services = service_mgr.get_running_services()
-  resp = [{"id": s.id, "name": s.name, "status": "running"} for s in services]
+  # services = service_mgr.get_running_services()
+  resp = service_mgr.get_services_status()
   app.logger.log(VERBOSE, "Sent response:\n%s" % pprint.pformat(resp))
   return Response(status=httplib.OK,
                   content_type="application/json",
                   response=json.dumps(resp))
 
 
-@app.route("/ns-instances/<service_id>", methods=['PUT'])
-def update_service (service_id):
+@app.route("/ns-instances/<instance_id>", methods=['PUT'])
+def update_service (instance_id):
   """
   REST-API function for service deletion. The request URL contains the
   previously initiated NSD id. The stored NFFG will be send to
@@ -306,14 +329,15 @@ def update_service (service_id):
      "updated_at":"2014-11-25T10:01:52Z"
   }
 
-  :param service_id: service ID
-  :type service_id: str
+  :param instance_id: service instance ID
+  :type instance_id: str
   :return: HTTP Response 200 OK
   :rtype: :any:`flask.Response`
   """
   app.logger.info("Call update_service() with path: PUT /ns-instances/<id>")
-  app.logger.debug("Detected service id: %s" % service_id)
+  app.logger.debug("Detected service instance id: %s" % instance_id)
   if request.data is None:
+    app.logger.error("Missing service instance content from request!")
     return Response(status=httplib.NO_CONTENT)
   try:
     params = json.loads(request.data)
@@ -326,19 +350,22 @@ def update_service (service_id):
   except ValueError:
     app.logger.error("Received POST params are not valid JSON!")
     app.logger.debug("Received body:\n%s" % request.data)
-    return Response(status=httplib.UNSUPPORTED_MEDIA_TYPE)
-  if status != 'stopped':
-    app.logger.error("Service status request: %s is not supported yet!" %
+    return Response(status=httplib.BAD_REQUEST)
+  if status != ServiceInstance.STATUS_STOPPED:
+    app.logger.error("Change service status: %s is not supported yet!" %
                      status)
     return Response(status=httplib.NOT_IMPLEMENTED)
-  app.logger.info("Received service deletion with id: %s" % service_id)
+  app.logger.info("Received service deletion with id: %s" % instance_id)
+  # Get managed service instance
+  si = service_mgr.get_service(id=instance_id)
+  if si is None:
+    app.logger.error("Service instance : %s is not found!" % instance_id)
+    return Response(status=httplib.NOT_FOUND)
+  app.logger.debug("Loading service request from file: %s..." % si.path)
+  sg = si.load_sg_from_file()
   # Load NFFG from file
-  sg_path = os.path.join(PWD, SERVICE_NFFG_DIR, "%s.nffg" % service_id)
-  app.logger.debug("Loading service request from file: %s..." % sg_path)
-  try:
-    sg = NFFG.parse_from_file(path=sg_path)
-  except IOError:
-    app.logger.error("Service with id: %s is not found!" % service_id)
+  if sg is None:
+    app.logger.error("Service with id: %s is not found!" % instance_id)
     return Response(status=httplib.NOT_FOUND)
   # Set DELETE mode
   sg.mode = NFFG.MODE_DEL
@@ -353,12 +380,16 @@ def update_service (service_id):
     if ret.status_code == httplib.ACCEPTED:
       app.logger.info("Service deletion has been forwarded with result: %s" %
                       ret.status_code)
-      service_mgr.set_service_status(service_id=service_id,
-                                     status=ServiceManager.STATUS_STOPPED)
+      # Due to the limitation of the current ESCAPE version, we can assume
+      # that the service request was successful, status->stopped
+      service_mgr.set_service_status(id=instance_id,
+                                     status=ServiceInstance.STATUS_STOPPED)
     else:
-      app.logger.error(
-        "Got error from ESCAPE during service deletion! Got status code: %s" %
-        ret.status_code)
+      app.logger.error("Got error from ESCAPE during service deletion! "
+                       "Got status code: %s" % ret.status_code)
+      # service_mgr.set_service_status(id=instance_id,
+      #                                status=ServiceInstance.STATUS_ERROR)
+      # Return the status code received from ESCAPE
       return Response(status=ret.status_code)
   except ConnectionError:
     app.logger.error("ESCAPE is not available!")
@@ -366,13 +397,9 @@ def update_service (service_id):
   except:
     app.logger.exception("Got unexpected exception during service initiation!")
     return Response(status=httplib.BAD_REQUEST)
-  # Create and send Response
-  resp = {"id": str(uuid.uuid1()),
-          "ns-id": sg.id,
-          "status": "stopped",
-          "created_at": datetime.datetime.fromtimestamp(
-            os.path.getctime(sg_path)).isoformat(),
-          "updated_at": datetime.datetime.now().isoformat()}
+  # Get and send Response
+  si = service_mgr.get_service(id=instance_id)
+  resp = si.get_json()
   app.logger.log(VERBOSE, "Sent response:\n%s" % pprint.pformat(resp))
   return Response(status=httplib.OK,
                   content_type="application/json",
@@ -391,15 +418,12 @@ if __name__ == "__main__":
                       help="run in debug mode (can use multiple times for more "
                            "verbose logging, default logging level: INFO)")
   args = parser.parse_args()
-  # logging.setLoggerClass(ColoredLogger)
-  # logging.basicConfig(level=logging.DEBUG if args.debug else logging.INFO)
   if args.debug == 0:
     level = logging.INFO
   elif args.debug == 1:
     level = logging.DEBUG
   else:
     level = VERBOSE
-  # app.logger.addHandler(ColoredLogger.createHandler())
   app.logger.handlers[:] = [ColoredLogger.createHandler()]
   app.logger.setLevel(level)
   app.logger.propagate = False

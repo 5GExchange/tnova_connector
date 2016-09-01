@@ -12,6 +12,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import httplib
 import json
 import logging
 import os
@@ -320,6 +321,14 @@ class VNFCatalogue(object):
     return self
 
   def request_vnf_from_remote_store (self, vnf_id):
+    """
+    Request a VNFD given by vnf_id from remote VNFStore.
+
+    :param vnf_id: VNF id
+    :type vnf_id: str
+    :return: parsed VNFD if it's found else None
+    :rtype: :any:`VNFWrapper`
+    """
     if all((self.VNF_STORE_ENABLED, self.STORE_VNFD_LOCALLY,
             vnf_id in self.catalogue)):
       self.log.debug("Return with cached VNFD(id: %s)" % vnf_id)
@@ -333,7 +342,6 @@ class VNFCatalogue(object):
     try:
       response = requests.get(url=os.path.join(self.vnf_store_url, str(vnf_id)),
                               timeout=self.REQUEST_TIMEOUT)
-
     except Timeout:
       self.log.error(
         "Request timeout: %ss exceeded! VNF Store: %s is unreachable!" % (
@@ -343,7 +351,7 @@ class VNFCatalogue(object):
       self.log.error(str(e))
       raise MissingVNFDException(vnf_id=vnf_id)
     if not response.ok:
-      if response.status_code == 404:
+      if response.status_code == httplib.NOT_FOUND: # HTTP 404
         self.log.debug(
           "Got HTTP 404! VNFD (id: %s) is missing from VNF Store!" % vnf_id)
       else:
