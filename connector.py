@@ -142,11 +142,11 @@ def register_nsd ():
   except ValueError:
     app.logger.exception("Received data is not valid JSON!")
     app.logger.debug("Received body:\n%s" % request.data)
-    return Response(status=httplib.INTERNAL_SERVER_ERROR)
+    return Response(status=httplib.BAD_REQUEST)
   except KeyError:
     app.logger.exception("Received data is not valid NSD!")
     app.logger.debug("Received body:\n%s" % request.data)
-    return Response(status=httplib.INTERNAL_SERVER_ERROR)
+    return Response(status=httplib.BAD_REQUEST)
   except MissingVNFDException:
     app.logger.exception("Unrecognisable VNFD has been found in NSD!")
     return Response(status=httplib.INTERNAL_SERVER_ERROR)
@@ -191,11 +191,11 @@ def register_vnfd ():
   except ValueError:
     app.logger.error("Received data is not valid JSON!")
     app.logger.debug("Received body:\n%s" % request.data)
-    return Response(status=httplib.INTERNAL_SERVER_ERROR)
+    return Response(status=httplib.BAD_REQUEST)
   except KeyError:
     app.logger.error("Received data is not valid VNFD!")
     app.logger.debug("Received body:\n%s" % request.data)
-    return Response(status=httplib.INTERNAL_SERVER_ERROR)
+    return Response(status=httplib.BAD_REQUEST)
 
 
 @app.route("/service", methods=['POST'])
@@ -226,7 +226,7 @@ def initiate_service ():
   except ValueError:
     app.logger.error("Received POST params are not valid JSON!")
     app.logger.debug("Received body:\n%s" % request.data)
-    return Response(status=httplib.UNSUPPORTED_MEDIA_TYPE)
+    return Response(status=httplib.BAD_REQUEST)
   ns_path = os.path.join(PWD, SERVICE_NFFG_DIR, "%s.nffg" % ns_id)
   # Create the service instantiation request, status->instantiated
   si = service_mgr.instantiate_ns(ns_id=ns_id,
@@ -269,7 +269,8 @@ def initiate_service ():
     return Response(status=ret.status_code)
   except ConnectionError:
     app.logger.error("ESCAPE is not available!")
-    return Response(status=httplib.INTERNAL_SERVER_ERROR)
+    return Response(status=httplib.INTERNAL_SERVER_ERROR,
+                    response=json.dumps({"error": "ESCAPE is not available!"}))
   except:
     app.logger.exception("Got unexpected exception during service initiation!")
     return Response(status=httplib.BAD_REQUEST)
@@ -307,7 +308,7 @@ def list_service_instances ():
 
 
 @app.route("/ns-instances/<instance_id>", methods=['PUT'])
-def update_service (instance_id):
+def stop_service (instance_id):
   """
   REST-API function for service deletion. The request URL contains the
   previously initiated NSD id. The stored NFFG will be send to
@@ -334,7 +335,7 @@ def update_service (instance_id):
   :return: HTTP Response 200 OK
   :rtype: :any:`flask.Response`
   """
-  app.logger.info("Call update_service() with path: PUT /ns-instances/<id>")
+  app.logger.info("Call stop_service() with path: PUT /ns-instances/<id>")
   app.logger.debug("Detected service instance id: %s" % instance_id)
   if request.data is None:
     app.logger.error("Missing service instance content from request!")
@@ -361,6 +362,7 @@ def update_service (instance_id):
   if si is None:
     app.logger.error("Service instance : %s is not found!" % instance_id)
     return Response(status=httplib.NOT_FOUND)
+  app.logger.debug("Service status: %s" % si.status)
   app.logger.debug("Loading service request from file: %s..." % si.path)
   sg = si.load_sg_from_file()
   # Load NFFG from file
@@ -393,17 +395,104 @@ def update_service (instance_id):
       return Response(status=ret.status_code)
   except ConnectionError:
     app.logger.error("ESCAPE is not available!")
-    return Response(status=httplib.INTERNAL_SERVER_ERROR)
+    return Response(status=httplib.INTERNAL_SERVER_ERROR,
+                    response=json.dumps({"error": "ESCAPE is not available!"}))
   except:
     app.logger.exception("Got unexpected exception during service initiation!")
-    return Response(status=httplib.BAD_REQUEST)
+    return Response(status=httplib.INTERNAL_SERVER_ERROR)
   # Get and send Response
-  si = service_mgr.get_service(id=instance_id)
   resp = si.get_json()
   app.logger.log(VERBOSE, "Sent response:\n%s" % pprint.pformat(resp))
   return Response(status=httplib.OK,
                   content_type="application/json",
                   response=json.dumps(resp))
+
+
+@app.route("/ns-instances/<instance_id>/terminate", methods=['PUT'])
+def terminate_service (instance_id):
+  """
+  REST-API function for service deletion. The request URL contains the
+  previously initiated NSD id. The stored NFFG will be send to
+  ESCAPE's REST-API.
+
+  Rule: /ns-instances/{id}/terminate
+  Method: PUT
+  Body: None
+
+  Sample response: 200 OK
+  {
+     "id":"456",
+     "ns-id":"987",
+     "status":"stopped",
+     "created_at":"2014-11-21T14:18:09Z",
+     "updated_at":"2014-11-25T10:01:52Z"
+  }
+
+  :param instance_id: service instance ID
+  :type instance_id: str
+  :return: HTTP Response 200 OK
+  :rtype: :any:`flask.Response`
+  """
+  app.logger.info(
+    "Call terminate_service() with path: PUT /ns-instances/<id>/terminate")
+  app.logger.info("Received service termination with id: %s" % instance_id)
+  # Get managed service instance
+  si = service_mgr.get_service(id=instance_id)
+  if si is None:
+    app.logger.error("Service instance : %s is not found!" % instance_id)
+    return Response(status=httplib.NOT_FOUND)
+  # If service instance is just created, stopped or error_created -> simply
+  # delete
+  app.logger.debug("Service status: %s" % si.status)
+  if si.status != ServiceInstance.STATUS_START:
+    app.logger.info("Service instance: %s is not running! "
+                    "Remove instance without service deletion from ESCAPE" %
+                    instance_id)
+    service_mgr.remove_service_instance(id=instance_id)
+    return Response(status=httplib.OK)
+  app.logger.debug("Loading service request from file: %s..." % si.path)
+  sg = si.load_sg_from_file()
+  # Load NFFG from file
+  if sg is None:
+    app.logger.error("Service with id: %s is not found!" % instance_id)
+    return Response(status=httplib.NOT_FOUND)
+  # Set DELETE mode
+  sg.mode = NFFG.MODE_DEL
+  app.logger.debug("Set mapping mode: %s" % sg.mode)
+  esc_url = os.path.join(ESCAPE_URL, ESCAPE_PREFIX)
+  app.logger.debug("Send request to ESCAPE on: %s" % esc_url)
+  app.logger.log(VERBOSE, "Forwarded deletion request:\n%s" % sg.dump())
+  try:
+    ret = requests.put(url=esc_url,
+                       headers=POST_HEADERS,
+                       json=sg.dump_to_json())
+    if ret.status_code == httplib.ACCEPTED:
+      app.logger.info("Service termination has been forwarded with result: %s" %
+                      ret.status_code)
+      # Due to the limitation of the current ESCAPE version, we can assume
+      # that the service request was successful, status->stopped
+      service_mgr.remove_service_instance(id=instance_id)
+    else:
+      app.logger.error("Got error from ESCAPE during service deletion! "
+                       "Got status code: %s" % ret.status_code)
+      # service_mgr.set_service_status(id=instance_id,
+      #                                status=ServiceInstance.STATUS_ERROR)
+      # Return the status code received from ESCAPE
+      return Response(status=ret.status_code)
+  except ConnectionError:
+    app.logger.error("ESCAPE is not available!")
+    return Response(status=httplib.INTERNAL_SERVER_ERROR,
+                    response=json.dumps({"error": "ESCAPE is not available!"}))
+  except:
+    app.logger.exception("Got unexpected exception during service termination!")
+    return Response(status=httplib.INTERNAL_SERVER_ERROR)
+  # Get and send Response
+  # resp = si.get_json()
+  # app.logger.log(VERBOSE, "Sent response:\n%s" % pprint.pformat(resp))
+  # return Response(status=httplib.OK,
+  #                 content_type="application/json",
+  #                 response=json.dumps(resp))
+  return Response(status=httplib.OK)
 
 
 if __name__ == "__main__":

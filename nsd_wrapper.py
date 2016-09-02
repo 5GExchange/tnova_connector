@@ -66,7 +66,7 @@ class NSWrapper(AbstractDescriptorWrapper):
 
   def get_saps (self):
     """
-    Get the list of SAPs wich come from the 'connection_points' klist.
+    Get the list of SAPs which come from the 'connection_points' list.
 
     :return: SAP ids
     :rtype: list
