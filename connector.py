@@ -43,33 +43,63 @@ except (ImportError, AttributeError):
     from nffg import NFFG
 
 ### Connector configuration parameters
-
-CATALOGUE_URL = "http://172.16.178.128:8080"  # VNF Store URL as <host>:<port>
-CATALOGUE_PREFIX = "NFS/vnfds"  # static prefix used in REST calls
+# VNF Store URL as <host>:<port>
+CATALOGUE_URL = "http://localhost:8080/NFS/vnfds"
 USE_VNF_STORE = True  # enable dynamic VNFD acquiring from VNF Store
 CATALOGUE_DIR = "vnf_catalogue"  # read VNFDs from dir if VNF Store is disabled
-ESCAPE_URL = "http://localhost:8008"  # ESCAPE's top level REST-API
-ESCAPE_PREFIX = "escape/sg"  # static prefix for service request calls
+ESCAPE_URL = "http://localhost:8008/escape/sg"  # ESCAPE's top level REST-API
 NSD_DIR = "nsds"  # dir name used for storing received NSD files
 SERVICE_NFFG_DIR = "services"  # dir name used for storing converted services
 ### Connector configuration parameters
-
 # Other constants
 PWD = os.path.realpath(os.path.dirname(__file__))
 POST_HEADERS = {"Content-Type": "application/json"}
-
-# Logging config
+# Configure common logging
 VERBOSE = 5
 logging.addLevelName(VERBOSE, "VERBOSE")
 root_logger = logging.getLogger()
 root_logger.addHandler(ColoredLogger.createHandler())
 root_logger.setLevel(logging.DEBUG)
-
+# Parse initial arguments
+parser = argparse.ArgumentParser(
+  description="TNOVAConnector: Middleware component which make the "
+              "connection between Marketplace and ESCAPE with automatic "
+              "request conversion",
+  add_help=True)
+parser.add_argument("-p", "--port", action="store", default=5000,
+                    type=int, help="REST-API port (default: 5000)")
+parser.add_argument("-d", "--debug", action="count", default=0,
+                    help="run in debug mode (can use multiple times for more "
+                         "verbose logging, default logging level: INFO)")
+parser.add_argument("-e", "--esc", action="store", type=str, default=False,
+                    help="ESCAPE full URL, default: "
+                         "http://localhost:8008/escape/sg")
+parser.add_argument("-v", "--vnfs", action="store", type=str, default=False,
+                    help="Enables remote VNFStore with given full URL, "
+                         "default: http://localhost:8080/NFS/vnfds")
+args = parser.parse_args()
+if args.debug == 0:
+  level = logging.INFO
+elif args.debug == 1:
+  level = logging.DEBUG
+else:
+  level = VERBOSE
+if args.esc:
+  ESCAPE_URL = args.esc
+if args.vnfs:
+  CATALOGUE_URL = args.vnfs
+  USE_VNF_STORE = True
 # Create REST-API handler app
 app = Flask("Connector")
-# create Catalogue for VNFDs
+# Adjust Flask logging to common logging
+app.logger.handlers[:] = [ColoredLogger.createHandler()]
+app.logger.setLevel(level)
+app.logger.propagate = False
+app.logger.info("Set logging level: %s",
+                logging.getLevelName(app.logger.getEffectiveLevel()))
+# Create Catalogue for VNFDs
 catalogue = VNFCatalogue(remote_store=USE_VNF_STORE,
-                         url=os.path.join(CATALOGUE_URL, CATALOGUE_PREFIX),
+                         url=CATALOGUE_URL,
                          catalogue_dir=CATALOGUE_DIR,
                          logger=app.logger)
 # Create converter
@@ -496,26 +526,4 @@ def terminate_service (instance_id):
 
 
 if __name__ == "__main__":
-  parser = argparse.ArgumentParser(
-    description="TNOVAConnector: Middleware component which make the "
-                "connection between Marketplace and ESCAPE with automatic "
-                "request conversion",
-    add_help=True)
-  parser.add_argument("-p", "--port", action="store", default=5000,
-                      type=int, help="REST-API port (default: 5000)")
-  parser.add_argument("-d", "--debug", action="count", default=0,
-                      help="run in debug mode (can use multiple times for more "
-                           "verbose logging, default logging level: INFO)")
-  args = parser.parse_args()
-  if args.debug == 0:
-    level = logging.INFO
-  elif args.debug == 1:
-    level = logging.DEBUG
-  else:
-    level = VERBOSE
-  app.logger.handlers[:] = [ColoredLogger.createHandler()]
-  app.logger.setLevel(level)
-  app.logger.propagate = False
-  app.logger.info("Set logging level: %s",
-                  logging.getLevelName(app.logger.getEffectiveLevel()))
   app.run(host='0.0.0.0', port=args.port, debug=args.debug, use_reloader=False)

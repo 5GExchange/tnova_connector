@@ -236,10 +236,12 @@ class VNFCatalogue(object):
     self.catalogue = {}
     if catalogue_dir:
       self.VNF_CATALOGUE_DIR = catalogue_dir
+      self.log.info("Use directory for VNF cache: %s" % self.VNF_CATALOGUE_DIR)
+    self._full_catalogue_path = None
+    self.vnf_store_url = url
     if remote_store:
       self.VNF_STORE_ENABLED = True
-    self.vnf_store_url = url
-    self._full_catalogue_path = None
+      self.log.info("Enabled VNFStore with URL: %s" % self.vnf_store_url)
 
   def register (self, id, vnfd):
     """
@@ -351,7 +353,7 @@ class VNFCatalogue(object):
       self.log.error(str(e))
       raise MissingVNFDException(vnf_id=vnf_id)
     if not response.ok:
-      if response.status_code == httplib.NOT_FOUND: # HTTP 404
+      if response.status_code == httplib.NOT_FOUND:  # HTTP 404
         self.log.debug(
           "Got HTTP 404! VNFD (id: %s) is missing from VNF Store!" % vnf_id)
       else:

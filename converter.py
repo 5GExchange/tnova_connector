@@ -61,6 +61,7 @@ class TNOVAConverter(object):
     else:
       self.catalogue = VNFCatalogue(logger=logger)
       self.catalogue.parse_vnf_catalogue_from_folder()
+    self.log.debug("Use VNFCatalogue: %s" % self.catalogue)
     self.vlan_register = {}
 
   def parse_nsd_from_file (self, nsd_file):

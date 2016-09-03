@@ -121,7 +121,6 @@ class ServiceManager(object):
 
   def __init__ (self, service_dir, escape_url, logger=None):
     self.service_dir = service_dir
-    self.ESCAPE_URL = escape_url
     # service-id: ServiceInstance object
     self.instances = {}
     if logger is not None:
@@ -129,6 +128,9 @@ class ServiceManager(object):
       # self.log.name = self.LOGGER_NAME
     else:
       logging.getLogger(self.__class__.__name__)
+    self.log.debug("Use directory for service cache: %s" % self.service_dir)
+    self.ESCAPE_URL = escape_url
+    self.log.info("Use URL for ESCAPE: %s" % self.ESCAPE_URL)
     self.initialize()
 
   def initialize (self):
@@ -137,11 +139,11 @@ class ServiceManager(object):
 
     :return: None
     """
-    self.log.info("Read defined services from location: %s" % self.service_dir)
+    self.log.debug("Read defined services from location: %s" % self.service_dir)
     for filename in os.listdir(self.service_dir):
       if not filename.startswith('.') and filename.endswith('.nffg'):
         service_id = os.path.splitext(filename)[0]
-        self.log.debug("Detected service NFFG: %s" % service_id)
+        self.log.debug("Detected cached service NFFG: %s" % service_id)
 
   def instantiate_ns (self, ns_id, path=None, name=None,
                       status=ServiceInstance.STATUS_INIT):
