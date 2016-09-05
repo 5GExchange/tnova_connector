@@ -273,12 +273,11 @@ def initiate_service ():
   # Set ADD mode
   sg.mode = NFFG.MODE_ADD
   app.logger.debug("Set mapping mode: %s" % sg.mode)
-  escape_url = os.path.join(ESCAPE_URL, ESCAPE_PREFIX)
-  app.logger.debug("Send service request to ESCAPE on: %s" % escape_url)
+  app.logger.debug("Send service request to ESCAPE on: %s" % ESCAPE_URL)
   app.logger.log(VERBOSE, "Forwarded request:\n%s" % sg.dump())
   # Try to orchestrate the service instance
   try:
-    ret = requests.post(url=escape_url,
+    ret = requests.post(url=ESCAPE_URL,
                         headers=POST_HEADERS,
                         json=sg.dump_to_json())
     # Check result
