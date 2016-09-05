@@ -83,6 +83,7 @@ class ServiceInstance(object):
     """
     return {"id": self.id,
             "ns-id": self.service_id,
+            "name": self.name,
             "status": self.__status,
             "created_at": self.created_at,
             "updated_at": self.updated_at}
