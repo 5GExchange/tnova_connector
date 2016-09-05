@@ -515,6 +515,7 @@ def terminate_service (instance_id):
     app.logger.exception("Got unexpected exception during service termination!")
     return Response(status=httplib.INTERNAL_SERVER_ERROR)
   # Get and send Response
+  si.status = ServiceInstance.STATUS_STOPPED
   resp = si.get_json()
   app.logger.log(VERBOSE, "Sent response:\n%s" % pprint.pformat(resp))
   return Response(status=httplib.OK,
