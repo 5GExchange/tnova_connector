@@ -488,11 +488,10 @@ def terminate_service (instance_id):
   # Set DELETE mode
   sg.mode = NFFG.MODE_DEL
   app.logger.debug("Set mapping mode: %s" % sg.mode)
-  esc_url = os.path.join(ESCAPE_URL, ESCAPE_PREFIX)
-  app.logger.debug("Send request to ESCAPE on: %s" % esc_url)
+  app.logger.debug("Send request to ESCAPE on: %s" % ESCAPE_URL)
   app.logger.log(VERBOSE, "Forwarded deletion request:\n%s" % sg.dump())
   try:
-    ret = requests.put(url=esc_url,
+    ret = requests.put(url=ESCAPE_URL,
                        headers=POST_HEADERS,
                        json=sg.dump_to_json())
     if ret.status_code == httplib.ACCEPTED:
