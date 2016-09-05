@@ -95,6 +95,8 @@ class ServiceInstance(object):
 
     :param path: overrided path (optional)
     :type path: str
+    :param mode: optional mapping mode
+    :type mode: str
     :return: read NFFG
     :rtype: :any:`NFFG`
     """
@@ -188,11 +190,15 @@ class ServiceManager(object):
 
     :param id: service instance id
     :type id: str
-    :return: None
+    :return: terminated service instance
+    :rtype: :any:`ServiceInstance`
     """
     self.log.debug("Remove service instance: %s from ServiceManager!" % id)
     if id in self.instances:
+      si = self.get_service(id=id)
       del self.instances[id]
+      si.status = ServiceInstance.STATUS_STOPPED
+      return si
     else:
       self.log.warning("Service: %s is not found!" % id)
 
@@ -219,7 +225,7 @@ class ServiceManager(object):
 
     :param id: service instance id
     :type id: str
-    :return: service description dict
+    :return: service instance object
     :rtype: :any:`ServiceInstance`
     """
     if id in self.instances:
@@ -264,11 +270,9 @@ class ServiceManager(object):
     """
     self.log.info("Collect running services from ServiceManager...")
     ret = []
-    for id in self.instances:
-      if self.instances[id].status == ServiceInstance.STATUS_START:
-        ret.append({"id": id,
-                    "name": self.get_service_name(id),
-                    "status": self.get_service_status(id)})
+    for si in self.instances.itervalues():
+      if si.status == ServiceInstance.STATUS_START:
+        ret.append(si.get_json())
     return ret
 
   def get_services_status (self):

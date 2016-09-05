@@ -191,12 +191,12 @@ def register_vnfd ():
   """
   REST-API function for VNFD storing. This function is defined for backward
   compatibility.
-  Receives the defined VNF from Marcetplace?? and store it persistently.
+  Receives the defined VNF from Marketplace?? and store it persistently.
   NSD conversion could use these VNFD to convert the NSD, but currently the
-  conversion use the remote VNFStore to aqcuire the necessary VNFD on-line.
+  conversion use the remote VNFStore to acquire the necessary VNFD on-line.
 
   .. deprecated:: 2.0
-    Use on-line VNFStore insted.
+    Use on-line VNFStore instead.
 
   Rule: /vnfd
   Method: POST
@@ -298,10 +298,16 @@ def initiate_service ():
     return Response(status=ret.status_code)
   except ConnectionError:
     app.logger.error("ESCAPE is not available!")
+    # Something went wrong, status->error_creating
+    service_mgr.set_service_status(id=si.id,
+                                   status=ServiceInstance.STATUS_ERROR)
     return Response(status=httplib.INTERNAL_SERVER_ERROR,
                     response=json.dumps({"error": "ESCAPE is not available!"}))
   except:
     app.logger.exception("Got unexpected exception during service initiation!")
+    # Something went wrong, status->error_creating
+    service_mgr.set_service_status(id=si.id,
+                                   status=ServiceInstance.STATUS_ERROR)
     return Response(status=httplib.BAD_REQUEST)
 
 
@@ -354,6 +360,7 @@ def stop_service (instance_id):
   {
      "id":"456",
      "ns-id":"987",
+     "name": "ESCAPE_NS",
      "status":"stopped",
      "created_at":"2014-11-21T14:18:09Z",
      "updated_at":"2014-11-25T10:01:52Z"
@@ -401,11 +408,10 @@ def stop_service (instance_id):
   # Set DELETE mode
   sg.mode = NFFG.MODE_DEL
   app.logger.debug("Set mapping mode: %s" % sg.mode)
-  esc_url = os.path.join(ESCAPE_URL, ESCAPE_PREFIX)
-  app.logger.debug("Send request to ESCAPE on: %s" % esc_url)
+  app.logger.debug("Send request to ESCAPE on: %s" % ESCAPE_URL)
   app.logger.log(VERBOSE, "Forwarded deletion request:\n%s" % sg.dump())
   try:
-    ret = requests.put(url=esc_url,
+    ret = requests.put(url=ESCAPE_URL,
                        headers=POST_HEADERS,
                        json=sg.dump_to_json())
     if ret.status_code == httplib.ACCEPTED:
@@ -415,6 +421,12 @@ def stop_service (instance_id):
       # that the service request was successful, status->stopped
       service_mgr.set_service_status(id=instance_id,
                                      status=ServiceInstance.STATUS_STOPPED)
+      # Get and send Response
+      resp = si.get_json()
+      app.logger.log(VERBOSE, "Sent response:\n%s" % pprint.pformat(resp))
+      return Response(status=httplib.OK,
+                      content_type="application/json",
+                      response=json.dumps(resp))
     else:
       app.logger.error("Got error from ESCAPE during service deletion! "
                        "Got status code: %s" % ret.status_code)
@@ -429,12 +441,6 @@ def stop_service (instance_id):
   except:
     app.logger.exception("Got unexpected exception during service initiation!")
     return Response(status=httplib.INTERNAL_SERVER_ERROR)
-  # Get and send Response
-  resp = si.get_json()
-  app.logger.log(VERBOSE, "Sent response:\n%s" % pprint.pformat(resp))
-  return Response(status=httplib.OK,
-                  content_type="application/json",
-                  response=json.dumps(resp))
 
 
 @app.route("/ns-instances/<instance_id>/terminate", methods=['PUT'])
@@ -452,6 +458,7 @@ def terminate_service (instance_id):
   {
      "id":"456",
      "ns-id":"987",
+     "name": "ESCAPE_NS",
      "status":"stopped",
      "created_at":"2014-11-21T14:18:09Z",
      "updated_at":"2014-11-25T10:01:52Z"
@@ -477,8 +484,12 @@ def terminate_service (instance_id):
     app.logger.info("Service instance: %s is not running! "
                     "Remove instance without service deletion from ESCAPE" %
                     instance_id)
-    service_mgr.remove_service_instance(id=instance_id)
-    return Response(status=httplib.OK)
+    si = service_mgr.remove_service_instance(id=instance_id)
+    resp = si.get_json()
+    app.logger.log(VERBOSE, "Sent response:\n%s" % pprint.pformat(resp))
+    return Response(status=httplib.OK,
+                    content_type="application/json",
+                    response=json.dumps(resp))
   app.logger.debug("Loading service request from file: %s..." % si.path)
   sg = si.load_sg_from_file()
   # Load NFFG from file
@@ -499,7 +510,14 @@ def terminate_service (instance_id):
                       ret.status_code)
       # Due to the limitation of the current ESCAPE version, we can assume
       # that the service request was successful, status->stopped
-      service_mgr.remove_service_instance(id=instance_id)
+      si = service_mgr.remove_service_instance(id=instance_id)
+      # Set instance to stop before send back the SI description using the last
+      # reference of the SI
+      resp = si.get_json()
+      app.logger.log(VERBOSE, "Sent response:\n%s" % pprint.pformat(resp))
+      return Response(status=httplib.OK,
+                      content_type="application/json",
+                      response=json.dumps(resp))
     else:
       app.logger.error("Got error from ESCAPE during service deletion! "
                        "Got status code: %s" % ret.status_code)
@@ -514,14 +532,6 @@ def terminate_service (instance_id):
   except:
     app.logger.exception("Got unexpected exception during service termination!")
     return Response(status=httplib.INTERNAL_SERVER_ERROR)
-  # Get and send Response
-  si.status = ServiceInstance.STATUS_STOPPED
-  resp = si.get_json()
-  app.logger.log(VERBOSE, "Sent response:\n%s" % pprint.pformat(resp))
-  return Response(status=httplib.OK,
-                  content_type="application/json",
-                  response=json.dumps(resp))
-  # return Response(status=httplib.OK)
 
 
 if __name__ == "__main__":
