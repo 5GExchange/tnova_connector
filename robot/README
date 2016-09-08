@@ -1,0 +1,10 @@
+1. Define an NSD through the Marketplace with name: ROBOT:<robot request name>
+2. Initiate service with the id of the NSD/converted NFFG
+    2.a connector will detect the ROBOT: prefix in the name
+    2.b Rewrite the path of the created ServiceInstance to:
+
+        <project path>/<configured robot demo directory>/<robot request name without prefix>.nffg
+
+        e.g.: /home/czentye/5gex/escape-5gex/tnova_connector/robot/bme_test.nffg
+
+3. Everything works in the same way as before like service listing, initiation, delete, terminate...

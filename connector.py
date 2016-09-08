@@ -54,6 +54,8 @@ SERVICE_NFFG_DIR = "services"  # dir name used for storing converted services
 # Other constants
 PWD = os.path.realpath(os.path.dirname(__file__))
 POST_HEADERS = {"Content-Type": "application/json"}
+ROBOT_DEMO_PREFIX = "ROBOT:"
+ROBOT_DEMO_DIR = "robot"
 # Configure common logging
 VERBOSE = 5
 logging.addLevelName(VERBOSE, "VERBOSE")
@@ -265,6 +267,13 @@ def initiate_service ():
   if si is None:
     app.logger.error("Service instance creation has been failed!")
     return Response(status=httplib.INTERNAL_SERVER_ERROR)
+  ### Robot demo hack
+  if si.name.startswith(ROBOT_DEMO_PREFIX):
+    robot_demo_name = si.name[len(ROBOT_DEMO_PREFIX):]
+    app.logger.debug("Explicit robot demo detected: %s" % robot_demo_name)
+    si.path = os.path.join(PWD, ROBOT_DEMO_DIR, robot_demo_name + ".nffg")
+    app.logger.debug("Rewritten path: %s" % si.path)
+  ### Robot demo hack
   app.logger.debug("Loading Service Descriptor from file: %s..." % ns_path)
   sg = si.load_sg_from_file()
   if sg is None:
