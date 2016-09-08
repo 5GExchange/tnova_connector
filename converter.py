@@ -274,10 +274,15 @@ class TNOVAConverter(object):
       # Create set from SLA ids referred in vlinks in NFP graph list
       req_id = {ns.get_vlink_sla_ref(id) for id in chain}
       # Only one SLA (aka requirement) must be referred through a NFP
-      if len(req_id) > 1:
-        self.log.error(
-          "Multiple SLA id: %s has detected in the NFP: %s! Skip SLA "
-          "processing..." % (req_id, chain))
+      print req_id
+      if len(req_id) < 1:
+        self.log.warning("No SLA id has detected in the NFP: %s! "
+                         "Skip SLA processing..." % chain)
+        return
+      elif len(req_id) > 1:
+        self.log.error("Multiple SLA id: %s has detected in the NFP: %s! "
+                       "Skip SLA processing..." % (req_id, chain))
+        return
       else:
         req_id = req_id.pop()
       self.log.debug("Detected Requirement link ref: %s" % req_id)
