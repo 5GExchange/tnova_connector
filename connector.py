@@ -24,7 +24,7 @@ import requests
 from flask import Flask, Response, request
 from requests.exceptions import ConnectionError
 
-from colored_logger import ColoredLogger
+from colored_logger import ColoredLogger, VERBOSE
 from converter import TNOVAConverter
 from service_mgr import ServiceManager, ServiceInstance
 from vnf_catalogue import VNFCatalogue, MissingVNFDException
@@ -57,7 +57,6 @@ POST_HEADERS = {"Content-Type": "application/json"}
 ROBOT_DEMO_PREFIX = "ROBOT:"
 ROBOT_DEMO_DIR = "robot"
 # Configure common logging
-VERBOSE = 5
 logging.addLevelName(VERBOSE, "VERBOSE")
 root_logger = logging.getLogger()
 root_logger.addHandler(ColoredLogger.createHandler())

@@ -1,6 +1,7 @@
 import logging
-from logging import NullHandler
 
+# Additional logging level
+VERBOSE = 5
 
 class ColoredLogger(logging.Logger):
   """
