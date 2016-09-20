@@ -113,14 +113,16 @@ class TNOVAConverter(object):
                             func_type=vnf.get_vnf_type(),
                             dep_type=vnf.get_deployment_type(),
                             **vnf.get_resources())
+      self.log.debug("Create VNF: %s" % node_nf)
       # Add ports to NF
       for port in vnf.get_ports():
         try:
           port_id = int(port)
         except ValueError:
           port_id = port
-        node_nf.add_port(id=port_id)
-        self.log.info("Added NF: %s" % node_nf)
+        nf_port = node_nf.add_port(id=port_id)
+        self.log.debug("Added NF port: %s" % nf_port)
+      self.log.info("Added NF: %s" % node_nf)
 
   def __convert_saps (self, nffg, ns, vnfs):
     """
@@ -142,9 +144,10 @@ class TNOVAConverter(object):
         sap_id = cp
       node_sap = nffg.add_sap(id=sap_id,
                               name=sap_id)
-      # Add default port to SAP with random name
-      node_sap.add_port(id=self.DEFAULT_SAP_PORT_ID)
       self.log.info("Added SAP: %s" % node_sap)
+      # Add default port to SAP with random name
+      sap_port = node_sap.add_port(id=self.DEFAULT_SAP_PORT_ID)
+      self.log.info("Added SAP port: %s" % sap_port)
 
   def __process_tag (self, abstract_id):
     """
