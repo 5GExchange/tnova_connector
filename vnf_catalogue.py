@@ -361,8 +361,8 @@ class VNFCatalogue(object):
       else:
         self.log.error("Got error during requesting VNFD with id: %s!" % vnf_id)
       return None
+    self.log.log(VERBOSE, "Received body:\n%s" % pprint.pformat(response.text))
     vnfd = json.loads(response.text, object_hook=self.__vnfd_object_hook)
-    self.log.log(VERBOSE, "Received body:\n%s" % pprint.pformat(vnfd))
     if self.STORE_VNFD_LOCALLY:
       self.register(id=vnf_id, vnfd=vnfd)
     return vnfd
