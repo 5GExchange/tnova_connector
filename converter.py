@@ -233,6 +233,7 @@ class TNOVAConverter(object):
       # If the id is not VNF Catalogue, it must be a SAP
       else:
         src_port = nffg[vlink['src_node']].ports.container[0]
+      self.log.debug("Got src port: %s" % src_port)
       # Parse dst params
       dst_node = vnfs.get_by_id(vlink['dst_node'])
       if dst_node is not None:
@@ -245,6 +246,7 @@ class TNOVAConverter(object):
       # If the id is not VNF Catalogue, it must be a SAP
       else:
         dst_port = nffg[vlink['dst_node']].ports.container[0]
+      self.log.debug("Got dst port: %s" % dst_port)
       # Generate SG link id compatible with ESCAPE's naming convention
       link_id = self.__process_tag(vlink['id'])
       # Add SG hop

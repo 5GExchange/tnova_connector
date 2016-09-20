@@ -14,7 +14,7 @@ Connector module is implemented entirely in Python.
 
 ```bash
 sudo apt install python-pip
-sudo -H pip install flask requests 
+sudo -H pip install flask requests networkx
 ```
 
 To clone the repository use the following command:

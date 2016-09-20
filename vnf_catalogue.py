@@ -354,7 +354,7 @@ class VNFCatalogue(object):
       raise MissingVNFDException(vnf_id=vnf_id)
     if not response.ok:
       if response.status_code == httplib.NOT_FOUND:  # HTTP 404
-        self.log.debug(
+        self.log.warning(
           "Got HTTP 404! VNFD (id: %s) is missing from VNF Store!" % vnf_id)
       else:
         self.log.error("Got error during requesting VNFD with id: %s!" % vnf_id)
