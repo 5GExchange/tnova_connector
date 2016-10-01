@@ -15,21 +15,9 @@
 import datetime
 import logging
 import os
-import sys
 import uuid
 
-try:
-  # Import from ESCAPEv2
-  from escape.nffg_lib.nffg import NFFG
-except (ImportError, AttributeError):
-  try:
-    # Import from locally in case of separately distributed version
-    from nffg_lib.nffg import NFFG
-  except ImportError:
-    # At last try to import from original place in escape git repo
-    sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__),
-                                                 "../escape/escape/nffg_lib/")))
-    from nffg import NFFG
+from nffg_lib.nffg import NFFG
 
 
 class ServiceInstance(object):

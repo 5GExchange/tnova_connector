@@ -3,6 +3,7 @@ import logging
 # Additional logging level
 VERBOSE = 5
 
+
 class ColoredLogger(logging.Logger):
   """
   Main Logger class for coloured logging.

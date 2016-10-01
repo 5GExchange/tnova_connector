@@ -20,21 +20,9 @@ import re
 import sys
 
 from colored_logger import ColoredLogger
+from nffg_lib.nffg import NFFG
 from nsd_wrapper import NSWrapper
 from vnf_catalogue import VNFCatalogue, MissingVNFDException
-
-try:
-  # Import from ESCAPEv2
-  from escape.nffg_lib.nffg import NFFG
-except (ImportError, AttributeError):
-  try:
-    # Import from locally in case of separately distributed version
-    from nffg_lib.nffg import NFFG
-  except ImportError:
-    # At last try to import from original place in escape git repo
-    sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__),
-                                                 "../escape/escape/nffg_lib/")))
-    from nffg import NFFG
 
 
 class TNOVAConverter(object):

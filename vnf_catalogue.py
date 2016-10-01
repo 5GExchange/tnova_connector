@@ -17,25 +17,11 @@ import json
 import logging
 import os
 import pprint
-import sys
 
 import requests
 from requests.exceptions import ConnectionError, Timeout
 
 from colored_logger import VERBOSE
-
-try:
-  # Import from ESCAPEv2
-  from escape.nffg_lib.nffg import NFFG
-except (ImportError, AttributeError):
-  try:
-    # Import from locally in case of separately distributed version
-    from nffg_lib.nffg import NFFG
-  except ImportError:
-    # At last try to import from original place in escape git repo
-    sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__),
-                                                 "../escape/escape/nffg_lib/")))
-    from nffg import NFFG
 
 
 class MissingVNFDException(Exception):
@@ -244,6 +230,17 @@ class VNFCatalogue(object):
     if remote_store:
       self.VNF_STORE_ENABLED = True
       self.log.info("Enabled VNFStore with URL: %s" % self.vnf_store_url)
+
+  def __str__ (self):
+    """
+    Return with string representation.
+
+    :return: string representation
+    :rtype: str
+    """
+    return "%s(dir: %s, URL:%s, enabled_remote: %s)" % (
+      self.__class__.__name__, self.VNF_CATALOGUE_DIR, self.vnf_store_url,
+      self.VNF_STORE_ENABLED)
 
   def register (self, id, vnfd):
     """
