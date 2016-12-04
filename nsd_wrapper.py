@@ -92,6 +92,7 @@ class NSWrapper(AbstractDescriptorWrapper):
     """
     try:
       hops = []
+      srcSAP_list = []
       for vlink in self.data['vld']['virtual_links']:
         if vlink['connectivity_type'] != self.LINK_TYPE:
           self.log.warning(
@@ -117,29 +118,21 @@ class NSWrapper(AbstractDescriptorWrapper):
           node, port = self.__parse_vlink_connection(vlink['connections'][0])
           sap_node, sap_port = vlink['alias'], None
           # Try to detect SAP role
-          cp_list = self.data['vnffgd']['vnffgs'][0][
-            'network_forwarding_path'][0]['connection_points']
-          graph_list = self.data['vnffgd']['vnffgs'][0][
-            'network_forwarding_path'][0]['graph']
-          # pos = cp_list.index(vlink['connections'][0])
-          pos = graph_list.index(vlink['vld_id']) * 2 + 1
-          # pos should be 1, 3, 5, ...
-          if pos < 2:
-            # First link of the chain started from the SAP
+          if sap_node not in srcSAP_list:
+            # Source SAP
+            # First virtual link referring the SAP is considered as the
+            # ingress (multiple ingress links will be supported if
+            # marketplace supports flowclass/metadata on links)
             hop['src_node'], hop['src_port'] = sap_node, sap_port
             hop['dst_node'], hop['dst_port'] = node, port
+            srcSAP_list.append(sap_node)
             self.log.debug("Detected starting SAP")
-          elif cp_list[pos - 2] == vlink['connections'][0]:
-            # Destination endpoint of the previous link is the same as the
-            # current endpoint => link directed to the SAP
+          else:
+            # Destination SAP
+            # We have already processed the rule for ingress traffic
             hop['src_node'], hop['src_port'] = node, port
             hop['dst_node'], hop['dst_port'] = sap_node, sap_port
             self.log.debug("Detected ending SAP")
-          else:
-            # not the same => it is the first link of a new chain
-            hop['src_node'], hop['src_port'] = sap_node, sap_port
-            hop['dst_node'], hop['dst_port'] = node, port
-            self.log.debug("Detected starting SAP of a new service chain")
         self.log.debug("src: %s - %s" % (hop['src_node'], hop['src_port']))
         self.log.debug("dst: %s - %s" % (hop['dst_node'], hop['dst_port']))
         hops.append(hop)
