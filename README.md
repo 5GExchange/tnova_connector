@@ -83,7 +83,7 @@ optional arguments:
 |:-----------------------------:|:----------------------------------|:---------:|:---------------------------------------------------------------------------------------------------|
 | /nsd                          | NSD desc. in JSON                 | POST      | Send an NSD to the connector, convert to NFFG using local VNFDs or a remote VNF Store and store it |
 | /vnfd                         | VNFD desc. in JSON                | POST      | Send a VNFD to the connector and store it locally                                                  |
-| /service                      | NSD id in JSON with key: "ns-id"  | POST      | Initiate a pre-defined NSD with the NSD id by sending the converted NFFG to ESCAPE                 |
+| /service                      | NSD id in JSON with key: "ns_id"  | POST      | Initiate a pre-defined NSD with the NSD id by sending the converted NFFG to ESCAPE                 |
 | /ns-instances                 | None                              | GET       | List services                                                                                      |
 | /ns-instances/{id}            | Service status JSON               | PUT       | Set service status - Not supported yet                                                             |
 | /ns-instances/{id}/terminate  | None                              | PUT       | Delete a defined service given by {id}                                                             |

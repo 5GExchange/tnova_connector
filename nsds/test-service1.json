@@ -1,0 +1,225 @@
+{
+  "nsd": {
+    "auto_scale_policy": {
+      "criteria": []
+    }, 
+    "connection_points": [], 
+    "description": "ESCAPE_NS", 
+    "descriptor_version": "1", 
+    "id": "test-service1", 
+    "lifecycle_events": {
+      "scale_out": [], 
+      "start": [], 
+      "stop": []
+    }, 
+    "monitoring_parameters": [
+      {
+        "desc": "Availability", 
+        "metric": "availability", 
+        "unit": "%"
+      }, 
+      {
+        "desc": "End-to-End Bandwidth", 
+        "metric": "end-to-end bandwidth", 
+        "unit": "Mbps"
+      }
+    ], 
+    "name": "ESCAPE_NS", 
+    "provider": "T-Nova", 
+    "provider_id": "3", 
+    "sla": [
+      {
+        "assurance_parameters": [], 
+        "billing": {
+          "model": "PAYG", 
+          "price": {
+            "price_per_period": 1, 
+            "setup": 1, 
+            "unit": "EUR"
+          }
+        }, 
+        "constituent_vnf": [
+          {
+            "number_of_instances": 1, 
+            "redundancy_model": "Active", 
+            "vnf_flavour_id_reference": "gold", 
+            "vnf_reference": "1649"
+          }, 
+          {
+            "number_of_instances": 1, 
+            "redundancy_model": "Active", 
+            "vnf_flavour_id_reference": "gold", 
+            "vnf_reference": "1648"
+          }, 
+          {
+            "number_of_instances": 1, 
+            "redundancy_model": "Active", 
+            "vnf_flavour_id_reference": "gold", 
+            "vnf_reference": "1647"
+          }
+        ], 
+        "id": "sla0", 
+        "sla_key": "Basic"
+      }
+    ], 
+    "vendor": "3", 
+    "version": "1", 
+    "vld": {
+      "number_of_endpoints": 0, 
+      "virtual_links": [
+        {
+          "alias": "SAP1", 
+          "connections": [
+            "VNF#9991:ext_1"
+          ], 
+          "connectivity_type": "E-LINE", 
+          "external_access": true, 
+          "leaf_requirement": "10Gbps", 
+          "merge": false, 
+          "qos": {
+            "average": "", 
+            "burst": "", 
+            "peak": ""
+          }, 
+          "root_requirements": "10Gbps", 
+          "sla_ref_id": "sla0", 
+          "vld_id": "vld0"
+        }, 
+        {
+          "alias": "CompDecomp", 
+          "connections": [
+            "VNF#9991:ext_1", 
+            "VNF#9992:ext_1"
+          ], 
+          "connectivity_type": "E-LINE", 
+          "external_access": false, 
+          "leaf_requirement": "10Gbps", 
+          "merge": false, 
+          "qos": {
+            "average": "", 
+            "burst": "", 
+            "peak": ""
+          }, 
+          "root_requirements": "10Gbps", 
+          "sla_ref_id": "sla0", 
+          "vld_id": "vld1"
+        }, 
+        {
+          "alias": "SAP2", 
+          "connections": [
+            "VNF#9992:ext_1"
+          ], 
+          "connectivity_type": "E-LINE", 
+          "external_access": true, 
+          "leaf_requirement": "1Gbps", 
+          "merge": false, 
+          "qos": {
+            "average": "", 
+            "burst": "", 
+            "peak": ""
+          }, 
+          "root_requirements": "1Gbps", 
+          "sla_ref_id": "sla0", 
+          "vld_id": "vld2"
+        }, 
+        {
+          "alias": "SAP2", 
+          "connections": [
+            "VNF#9994:ext_1"
+          ], 
+          "connectivity_type": "E-LINE", 
+          "external_access": true, 
+          "leaf_requirement": "10Gbps", 
+          "merge": false, 
+          "qos": {
+            "average": "", 
+            "burst": "", 
+            "peak": ""
+          }, 
+          "root_requirements": "10Gbps", 
+          "sla_ref_id": "sla0", 
+          "vld_id": "vld3"
+        }, 
+        {
+          "alias": "SAP1", 
+          "connections": [
+            "VNF#9994:ext_1"
+          ], 
+          "connectivity_type": "E-LINE", 
+          "external_access": true, 
+          "leaf_requirement": "10Gbps", 
+          "merge": false, 
+          "qos": {
+            "average": "", 
+            "burst": "", 
+            "peak": ""
+          }, 
+          "root_requirements": "10Gbps", 
+          "sla_ref_id": "sla0", 
+          "vld_id": "vld4"
+        }
+      ]
+    }, 
+    "vnf_depedency": [], 
+    "vnf_dependency": [], 
+    "vnfds": [
+      "9991", 
+      "9992", 
+      "9994"
+    ], 
+    "vnffgd": {
+      "vnffgs": [
+        {
+          "dependent_virtual_links": [
+            "vld0", 
+            "vld1", 
+            "vld2", 
+            "vld3", 
+            "vld4"
+          ], 
+          "network_forwarding_path": [
+            {
+              "connection_points": [
+                "ns_ext_SAP1", 
+                "VNF#9991:ext_1", 
+                "VNF#9991:ext_1", 
+                "VNF#9992:ext_1", 
+                "ns_ext_SAP2", 
+                "VNF#9992:ext_1", 
+                "ns_ext_SAP2", 
+                "VNF#9994:ext_1", 
+                "ns_ext_SAP1", 
+                "VNF#9994:ext_1"
+              ], 
+              "constituent_vnfs": [
+                {
+                  "vnf_flavor_key_ref": "gold", 
+                  "vnf_ref_id": "1649"
+                }, 
+                {
+                  "vnf_flavor_key_ref": "gold", 
+                  "vnf_ref_id": "1648"
+                }, 
+                {
+                  "vnf_flavor_key_ref": "gold", 
+                  "vnf_ref_id": "1647"
+                }
+              ], 
+              "graph": [
+                "vld0", 
+                "vld1", 
+                "vld2", 
+                "vld3", 
+                "vld4"
+              ], 
+              "nfp_id": "nfp0"
+            }
+          ], 
+          "number_of_endpoints": 4, 
+          "number_of_virtual_links": 5, 
+          "vnffg_id": "vnffg0"
+        }
+      ]
+    }
+  }
+}
