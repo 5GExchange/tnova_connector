@@ -205,7 +205,7 @@ class VNFCatalogue(object):
   LOGGER_NAME = "VNFCatalogue"
   # VNF_STORE_ENABLED = False
   VNF_CATALOGUE_DIR = "vnf_catalogue"
-  VNF_STORE_ENABLED = True
+  VNF_STORE_ENABLED = False
   STORE_VNFD_LOCALLY = True
   REQUEST_TIMEOUT = 1
 
@@ -250,6 +250,7 @@ class VNFCatalogue(object):
     :param id: id of the VNF
     :type id: str
     :param vnfd: VNFD as a :any:`VNFWrapper` class
+    :type vnfd: VNFWrapper
     :return: result of registering
     :rtype: bool
     """
@@ -282,7 +283,7 @@ class VNFCatalogue(object):
     :param id: VNF id
     :type id: str
     :return: registered VNF or None
-    :rtype: :any:`VNFWrapper`
+    :rtype: VNFWrapper
     """
     if self.VNF_STORE_ENABLED:
       return self.request_vnf_from_remote_store(id)
@@ -293,14 +294,13 @@ class VNFCatalogue(object):
   def parse_vnf_catalogue_from_folder (self, catalogue_dir=None):
     """
     Parse the given VNFDs as :any:`VNFWrapper` from files under the
-    directory
-    given by 'catalogue_dir' into a :any:`VNFCatalogue` instance.
+    directory given by 'catalogue_dir' into a :any:`VNFCatalogue` instance.
     catalogue_dir can be relative to $PWD.
 
     :param catalogue_dir: VNF folder
     :type catalogue_dir: str
     :return: created VNFCatalogue instance
-    :rtype: :any:`VNFCatalogue`
+    :rtype: VNFCatalogue
     """
     if catalogue_dir is None:
       catalogue_dir = os.path.realpath(
@@ -328,7 +328,7 @@ class VNFCatalogue(object):
     :param vnf_id: VNF id
     :type vnf_id: str
     :return: parsed VNFD if it's found else None
-    :rtype: :any:`VNFWrapper`
+    :rtype: VNFWrapper
     """
     if all((self.VNF_STORE_ENABLED, self.STORE_VNFD_LOCALLY,
             vnf_id in self.catalogue)):

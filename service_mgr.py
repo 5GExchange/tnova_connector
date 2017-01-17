@@ -86,14 +86,14 @@ class ServiceInstance(object):
     :param mode: optional mapping mode
     :type mode: str
     :return: read NFFG
-    :rtype: :any:`NFFG`
+    :rtype: NFFG
     """
     if path is None:
       path = self.path
     # Load NFFG from file
     try:
       nffg = NFFG.parse_from_file(path=path)
-      # Rewrite the default SG id  to the instance id to be unique for ESCAPE
+      # Rewrite the default SG id to the instance id to be unique for ESCAPE
       nffg.id = self.id
       nffg.mode = mode
       return nffg
@@ -149,7 +149,7 @@ class ServiceManager(object):
     :param path: path of the service NFFG
     :type path: str
     :return: service instance
-    :rtype: :any:`ServiceInstance`
+    :rtype: ServiceInstance
     """
     # If path is missing then assembly if from ns id
     if not path:
@@ -179,7 +179,7 @@ class ServiceManager(object):
     :param id: service instance id
     :type id: str
     :return: terminated service instance
-    :rtype: :any:`ServiceInstance`
+    :rtype: ServiceInstance
     """
     self.log.debug("Remove service instance: %s from ServiceManager!" % id)
     if id in self.instances:
@@ -214,7 +214,7 @@ class ServiceManager(object):
     :param id: service instance id
     :type id: str
     :return: service instance object
-    :rtype: :any:`ServiceInstance`
+    :rtype: ServiceInstance
     """
     if id in self.instances:
       return self.instances[id]

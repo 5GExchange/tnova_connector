@@ -146,7 +146,7 @@ class NSWrapper(AbstractDescriptorWrapper):
     from 'sla' fields.
 
     :return: list of requirement link params
-    :rtype: list
+    :rtype: list of dict
     """
     try:
       reqs = {}

@@ -60,7 +60,7 @@ class TNOVAConverter(object):
     :param nsd_file: NSD file path
     :type nsd_file: str
     :return: parsed NSD
-    :rtype: :any:`NSWrapper`
+    :rtype: NSWrapper
     """
     try:
       with open(os.path.abspath(nsd_file)) as f:
@@ -82,11 +82,11 @@ class TNOVAConverter(object):
     Create NF nodes in given NFFG based on given NF and VNFs.
 
     :param nffg: main NFFG object
-    :type nffg: :any:`NFFG`
+    :type nffg: NFFG
     :param ns: NSD wrapper object
-    :type ns: :any:`NSWrapper`
+    :type ns: NSWrapper
     :param vnfs: VNF catalogue
-    :type vnfs: :any:`VNFCatalogue`
+    :type vnfs: VNFCatalogue
     :return: None
     """
     # Add NFs
@@ -117,11 +117,11 @@ class TNOVAConverter(object):
     Create SAP nodes in given NFFG based on given NF and VNFs.
 
     :param nffg: main NFFG object
-    :type nffg: :any:`NFFG`
+    :type nffg: NFFG
     :param ns: NSD wrapper object
-    :type ns: :any:`NSWrapper`
+    :type ns: NSWrapper
     :param vnfs: VNF catalogue
-    :type vnfs: :any:`VNFCatalogue`
+    :type vnfs: VNFCatalogue
     :return: None
     """
     # Add SAPs
@@ -203,11 +203,11 @@ class TNOVAConverter(object):
     Create SG hop edges in given NFFG based on given NF and VNFs.
 
     :param nffg: main NFFG object
-    :type nffg: :any:`NFFG`
+    :type nffg: NFFG
     :param ns: NSD wrapper object
-    :type ns: :any:`NSWrapper`
+    :type ns: NSWrapper
     :param vnfs: VNF catalogue
-    :type vnfs: :any:`VNFCatalogue`
+    :type vnfs: VNFCatalogue
     :return: None
     """
     # Add SG hops
@@ -251,11 +251,11 @@ class TNOVAConverter(object):
     Create E2E Requirement edges in given NFFG based on given NF and VNFs.
 
     :param nffg: main NFFG object
-    :type nffg: :any:`NFFG`
+    :type nffg: NFFG
     :param ns: NSD wrapper object
-    :type ns: :any:`NSWrapper`
+    :type ns: NSWrapper
     :param vnfs: VNF catalogue
-    :type vnfs: :any:`VNFCatalogue`
+    :type vnfs: VNFCatalogue
     :return: None
     """
     # Add e2e requirement links
