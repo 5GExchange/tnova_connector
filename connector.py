@@ -33,10 +33,14 @@ from vnf_catalogue import VNFCatalogue, MissingVNFDException
 ESCAPE_URL = "http://localhost:8008/escape/sg"  # ESCAPE's top level REST-API
 VNF_STORE_URL = "http://localhost:8080/NFS/vnfds"
 
-USE_VNF_STORE = True  # enable dynamic VNFD acquiring from VNF Store
+USE_VNF_STORE = False  # enable dynamic VNFD acquiring from VNF Store
 NSD_DIR = "nsds"  # dir name used for storing received NSD files
 SERVICE_NFFG_DIR = "services"  # dir name used for storing converted services
 CATALOGUE_DIR = "vnf_catalogue"  # read VNFDs from dir if VNF Store is disabled
+
+# TNOVA format constants
+NS_ID_NAME = "ns_id"
+MESSAGE_ID_NAME = "message-id"
 
 # Other constants
 PWD = os.path.realpath(os.path.dirname(__file__))
@@ -200,18 +204,17 @@ def main ():
     Body: service request id in JSON object with key: "ns-id"
 
     :return: HTTP Response
-    :rtype: :any:`flask.Response`
+    :rtype: flask.Response
     """
-    ns_id_name = "ns_id"
     app.logger.info("Call initiate_service() with path: POST /service")
     try:
       params = json.loads(request.data)
       app.logger.log(VERBOSE, "Received body:\n%s" % pprint.pformat(params))
-      if ns_id_name not in params:
+      if NS_ID_NAME not in params:
         app.logger.error(
-          "Missing NSD id (%s) from service initiation request!" % ns_id_name)
+          "Missing NSD id (%s) from service initiation request!" % NS_ID_NAME)
         return Response(status=httplib.BAD_REQUEST)
-      ns_id = params[ns_id_name]
+      ns_id = params[NS_ID_NAME]
       app.logger.info("Received service initiation with id: %s" % ns_id)
     except ValueError:
       app.logger.error("Received POST params are not valid JSON!")
@@ -240,13 +243,16 @@ def main ():
     # Set ADD mode
     sg.mode = NFFG.MODE_ADD
     app.logger.debug("Set mapping mode: %s" % sg.mode)
+    params = {MESSAGE_ID_NAME: si.id}
+    app.logger.debug("Using explicit message-id: %s" % params[MESSAGE_ID_NAME])
     app.logger.debug("Send service request to ESCAPE on: %s" % ESCAPE_URL)
     app.logger.log(VERBOSE, "Forwarded request:\n%s" % sg.dump())
     # Try to orchestrate the service instance
     try:
       ret = requests.post(url=ESCAPE_URL,
                           headers=POST_HEADERS,
-                          json=sg.dump_to_json())
+                          json=sg.dump_to_json(),
+                          params=params)
       # Check result
       if ret.status_code == httplib.ACCEPTED:
         app.logger.info(
@@ -292,15 +298,15 @@ def main ():
     Sample response:
     [
       {
-        "id":"456",
-        "name":"name of the ns",
-        "status":"stopped
+        "id": "456",
+        "name": "name of the ns",
+        "status": "stopped
       },
       ...
     ]
 
     :return: HTTP Response
-    :rtype: :any:`flask.Response`
+    :rtype: flask.Response
     """
     app.logger.info(
       "Call list_service_instances() with path: GET /ns-instances")
@@ -327,18 +333,18 @@ def main ():
 
     Sample response: 200 OK
     {
-       "id":"456",
-       "ns-id":"987",
-       "name": "ESCAPE_NS",
-       "status":"stopped",
-       "created_at":"2014-11-21T14:18:09Z",
-       "updated_at":"2014-11-25T10:01:52Z"
+       "id":  "456",
+       "ns-id": "987",
+       "name":  "ESCAPE_NS",
+       "status":  "stopped",
+       "created_at":  "2014-11-21T14:18:09Z",
+       "updated_at":  "2014-11-25T10:01:52Z"
     }
 
     :param instance_id: service instance ID
     :type instance_id: str
     :return: HTTP Response 200 OK
-    :rtype: :any:`flask.Response`
+    :rtype: flask.Response
     """
     app.logger.info("Call stop_service() with path: PUT /ns-instances/<id>")
     app.logger.debug("Detected service instance id: %s" % instance_id)
@@ -426,18 +432,18 @@ def main ():
 
     Sample response: 200 OK
     {
-       "id":"456",
-       "ns-id":"987",
-       "name": "ESCAPE_NS",
-       "status":"stopped",
-       "created_at":"2014-11-21T14:18:09Z",
-       "updated_at":"2014-11-25T10:01:52Z"
+       "id":  "456",
+       "ns-id": "987",
+       "name":  "ESCAPE_NS",
+       "status":  "stopped",
+       "created_at":  "2014-11-21T14:18:09Z",
+       "updated_at":  "2014-11-25T10:01:52Z"
     }
 
     :param instance_id: service instance ID
     :type instance_id: str
     :return: HTTP Response 200 OK
-    :rtype: :any:`flask.Response`
+    :rtype: flask.Response
     """
     app.logger.info(
       "Call terminate_service() with path: PUT /ns-instances/<id>/terminate")
