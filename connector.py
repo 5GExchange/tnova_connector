@@ -127,10 +127,6 @@ def main ():
       with open(path, 'w') as f:
         f.write(json.dumps(data, indent=2, sort_keys=True))
       app.logger.info("Received NSD has been saved: %s!" % path)
-      # Initiate service conversion in a thread
-      # t = Thread(target=convert_service, name="SERVICE_CONVERTER",
-      # args=(path,))
-      # t.start()
       if not convert_service(nsd_file=path):
         return Response(status=httplib.INTERNAL_SERVER_ERROR)
       # Response with 200 OK

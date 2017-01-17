@@ -341,7 +341,7 @@ class TNOVAConverter(object):
       vnfs = self.catalogue.parse_vnf_catalogue_from_folder()
       self.log.debug("Registered VNFs: %s" % vnfs.catalogue.keys())
     # Create main NFFG object
-    nffg = NFFG(id=ns.id, name=ns.name)
+    nffg = NFFG(id=ns.id, service_id=ns.id, name=ns.name)
     # Convert NFFG elements
     try:
       self.log.debug("Convert NF nodes...")

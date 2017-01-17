@@ -94,6 +94,8 @@ class ServiceInstance(object):
     try:
       nffg = NFFG.parse_from_file(path=path)
       # Rewrite the default SG id to the instance id to be unique for ESCAPE
+      if nffg.service_id is None:
+        nffg.service_id = nffg.id
       nffg.id = self.id
       nffg.mode = mode
       return nffg

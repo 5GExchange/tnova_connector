@@ -2,6 +2,7 @@
   "parameters": {
     "id": "test-service1", 
     "name": "ESCAPE_NS", 
+    "service_id": "test-service1", 
     "version": "1.0"
   }, 
   "node_nfs": [
