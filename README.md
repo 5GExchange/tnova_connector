@@ -34,6 +34,11 @@ or
 ```bash
 git pull -v --recurse-submodules
 ```
+If the NFFG submodule is not initialized, use the following command:
+
+```bash
+git submodule update --init
+```
 
 ## Configuration
 
@@ -79,10 +84,12 @@ optional arguments:
 
 ## REST-API
 
-| Path                          | Params                            | HTTP verb | Description                                                                                        |
+The RESPT-API calls use no prefix in path by default and follow the syntax: ``http://<ip>:<port|5000>/<operation>``
+
+| Operation                     | Params                            | HTTP verb | Description                                                                                        |
 |:-----------------------------:|:----------------------------------|:---------:|:---------------------------------------------------------------------------------------------------|
 | /nsd                          | NSD desc. in JSON                 | POST      | Send an NSD to the connector, convert to NFFG using local VNFDs or a remote VNF Store and store it |
-| /vnfd                         | VNFD desc. in JSON                | POST      | Send a VNFD to the connector and store it locally                                                  |
+| /vnfd                         | VNFD desc. in JSON                | POST      | Send a VNFD to the connector and store it locally (for backward compatibility and testing purposes)|
 | /service                      | NSD id in JSON with key: "ns_id"  | POST      | Initiate a pre-defined NSD with the NSD id by sending the converted NFFG to ESCAPE                 |
 | /ns-instances                 | None                              | GET       | List services                                                                                      |
 | /ns-instances/{id}            | Service status JSON               | PUT       | Set service status - Not supported yet                                                             |
