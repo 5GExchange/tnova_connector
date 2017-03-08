@@ -10,10 +10,15 @@ resource domain.
 
 Connector module is implemented entirely in Python.
 
+## Requirements
+
+* Python 2.7.6+
+* NFFG 1.0
+
 ### Dependencies
 
 ```bash
-sudo apt install python-pip
+sudo apt install python python-pip
 sudo -H pip install flask requests networkx
 ```
 
@@ -26,7 +31,7 @@ git clone git@5gexgit.tmit.bme.hu:unify/tnova_connector.git
 If you want to use as a submodule e.g. from ESCAPE repository use the following command to get the latest code:
 
 ```bash
-git submodule update --remote --merge
+git submodule update
 ```
 
 or
@@ -54,17 +59,15 @@ SERVICE_NFFG_DIR = "services"  # dir name used for storing converted services
 CATALOGUE_DIR = "vnf_catalogue"  # read VNFDs from dir if VNF Store is disabled
 ```
 
-Connector tries to acquire the URL in the following order:
+Connector tries to acquire the URLs in the following order:
 
 1. Command line argument (-e; -v)
-2. Environment variable (use the name of the constants in the connector script)
+2. Environment variable (use the name of the constants in the connector script: `ESCAPE_URL` and `VNF_STORE_URL`)
 3. Default value defined in the top of the script
-
-
 
 ## Usage
 
-```bash
+```
 $ ./connector.py -h
 usage: connector.py [-h] [-p PORT] [-d] [-e ESC] [-v VNFS]
 
@@ -94,3 +97,10 @@ The RESPT-API calls use no prefix in path by default and follow the syntax: ``ht
 | /ns-instances                 | None                              | GET       | List services                                                                                      |
 | /ns-instances/{id}            | Service status JSON               | PUT       | Set service status - Not supported yet                                                             |
 | /ns-instances/{id}/terminate  | None                              | PUT       | Delete a defined service given by {id}                                                             |
+
+## License
+
+Licensed under the Apache License, Version 2.0; see LICENSE file.
+
+    Copyright (C) 2017 by
+    János Czentye <janos.czentye@tmit.bme.hu>
