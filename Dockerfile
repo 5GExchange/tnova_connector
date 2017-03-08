@@ -1,6 +1,12 @@
-FROM python:2.7.12-alpine
-RUN pip install networkx flask requests
+################################################################################
+# Dockerfile to build the TNOVA connector image
+################################################################################
+FROM python:2.7.13-alpine
+MAINTAINER Janos Czentye <czentye@tmit.bme.hu>
+LABEL Description="TNOVA-Connector" Project="5GEx" version="1.0.0+"
 WORKDIR /opt/tnova_connector
 COPY . ./
+RUN pip install -r requirements.txt
 EXPOSE 5000
-ENTRYPOINT ["python", "connector.py", "-p", "5000"]
+ENTRYPOINT ["python", "connector.py"]
+CMD ["--debug", "--port", "5000"]

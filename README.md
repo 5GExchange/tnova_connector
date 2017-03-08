@@ -98,6 +98,31 @@ The RESPT-API calls use no prefix in path by default and follow the syntax: ``ht
 | /ns-instances/{id}            | Service status JSON               | PUT       | Set service status - Not supported yet                                                             |
 | /ns-instances/{id}/terminate  | None                              | PUT       | Delete a defined service given by {id}                                                             |
 
+## TNOVAConverter as a Docker container
+
+TNOVAConverter can be run in a Docker container. To create the basic image, issue the following command 
+in the project root:
+
+```bash
+$ docker build --rm --no-cache -t tnova_connector .
+```
+
+This command creates a minimal image based on the alpine Python image with the name: _tnova_connector_, 
+installs the required Python dependencies listed in `requirement.txt` and sets the entry point.
+
+To create and start a persistent container based on the _tnova_connector_ image, use the following commands:
+
+```bash
+$ docker run --name conenctor -p 5000:5000 -it tnova_connector
+$ docker start -i connector
+```
+
+To create a one-time container, use the following command:
+
+```bash
+$ docker run --rm -p 5000:5000 -ti tnova_connector
+```
+
 ## License
 
 Licensed under the Apache License, Version 2.0; see LICENSE file.
