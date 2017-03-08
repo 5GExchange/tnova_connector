@@ -61,9 +61,6 @@ def main ():
   # Adjust Flask logging to common logging
   app.logger.handlers[:] = [ColoredLogger.createHandler()]
   app.logger.propagate = False
-  # app.logger.setLevel(level)
-  # app.logger.info("Set logging level: %s",
-  #                 logging.getLevelName(app.logger.getEffectiveLevel()))
   # Create Catalogue for VNFDs
   catalogue = VNFCatalogue(remote_store=USE_VNF_STORE,
                            url=VNF_STORE_URL,
@@ -247,8 +244,8 @@ def main ():
     try:
       ret = requests.post(url=ESCAPE_URL,
                           headers=POST_HEADERS,
-                          json=sg.dump_to_json(),
-                          params=params)
+                          params=params,
+                          json=sg.dump_to_json())
       # Check result
       if ret.status_code == httplib.ACCEPTED:
         app.logger.info(
@@ -378,12 +375,14 @@ def main ():
       return Response(status=httplib.NOT_FOUND)
     # Set DELETE mode
     sg.mode = NFFG.MODE_DEL
+    params = {MESSAGE_ID_NAME: si.id}
     app.logger.debug("Set mapping mode: %s" % sg.mode)
     app.logger.debug("Send request to ESCAPE on: %s" % ESCAPE_URL)
     app.logger.log(VERBOSE, "Forwarded deletion request:\n%s" % sg.dump())
     try:
       ret = requests.put(url=ESCAPE_URL,
                          headers=POST_HEADERS,
+                         params=params,
                          json=sg.dump_to_json())
       if ret.status_code == httplib.ACCEPTED:
         app.logger.info("Service deletion has been forwarded with result: %s" %
@@ -401,8 +400,6 @@ def main ():
       else:
         app.logger.error("Got error from ESCAPE during service deletion! "
                          "Got status code: %s" % ret.status_code)
-        # service_mgr.set_service_status(id=instance_id,
-        #                                status=ServiceInstance.STATUS_ERROR)
         # Return the status code received from ESCAPE
         return Response(status=ret.status_code)
     except ConnectionError:
@@ -453,9 +450,9 @@ def main ():
     # delete
     app.logger.debug("Service status: %s" % si.status)
     if si.status != ServiceInstance.STATUS_START:
-      app.logger.info("Service instance: %s is not running! "
-                      "Remove instance without service deletion from ESCAPE" %
-                      instance_id)
+      app.logger.warning("Service instance: %s is not running! "
+                         "Remove instance without service deletion from ESCAPE"
+                         % instance_id)
       si = service_mgr.remove_service_instance(id=instance_id)
       resp = si.get_json()
       app.logger.log(VERBOSE, "Sent response:\n%s" % pprint.pformat(resp))
@@ -470,12 +467,14 @@ def main ():
       return Response(status=httplib.NOT_FOUND)
     # Set DELETE mode
     sg.mode = NFFG.MODE_DEL
+    params = {MESSAGE_ID_NAME: si.id}
     app.logger.debug("Set mapping mode: %s" % sg.mode)
     app.logger.debug("Send request to ESCAPE on: %s" % ESCAPE_URL)
     app.logger.log(VERBOSE, "Forwarded deletion request:\n%s" % sg.dump())
     try:
       ret = requests.put(url=ESCAPE_URL,
                          headers=POST_HEADERS,
+                         params=params,
                          json=sg.dump_to_json())
       if ret.status_code == httplib.ACCEPTED:
         app.logger.info(
@@ -485,8 +484,7 @@ def main ():
         # that the service request was successful, status->stopped
         si = service_mgr.remove_service_instance(id=instance_id)
         # Set instance to stop before send back the SI description using the
-        # last
-        # reference of the SI
+        # last reference of the SI
         resp = si.get_json()
         app.logger.log(VERBOSE, "Sent response:\n%s" % pprint.pformat(resp))
         return Response(status=httplib.OK,
@@ -495,8 +493,6 @@ def main ():
       else:
         app.logger.error("Got error from ESCAPE during service deletion! "
                          "Got status code: %s" % ret.status_code)
-        # service_mgr.set_service_status(id=instance_id,
-        #                                status=ServiceInstance.STATUS_ERROR)
         # Return the status code received from ESCAPE
         return Response(status=ret.status_code)
     except ConnectionError:
