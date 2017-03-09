@@ -375,7 +375,7 @@ def main ():
       return Response(status=httplib.NOT_FOUND)
     # Set DELETE mode
     sg.mode = NFFG.MODE_DEL
-    params = {MESSAGE_ID_NAME: si.id}
+    params = {MESSAGE_ID_NAME: "%s-DELETE" % si.id}
     app.logger.debug("Set mapping mode: %s" % sg.mode)
     app.logger.debug("Send request to ESCAPE on: %s" % ESCAPE_URL)
     app.logger.log(VERBOSE, "Forwarded deletion request:\n%s" % sg.dump())
@@ -467,7 +467,7 @@ def main ():
       return Response(status=httplib.NOT_FOUND)
     # Set DELETE mode
     sg.mode = NFFG.MODE_DEL
-    params = {MESSAGE_ID_NAME: si.id}
+    params = {MESSAGE_ID_NAME: "%s-DELETE" % si.id}
     app.logger.debug("Set mapping mode: %s" % sg.mode)
     app.logger.debug("Send request to ESCAPE on: %s" % ESCAPE_URL)
     app.logger.log(VERBOSE, "Forwarded deletion request:\n%s" % sg.dump())
