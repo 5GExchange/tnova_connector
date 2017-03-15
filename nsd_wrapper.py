@@ -115,21 +115,34 @@ class NSWrapper(AbstractDescriptorWrapper):
             vlink['connections'][1])
         # External link, one of the endpoint is a SAP
         else:
+          direction = None
           node, port = self.__parse_vlink_connection(vlink['connections'][0])
-          sap_node, sap_port = vlink['alias'], None
-          # Try to detect SAP role
-          if sap_node not in srcSAP_list:
+          sap_node, sap_port = vlink['alias'].split(':')[0], None
+          # If explicit direction (in/out) is given: 
+          if len(vlink['alias'].split(':')) > 1:
+            if vlink['alias'].split(':')[1] == 'in':
+              direction = 'in'
+            elif vlink['alias'].split(':')[1] == 'out':
+              direction = 'out'
+          else:
+            # No explicit direction defined
+            # Try to detect SAP role
+            if sap_node not in srcSAP_list:
+              # First virtual link referring the SAP is considered as the
+              # ingress (multiple ingress links will be supported if
+              # marketplace supports flowclass/metadata on links)
+              direction = 'in'
+            else:
+              # We have already processed the rule for ingress traffic
+              direction = 'out'
+          if direction == 'in':
             # Source SAP
-            # First virtual link referring the SAP is considered as the
-            # ingress (multiple ingress links will be supported if
-            # marketplace supports flowclass/metadata on links)
             hop['src_node'], hop['src_port'] = sap_node, sap_port
             hop['dst_node'], hop['dst_port'] = node, port
             srcSAP_list.append(sap_node)
             self.log.debug("Detected starting SAP")
           else:
             # Destination SAP
-            # We have already processed the rule for ingress traffic
             hop['src_node'], hop['src_port'] = node, port
             hop['dst_node'], hop['dst_port'] = sap_node, sap_port
             self.log.debug("Detected ending SAP")
@@ -220,7 +233,7 @@ class NSWrapper(AbstractDescriptorWrapper):
           try:
             src = vld['connections'][index]
           except IndexError:
-            return vld['alias'], None
+            return vld['alias'].split(':')[0], None
           # Get VNF node/port values
           if src.startswith('VNF#'):
             parts = src.split(':')
