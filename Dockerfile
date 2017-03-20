@@ -1,4 +1,4 @@
-FROM python:2.7.12-alpine
+FROM python:2.7.13-alpine
 RUN pip install networkx flask requests
 WORKDIR /opt/tnova_connector
 COPY . ./
