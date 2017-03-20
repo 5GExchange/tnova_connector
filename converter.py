@@ -243,7 +243,10 @@ class TNOVAConverter(object):
       # Add SG hop
       link_sg = nffg.add_sglink(id=link_id,
                                 src_port=src_port,
-                                dst_port=dst_port)
+                                dst_port=dst_port,
+                                flowclass=vlink['flowclass'],
+                                delay=vlink['delay'],
+                                bandwidth=vlink['bandwidth'])
       self.log.info("Added SG hop: %s" % link_sg)
 
   def __convert_e2e_reqs (self, nffg, ns, vnfs):
