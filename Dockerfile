@@ -8,5 +8,6 @@ WORKDIR /opt/tnova_connector
 COPY . ./
 RUN pip install -r requirements.txt
 EXPOSE 5000
+ENV PYTHONUNBUFFERED 1
 ENTRYPOINT ["python", "connector.py"]
 CMD ["--debug", "--port", "5000"]
