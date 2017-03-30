@@ -152,11 +152,11 @@ class NSWrapper(AbstractDescriptorWrapper):
         self.log.debug("src: %s - %s" % (hop['src_node'], hop['src_port']))
         self.log.debug("dst: %s - %s" % (hop['dst_node'], hop['dst_port']))
         # Ugly hack for processing delay requirement and flowclass on link
-        if vlink['qos']['average']:
-          hop['delay'] = vlink['qos']['average']
+        if vlink['qos']['delay']:
+          hop['delay'] = vlink['qos']['delay']
           self.log.debug("delay requirement: %s" % hop['delay'])
-        if vlink['qos']['peak']:
-          hop['flowclass'] = vlink['qos']['peak']
+        if vlink['qos']['flowclass']:
+          hop['flowclass'] = vlink['qos']['flowclass']
           self.log.debug("flowclass: %s" % hop['flowclass'])
         hops.append(hop)
       return hops
