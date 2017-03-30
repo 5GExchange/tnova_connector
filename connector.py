@@ -18,6 +18,7 @@ import json
 import logging
 import os
 import pprint
+import signal
 
 import requests
 from flask import Flask, Response, request
@@ -38,7 +39,7 @@ NSD_DIR = "nsds"  # dir name used for storing received NSD files
 SERVICE_NFFG_DIR = "services"  # dir name used for storing converted services
 CATALOGUE_DIR = "vnf_catalogue"  # read VNFDs from dir if VNF Store is disabled
 
-# TNOVA format constants
+# T-NOVA format constants
 NS_ID_NAME = "ns_id"
 MESSAGE_ID_NAME = "message-id"
 
@@ -48,6 +49,22 @@ POST_HEADERS = {"Content-Type": "application/json"}
 ROBOT_DEMO_PREFIX = "ROBOT:"
 ROBOT_DEMO_DIR = "robot"
 LOGGER_NAME = "TNOVAConnector"
+
+
+def _sigterm_handler (sig, stack):
+  """
+  Specific signal handler for SIGTERM to stop ESCAPE by transforming the
+  received signal to SIGINT.
+
+  :param sig: received signal
+  :param stack: stack frame
+  :return: None
+  """
+  print "Received SIGTERM"
+  os.kill(os.getpid(), signal.SIGINT)
+
+# Register handler
+signal.signal(signal.SIGTERM, _sigterm_handler)
 
 
 def main ():
