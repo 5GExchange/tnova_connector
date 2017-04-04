@@ -126,10 +126,14 @@ class TNOVAConverter(object):
     """
     # Add SAPs
     for cp in ns.get_saps():
+      cp = cp.split(':')[0]
       try:
         sap_id = int(cp)
       except ValueError:
         sap_id = cp
+      if sap_id in nffg:
+        self.log.info("SAP: %s was already added, skip" % sap_id)
+        continue
       node_sap = nffg.add_sap(id=sap_id,
                               name=sap_id)
       self.log.info("Added SAP: %s" % node_sap)
