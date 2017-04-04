@@ -67,9 +67,7 @@ class NSWrapper(AbstractDescriptorWrapper):
     :rtype: (str, int, int)
     """
     domain, id, port = None, None, None
-    print raw
     for tag in raw.split(self.VNFDS_SEPARATOR):
-      print tag
       lower_tag = tag.lower()
       if lower_tag.startswith(self.VNFD_DOMAIN_PREFIX):
         domain = tag[len(self.VNFD_DOMAIN_PREFIX):]
