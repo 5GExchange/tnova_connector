@@ -28,17 +28,6 @@ To clone the repository use the following command:
 git clone git@5gexgit.tmit.bme.hu:unify/tnova_connector.git
 ```
 
-If you want to use as a submodule e.g. from ESCAPE repository use the following command to get the latest code:
-
-```bash
-git submodule update
-```
-
-or
-
-```bash
-git pull -v --recurse-submodules
-```
 If the NFFG submodule is not initialized, use the following command:
 
 ```bash
