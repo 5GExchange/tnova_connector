@@ -51,8 +51,9 @@ class NSWrapper(AbstractDescriptorWrapper):
     try:
       return [self.__vnfd_connection_point_parser(raw=vnf)[0:2]
               for vnf in self.data['vnfds']]
-    except KeyError:
-      self.log.error("Missing required field for 'vnfds' in NSD: %s!" % self.id)
+    except KeyError as e:
+      self.log.error("Missing required field: %s for 'vnfds' in NSD: %s!"
+                     % (e.message, self.id))
     except ValueError as e:
       self.log.error("Listed VNF id in 'vnfds': %s is not a valid integer!" % e)
 
@@ -116,10 +117,9 @@ class NSWrapper(AbstractDescriptorWrapper):
             saps.append(ext_point)
             self.log.debug("Found SAP: %s" % ext_point)
       return saps
-    except KeyError:
-      self.log.error(
-        "Missing required field for SAPs in 'connection_points' in NSD: %s!" %
-        self.id)
+    except KeyError as e:
+      self.log.error("Missing required field: %s for SAPs in "
+                     "'connection_points' in NSD: %s!" % (e.message, self.id))
 
   def __parse_vlink_connection (self, conn):
     """
@@ -132,7 +132,7 @@ class NSWrapper(AbstractDescriptorWrapper):
     """
     domain, vnf_id, port = self.__vnfd_connection_point_parser(raw=conn)
     if not all((vnf_id, port)):
-      self.log.error("Missing VNF prefix from connection: %s" % conn)
+      self.log.error("Missing VNF prefix: %s from connection: %s" % conn)
     return vnf_id, port
 
   def get_vlinks (self):
@@ -212,10 +212,13 @@ class NSWrapper(AbstractDescriptorWrapper):
         if vlink['qos']['flowclass']:
           hop['flowclass'] = vlink['qos']['flowclass']
           self.log.debug("flowclass: %s" % hop['flowclass'])
+        self.log.debug("Detected link data - delay: %s, flowclass: %s"
+                       % (hop['delay'], hop['flowclass']))
         hops.append(hop)
       return hops
-    except KeyError:
-      self.log.error("Missing required field for 'vld' in data:\n%s!" % self)
+    except KeyError as e:
+      self.log.error("Missing required field: %s for 'vld' in data:\n%s!"
+                     % (e.message, self))
 
   def get_e2e_reqs (self):
     """
@@ -240,8 +243,9 @@ class NSWrapper(AbstractDescriptorWrapper):
         if e2e:
           reqs[sla['id']] = e2e
       return reqs
-    except KeyError:
-      self.log.error("Missing required field for 'sla' in data:\n%s!" % self)
+    except KeyError as e:
+      self.log.error("Missing required field: %s for 'sla' in data:\n%s!"
+                     % (e.message, self))
 
   def get_vlink_sla_ref (self, id):
     """
@@ -270,10 +274,10 @@ class NSWrapper(AbstractDescriptorWrapper):
         return
       nfps = self.data['vnffgd']['vnffgs'][0]['network_forwarding_path']
       return [nfp['graph'] for nfp in nfps]
-    except KeyError:
+    except KeyError as e:
       self.log.error(
-        "Missing required field for 'network_forwarding_path' in NFP: %s!"
-        % self.id)
+        "Missing required field: %s for 'network_forwarding_path' in NFP: %s!"
+        % (e.message, self.id))
 
   def get_port_from_vlink (self, vlink_id, index):
     """
@@ -300,8 +304,9 @@ class NSWrapper(AbstractDescriptorWrapper):
             return vld['alias'].split(':')[0], None
           # Get VNF node/port values
           return self.__vnfd_connection_point_parser(src)[0:2]
-    except KeyError:
-      self.log.error("Missing required field for 'vlink' in NSD: %s!" % self.id)
+    except KeyError as e:
+      self.log.error("Missing required field: %s for 'vlink' in NSD: %s!"
+                     % (e.message, self.id))
 
   def get_src_port (self, vlink_id):
     """

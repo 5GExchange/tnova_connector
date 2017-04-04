@@ -136,9 +136,9 @@
           "leaf_requirement": "10Gbps",
           "merge": false,
           "qos": {
-            "average": "",
+            "delay": "",
             "burst": "",
-            "peak": "",
+            "flowclass": "",
             "params": ""
           },
           "root_requirements": "10Gbps",
@@ -156,9 +156,9 @@
           "leaf_requirement": "10Gbps",
           "merge": false,
           "qos": {
-            "average": "",
+            "delay": "",
             "burst": "",
-            "peak": "",
+            "flowclass": "",
             "params": ""
           },
           "root_requirements": "10Gbps",
@@ -175,9 +175,9 @@
           "leaf_requirement": "1Gbps",
           "merge": false,
           "qos": {
-            "average": "",
+            "delay": "",
             "burst": "",
-            "peak": "",
+            "flowclass": "",
             "params": ""
           },
           "root_requirements": "1Gbps",
@@ -194,9 +194,9 @@
           "leaf_requirement": "10Gbps",
           "merge": false,
           "qos": {
-            "average": "",
+            "delay": "",
             "burst": "",
-            "peak": "",
+            "flowclass": "",
             "parmas": ""
           },
           "root_requirements": "10Gbps",
@@ -213,9 +213,9 @@
           "leaf_requirement": "10Gbps",
           "merge": false,
           "qos": {
-            "average": "",
+            "delay": "",
             "burst": "",
-            "peak": "",
+            "flowclass": "",
             "params": ""
           },
           "root_requirements": "10Gbps",
