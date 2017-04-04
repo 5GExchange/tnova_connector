@@ -90,7 +90,7 @@ class TNOVAConverter(object):
     :return: None
     """
     # Add NFs
-    for nf_id in ns.get_vnfs():
+    for domain, nf_id in ns.get_vnfs():
       vnf = vnfs.get_by_id(nf_id)
       if vnf is None:
         self.log.error(
@@ -216,10 +216,7 @@ class TNOVAConverter(object):
       src_node = vnfs.get_by_id(vlink['src_node'])
       if src_node is not None:
         src_node_id = src_node.get_vnf_id()
-        try:
-          src_port_id = int(vlink['src_port'])
-        except ValueError:
-          src_port_id = vlink['src_port']
+        src_port_id = vlink['src_port']
         src_port = nffg[src_node_id].ports[src_port_id]
       # If the id is not VNF Catalogue, it must be a SAP
       else:
@@ -229,10 +226,7 @@ class TNOVAConverter(object):
       dst_node = vnfs.get_by_id(vlink['dst_node'])
       if dst_node is not None:
         dst_node_id = dst_node.get_vnf_id()
-        try:
-          dst_port_id = int(vlink['dst_port'])
-        except ValueError:
-          dst_port_id = vlink['dst_port']
+        dst_port_id = vlink['dst_port']
         dst_port = nffg[dst_node_id].ports[dst_port_id]
       # If the id is not VNF Catalogue, it must be a SAP
       else:

@@ -23,6 +23,12 @@ class NSWrapper(AbstractDescriptorWrapper):
   """
   # Constants
   LINK_TYPE = "E-LINE"
+  NS_EXTERNAL_PORT_PREFIX = 'ns_ext_'
+  VNFDS_SEPARATOR = ':'
+  VNFD_DOMAIN_PREFIX = 'domain#'
+  VNFD_VNF_PREFIX = 'vnf#'
+  VNFD_NS_PREFIX = 'ns#'
+  VNFD_EXTERNAL_PORT_PREFIX = 'ext_'
 
   def __init__ (self, raw):
     """
@@ -43,11 +49,55 @@ class NSWrapper(AbstractDescriptorWrapper):
     :rtype: list
     """
     try:
-      return [int(vnf) for vnf in self.data['vnfds']]
+      return [self.__vnfd_connection_point_parser(raw=vnf)[0:2]
+              for vnf in self.data['vnfds']]
     except KeyError:
       self.log.error("Missing required field for 'vnfds' in NSD: %s!" % self.id)
     except ValueError as e:
       self.log.error("Listed VNF id in 'vnfds': %s is not a valid integer!" % e)
+
+  def __vnfd_connection_point_parser (self, raw):
+    """
+    Parse, split and convert VNFD parts from NSD's list, "vnfds".
+    Missing element substituted with None.
+    
+    :param raw: raw ID in "vnfds" list
+    :type raw: str
+    :return: tuple of parsed domain, VNFD id and port
+    :rtype: (str, int, int)
+    """
+    domain, id, port = None, None, None
+    print raw
+    for tag in raw.split(self.VNFDS_SEPARATOR):
+      print tag
+      lower_tag = tag.lower()
+      if lower_tag.startswith(self.VNFD_DOMAIN_PREFIX):
+        domain = tag[len(self.VNFD_DOMAIN_PREFIX):]
+      elif lower_tag.startswith(self.VNFD_VNF_PREFIX):
+        id = tag[len(self.VNFD_VNF_PREFIX):]
+      elif lower_tag.startswith(self.VNFD_NS_PREFIX):
+        id = tag[len(self.VNFD_NS_PREFIX):]
+      elif lower_tag.startswith(self.VNFD_EXTERNAL_PORT_PREFIX):
+        port = tag[len(self.VNFD_EXTERNAL_PORT_PREFIX):]
+      # Check old format(no prefixes) for backward compatibility
+      elif lower_tag.isdigit():
+        id = tag
+      else:
+        self.log.warning("Unrecognized prefix in: %s" % tag)
+    self.log.debug("Found VNFD params - domain: %s, VNF: %s, port: %s"
+                   % (domain, id, port))
+    try:
+      id = int(id)
+    except ValueError:
+      self.log.warning("Detected ID: %s is not valid integer!" % id)
+    try:
+      port = int(port)
+    except TypeError:
+      # If port has remained None
+      pass
+    except ValueError:
+      self.log.warining("Detected port: %s is not valid integer!" % port)
+    return domain, id, port
 
   def get_saps (self):
     """
@@ -62,8 +112,8 @@ class NSWrapper(AbstractDescriptorWrapper):
       saps = []
       for cp in self.data['vnffgd']['vnffgs'][0]['network_forwarding_path'][0][
         'connection_points']:
-        if cp.startswith('ns_ext'):
-          ext_point = cp.lstrip('ns_ext_')
+        if cp.startswith(self.NS_EXTERNAL_PORT_PREFIX):
+          ext_point = cp.lstrip(self.NS_EXTERNAL_PORT_PREFIX)
           if ext_point not in saps:
             saps.append(ext_point)
             self.log.debug("Found SAP: %s" % ext_point)
@@ -74,11 +124,18 @@ class NSWrapper(AbstractDescriptorWrapper):
         self.id)
 
   def __parse_vlink_connection (self, conn):
-    if conn.startswith('VNF#'):
-      parts = conn.split(':')
-      return int(parts[0].lstrip('VNF#')), parts[1].lstrip('ext_')
-    else:
+    """
+    Return parsed node and port ID of given connection point: ``conn``.
+     
+    :param conn: connection point in raw string
+    :type conn: str
+    :return: tuple of node and port IDs
+    :rtype: (int, int)
+    """
+    domain, vnf_id, port = self.__vnfd_connection_point_parser(raw=conn)
+    if not all((vnf_id, port)):
       self.log.error("Missing VNF prefix from connection: %s" % conn)
+    return vnf_id, port
 
   def get_vlinks (self):
     """
@@ -99,10 +156,9 @@ class NSWrapper(AbstractDescriptorWrapper):
             "Only Link type: %s is supported! Skip Virtual link "
             "processing:\n%s" % (self.LINK_TYPE, vlink))
           continue
-        hop = {}
-        hop['flowclass'] = None
-        hop['delay'] = None
-        hop['bandwidth'] = None
+        hop = {'flowclass': None,
+               'delay': None,
+               'bandwidth': None}
         try:
           hop['id'] = int(vlink['vld_id'])
         except ValueError:
@@ -245,9 +301,7 @@ class NSWrapper(AbstractDescriptorWrapper):
           except IndexError:
             return vld['alias'].split(':')[0], None
           # Get VNF node/port values
-          if src.startswith('VNF#'):
-            parts = src.split(':')
-            return parts[0].lstrip('VNF#'), parts[1].lstrip('ext_')
+          return self.__vnfd_connection_point_parser(src)[0:2]
     except KeyError:
       self.log.error("Missing required field for 'vlink' in NSD: %s!" % self.id)
 

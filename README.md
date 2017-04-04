@@ -113,7 +113,7 @@ installs the required Python dependencies listed in `requirement.txt` and sets t
 To create and start a persistent container based on the _tnova_connector_ image, use the following commands:
 
 ```bash
-$ docker run --name conenctor -p 5000:5000 -it tnova_connector
+$ docker run --name connector -p 5000:5000 -it tnova_connector
 $ docker start -i connector
 ```
 

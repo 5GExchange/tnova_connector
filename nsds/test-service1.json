@@ -43,7 +43,7 @@
             "number_of_instances": 1, 
             "redundancy_model": "Active", 
             "vnf_flavour_id_reference": "gold", 
-            "vnf_reference": "1649"
+            "vnf_reference": "1649@B"
           }, 
           {
             "number_of_instances": 1, 
@@ -70,7 +70,7 @@
         {
           "alias": "SAP1", 
           "connections": [
-            "VNF#9991:ext_1"
+            "domain#B:vnf#9991:ext_1"
           ], 
           "connectivity_type": "E-LINE", 
           "external_access": true, 
@@ -79,6 +79,7 @@
           "qos": {
             "average": "", 
             "burst": "", 
+            "params": "", 
             "peak": ""
           }, 
           "root_requirements": "10Gbps", 
@@ -88,8 +89,8 @@
         {
           "alias": "CompDecomp", 
           "connections": [
-            "VNF#9991:ext_1", 
-            "VNF#9992:ext_1"
+            "domain#B:vnf#9991:ext_1", 
+            "domain#B:vnf#9992:ext_1"
           ], 
           "connectivity_type": "E-LINE", 
           "external_access": false, 
@@ -98,6 +99,7 @@
           "qos": {
             "average": "", 
             "burst": "", 
+            "params": "", 
             "peak": ""
           }, 
           "root_requirements": "10Gbps", 
@@ -107,7 +109,7 @@
         {
           "alias": "SAP2", 
           "connections": [
-            "VNF#9992:ext_1"
+            "domain#B:vnf#9992:ext_1"
           ], 
           "connectivity_type": "E-LINE", 
           "external_access": true, 
@@ -116,6 +118,7 @@
           "qos": {
             "average": "", 
             "burst": "", 
+            "params": "", 
             "peak": ""
           }, 
           "root_requirements": "1Gbps", 
@@ -125,7 +128,7 @@
         {
           "alias": "SAP2", 
           "connections": [
-            "VNF#9994:ext_1"
+            "domain#B:vnf#9994:ext_1"
           ], 
           "connectivity_type": "E-LINE", 
           "external_access": true, 
@@ -134,6 +137,7 @@
           "qos": {
             "average": "", 
             "burst": "", 
+            "parmas": "", 
             "peak": ""
           }, 
           "root_requirements": "10Gbps", 
@@ -143,7 +147,7 @@
         {
           "alias": "SAP1", 
           "connections": [
-            "VNF#9994:ext_1"
+            "domain#B:vnf#9994:ext_1"
           ], 
           "connectivity_type": "E-LINE", 
           "external_access": true, 
@@ -152,6 +156,7 @@
           "qos": {
             "average": "", 
             "burst": "", 
+            "params": "", 
             "peak": ""
           }, 
           "root_requirements": "10Gbps", 
@@ -163,9 +168,9 @@
     "vnf_depedency": [], 
     "vnf_dependency": [], 
     "vnfds": [
-      "9991", 
-      "9992", 
-      "9994"
+      "domain#B:vnf#9991", 
+      "domain#B:vnf#9992", 
+      "domain#B:vnf#9994"
     ], 
     "vnffgd": {
       "vnffgs": [
@@ -181,28 +186,28 @@
             {
               "connection_points": [
                 "ns_ext_SAP1", 
-                "VNF#9991:ext_1", 
-                "VNF#9991:ext_1", 
-                "VNF#9992:ext_1", 
+                "domain#B:vnf#9991:ext_1", 
+                "domain#B:vnf#9991:ext_1", 
+                "domain#B:vnf#9992:ext_1", 
                 "ns_ext_SAP2", 
-                "VNF#9992:ext_1", 
+                "domain#B:vnf#9992:ext_1", 
                 "ns_ext_SAP2", 
-                "VNF#9994:ext_1", 
+                "domain#B:vnf#9994:ext_1", 
                 "ns_ext_SAP1", 
-                "VNF#9994:ext_1"
+                "domain#B:vnf#9994:ext_1"
               ], 
               "constituent_vnfs": [
                 {
                   "vnf_flavor_key_ref": "gold", 
-                  "vnf_ref_id": "1649"
+                  "vnf_ref_id": "1649@B"
                 }, 
                 {
                   "vnf_flavor_key_ref": "gold", 
-                  "vnf_ref_id": "1648"
+                  "vnf_ref_id": "1648@B"
                 }, 
                 {
                   "vnf_flavor_key_ref": "gold", 
-                  "vnf_ref_id": "1647"
+                  "vnf_ref_id": "1647@B"
                 }
               ], 
               "graph": [
