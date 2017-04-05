@@ -1,227 +1,233 @@
 {
   "nsd": {
     "auto_scale_policy": {
-      "criteria": []
-    }, 
-    "connection_points": [], 
-    "description": "ESCAPE_NS", 
-    "descriptor_version": "1", 
-    "id": "test-service1", 
+      "criteria": [],
+      "undefined": []
+    },
+    "connection_points": [],
+    "description": "",
+    "descriptor_version": "1",
+    "id": "test-service1",
     "lifecycle_events": {
-      "scale_out": [], 
-      "start": [], 
+      "scale_in": [],
+      "scale_out": [],
+      "start": [],
       "stop": []
-    }, 
+    },
     "monitoring_parameters": [
       {
-        "desc": "Availability", 
-        "metric": "availability", 
+        "desc": "Availability",
+        "metric": "availability",
         "unit": "%"
-      }, 
+      },
       {
-        "desc": "End-to-End Bandwidth", 
-        "metric": "end-to-end bandwidth", 
+        "desc": "End-to-End Bandwidth",
+        "metric": "end-to-end bandwidth",
         "unit": "Mbps"
       }
-    ], 
-    "name": "ESCAPE_NS", 
-    "provider": "T-Nova", 
-    "provider_id": "3", 
+    ],
+    "name": "ESCAPE_NS",
+    "provider": "5GEx",
+    "provider_id": "3",
     "sla": [
       {
-        "assurance_parameters": [], 
+        "assurance_parameters": [],
         "billing": {
-          "model": "PAYG", 
+          "model": "PAYG",
           "price": {
-            "price_per_period": 1, 
-            "setup": 1, 
+            "price_per_period": 1,
+            "setup": 1,
             "unit": "EUR"
           }
-        }, 
+        },
         "constituent_vnf": [
           {
-            "number_of_instances": 1, 
-            "redundancy_model": "Active", 
-            "vnf_flavour_id_reference": "gold", 
-            "vnf_reference": "1649@B"
-          }, 
+            "number_of_instances": 1,
+            "redundancy_model": "Active",
+            "vnf_flavour_id_reference": "gold",
+            "vnf_reference": "1"
+          },
           {
-            "number_of_instances": 1, 
-            "redundancy_model": "Active", 
-            "vnf_flavour_id_reference": "gold", 
-            "vnf_reference": "1648"
-          }, 
+            "number_of_instances": 1,
+            "redundancy_model": "Active",
+            "vnf_flavour_id_reference": "gold",
+            "vnf_reference": "2"
+          },
           {
-            "number_of_instances": 1, 
-            "redundancy_model": "Active", 
-            "vnf_flavour_id_reference": "gold", 
-            "vnf_reference": "1647"
+            "number_of_instances": 1,
+            "redundancy_model": "Active",
+            "vnf_flavour_id_reference": "gold",
+            "vnf_reference": "4"
           }
-        ], 
-        "id": "sla0", 
-        "sla_key": "Basic"
+        ],
+        "id": "sla0"
       }
-    ], 
-    "vendor": "3", 
-    "version": "1", 
+    ],
+    "vendor": "3",
+    "version": "1",
     "vld": {
-      "number_of_endpoints": 0, 
+      "number_of_endpoints": 0,
       "virtual_links": [
         {
-          "alias": "SAP1", 
+          "alias": "SAP1:in",
           "connections": [
-            "domain#B:vnf#9991:ext_1"
-          ], 
-          "connectivity_type": "E-LINE", 
-          "external_access": true, 
-          "leaf_requirement": "10Gbps", 
-          "merge": false, 
+            "VNF#1:ext_1"
+          ],
+          "connectivity_type": "E-LINE",
+          "external_access": true,
+          "leaf_requirement": "",
+          "merge": false,
           "qos": {
-            "burst": "", 
-            "delay": "", 
-            "flowclass": "", 
-            "params": ""
-          }, 
-          "root_requirements": "10Gbps", 
-          "sla_ref_id": "sla0", 
+            "burst": "",
+            "delay": "",
+            "flowclass": "",
+            "params": "",
+            "peak": ""
+          },
+          "root_requirements": "",
+          "sla_ref_id": "sla0",
           "vld_id": "vld0"
-        }, 
+        },
         {
-          "alias": "CompDecomp", 
+          "alias": "comp-decomp",
           "connections": [
-            "domain#B:vnf#9991:ext_1", 
-            "domain#B:vnf#9992:ext_1"
-          ], 
-          "connectivity_type": "E-LINE", 
-          "external_access": false, 
-          "leaf_requirement": "10Gbps", 
-          "merge": false, 
+            "VNF#1:ext_1",
+            "VNF#2:ext_1"
+          ],
+          "connectivity_type": "E-LINE",
+          "external_access": false,
+          "leaf_requirement": "",
+          "merge": false,
           "qos": {
-            "burst": "", 
-            "delay": "", 
-            "flowclass": "", 
-            "params": ""
-          }, 
-          "root_requirements": "10Gbps", 
-          "sla_ref_id": "sla0", 
+            "burst": "",
+            "delay": "",
+            "flowclass": "",
+            "params": "",
+            "peak": ""
+          },
+          "root_requirements": "",
+          "sla_ref_id": "sla0",
           "vld_id": "vld1"
-        }, 
+        },
         {
-          "alias": "SAP2", 
+          "alias": "SAP2:out",
           "connections": [
-            "domain#B:vnf#9992:ext_1"
-          ], 
-          "connectivity_type": "E-LINE", 
-          "external_access": true, 
-          "leaf_requirement": "1Gbps", 
-          "merge": false, 
+            "VNF#2:ext_1"
+          ],
+          "connectivity_type": "E-LINE",
+          "external_access": true,
+          "leaf_requirement": "",
+          "merge": false,
           "qos": {
-            "burst": "", 
-            "delay": "", 
-            "flowclass": "", 
-            "params": ""
-          }, 
-          "root_requirements": "1Gbps", 
-          "sla_ref_id": "sla0", 
+            "burst": "",
+            "delay": "",
+            "flowclass": "",
+            "params": "",
+            "peak": ""
+          },
+          "root_requirements": "",
+          "sla_ref_id": "sla0",
           "vld_id": "vld2"
-        }, 
+        },
         {
-          "alias": "SAP2", 
+          "alias": "SAP2:in",
           "connections": [
-            "domain#B:vnf#9994:ext_1"
-          ], 
-          "connectivity_type": "E-LINE", 
-          "external_access": true, 
-          "leaf_requirement": "10Gbps", 
-          "merge": false, 
+            "VNF#4:ext_1"
+          ],
+          "connectivity_type": "E-LINE",
+          "external_access": true,
+          "leaf_requirement": "",
+          "merge": false,
           "qos": {
-            "burst": "", 
-            "delay": "", 
-            "flowclass": "", 
-            "parmas": ""
-          }, 
-          "root_requirements": "10Gbps", 
-          "sla_ref_id": "sla0", 
+            "burst": "",
+            "delay": "",
+            "flowclass": "",
+            "params": "",
+            "peak": ""
+          },
+          "root_requirements": "",
+          "sla_ref_id": "sla0",
           "vld_id": "vld3"
-        }, 
+        },
         {
-          "alias": "SAP1", 
+          "alias": "SAP1:out",
           "connections": [
-            "domain#B:vnf#9994:ext_1"
-          ], 
-          "connectivity_type": "E-LINE", 
-          "external_access": true, 
-          "leaf_requirement": "10Gbps", 
-          "merge": false, 
+            "VNF#4:ext_1"
+          ],
+          "connectivity_type": "E-LINE",
+          "external_access": true,
+          "leaf_requirement": "",
+          "merge": false,
           "qos": {
-            "burst": "", 
-            "delay": "", 
-            "flowclass": "", 
-            "params": ""
-          }, 
-          "root_requirements": "10Gbps", 
-          "sla_ref_id": "sla0", 
+            "burst": "",
+            "delay": "",
+            "flowclass": "",
+            "params": "",
+            "peak": ""
+          },
+          "root_requirements": "",
+          "sla_ref_id": "sla0",
           "vld_id": "vld4"
         }
       ]
-    }, 
-    "vnf_depedency": [], 
-    "vnf_dependency": [], 
+    },
+    "vnf_depedency": [],
+    "vnf_dependency": [],
     "vnfds": [
-      "domain#B:vnf#9991", 
-      "domain#B:vnf#9992", 
-      "domain#B:vnf#9994"
-    ], 
+      "1",
+      "2",
+      "4"
+    ],
     "vnffgd": {
       "vnffgs": [
         {
           "dependent_virtual_links": [
-            "vld0", 
-            "vld1", 
-            "vld2", 
-            "vld3", 
+            "vld0",
+            "vld1",
+            "vld2",
+            "vld3",
             "vld4"
-          ], 
+          ],
           "network_forwarding_path": [
             {
               "connection_points": [
-                "ns_ext_SAP1", 
-                "domain#B:vnf#9991:ext_1", 
-                "domain#B:vnf#9991:ext_1", 
-                "domain#B:vnf#9992:ext_1", 
-                "ns_ext_SAP2", 
-                "domain#B:vnf#9992:ext_1", 
-                "ns_ext_SAP2", 
-                "domain#B:vnf#9994:ext_1", 
-                "ns_ext_SAP1", 
-                "domain#B:vnf#9994:ext_1"
-              ], 
+                "ns_ext_SAP1:in",
+                "VNF#1:ext_1",
+                "VNF#1:ext_1",
+                "VNF#2:ext_1",
+                "ns_ext_SAP2:out",
+                "VNF#2:ext_1",
+                "ns_ext_SAP2:in",
+                "VNF#4:ext_1",
+                "ns_ext_SAP1:out",
+                "VNF#4:ext_1"
+              ],
               "constituent_vnfs": [
                 {
-                  "vnf_flavor_key_ref": "gold", 
-                  "vnf_ref_id": "1649@B"
-                }, 
+                  "vnf_flavor_key_ref": "gold",
+                  "vnf_ref_id": "1"
+                },
                 {
-                  "vnf_flavor_key_ref": "gold", 
-                  "vnf_ref_id": "1648@B"
-                }, 
+                  "vnf_flavor_key_ref": "gold",
+                  "vnf_ref_id": "2"
+                },
                 {
-                  "vnf_flavor_key_ref": "gold", 
-                  "vnf_ref_id": "1647@B"
+                  "vnf_flavor_key_ref": "gold",
+                  "vnf_ref_id": "4"
                 }
-              ], 
+              ],
               "graph": [
-                "vld0", 
-                "vld1", 
-                "vld2", 
-                "vld3", 
+                "vld0",
+                "vld1",
+                "vld2",
+                "vld3",
                 "vld4"
-              ], 
+              ],
               "nfp_id": "nfp0"
             }
-          ], 
-          "number_of_endpoints": 4, 
-          "number_of_virtual_links": 5, 
+          ],
+          "number_of_endpoints": 4,
+          "number_of_virtual_links": 5,
           "vnffg_id": "vnffg0"
         }
       ]

@@ -1,117 +1,117 @@
 {
   "parameters": {
-    "id": "test-service1", 
-    "name": "ESCAPE_NS", 
-    "service_id": "test-service1", 
+    "id": "test-service1",
+    "name": "ESCAPE_NS",
+    "service_id": "58e527f0e4b0fcb9548202c5",
     "version": "1.0"
-  }, 
+  },
   "node_nfs": [
     {
-      "id": "comp", 
-      "name": "comp", 
+      "id": "compressor",
+      "name": "compressor",
       "ports": [
         {
           "id": 1
         }
-      ], 
-      "functional_type": "headerCompressor", 
+      ],
+      "functional_type": "comp",
       "specification": {
         "resources": {
-          "cpu": 1, 
-          "mem": 2, 
+          "cpu": 1,
+          "mem": 2,
           "storage": 8
         }
       }
-    }, 
+    },
     {
-      "id": "forwarder", 
-      "name": "forwarder", 
+      "id": "forwarder",
+      "name": "forwarder",
       "ports": [
         {
           "id": 1
         }
-      ], 
-      "functional_type": "simpleForwarder", 
+      ],
+      "functional_type": "forwarder",
       "specification": {
         "resources": {
-          "cpu": 1, 
-          "mem": 2, 
+          "cpu": 1,
+          "mem": 2,
           "storage": 8
         }
       }
-    }, 
+    },
     {
-      "id": "decomp", 
-      "name": "decomp", 
+      "id": "decompressor",
+      "name": "decompressor",
       "ports": [
         {
           "id": 1
         }
-      ], 
-      "functional_type": "headerDecompressor", 
+      ],
+      "functional_type": "decomp",
       "specification": {
         "resources": {
-          "cpu": 1, 
-          "mem": 2, 
+          "cpu": 1,
+          "mem": 2,
           "storage": 8
         }
       }
     }
-  ], 
+  ],
   "node_saps": [
     {
-      "id": "SAP2", 
-      "name": "SAP2", 
+      "id": "SAP2",
+      "name": "SAP2",
       "ports": [
         {
           "id": 1
         }
       ]
-    }, 
+    },
     {
-      "id": "SAP1", 
-      "name": "SAP1", 
+      "id": "SAP1",
+      "name": "SAP1",
       "ports": [
         {
           "id": 1
         }
       ]
     }
-  ], 
+  ],
   "edge_sg_nexthops": [
     {
-      "id": 3, 
-      "src_node": "SAP2", 
-      "src_port": 1, 
-      "dst_node": "decomp", 
+      "id": 4,
+      "src_node": "SAP2",
+      "src_port": 1,
+      "dst_node": "forwarder",
       "dst_port": 1
-    }, 
+    },
     {
-      "id": 2, 
-      "src_node": "comp", 
-      "src_port": 1, 
-      "dst_node": "decomp", 
+      "id": 2,
+      "src_node": "compressor",
+      "src_port": 1,
+      "dst_node": "decompressor",
       "dst_port": 1
-    }, 
+    },
     {
-      "id": 5, 
-      "src_node": "forwarder", 
-      "src_port": 1, 
-      "dst_node": "SAP1", 
+      "id": 5,
+      "src_node": "forwarder",
+      "src_port": 1,
+      "dst_node": "SAP1",
       "dst_port": 1
-    }, 
+    },
     {
-      "id": 4, 
-      "src_node": "forwarder", 
-      "src_port": 1, 
-      "dst_node": "SAP2", 
+      "id": 1,
+      "src_node": "SAP1",
+      "src_port": 1,
+      "dst_node": "compressor",
       "dst_port": 1
-    }, 
+    },
     {
-      "id": 1, 
-      "src_node": "SAP1", 
-      "src_port": 1, 
-      "dst_node": "comp", 
+      "id": 3,
+      "src_node": "decompressor",
+      "src_port": 1,
+      "dst_node": "SAP2",
       "dst_port": 1
     }
   ]
