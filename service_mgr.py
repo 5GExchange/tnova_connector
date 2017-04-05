@@ -112,7 +112,7 @@ class ServiceManager(object):
   # Default ESCAPE RUL
   ESCAPE_URL = "http://localhost:8008"
 
-  def __init__ (self, service_dir, escape_url, logger=None):
+  def __init__ (self, service_dir, ro_url, logger=None):
     self.service_dir = service_dir
     # service-id: ServiceInstance object
     self.instances = {}
@@ -122,7 +122,7 @@ class ServiceManager(object):
     else:
       logging.getLogger(self.__class__.__name__)
     self.log.debug("Use directory for service cache: %s" % self.service_dir)
-    self.ESCAPE_URL = escape_url
+    self.ESCAPE_URL = ro_url
     self.log.info("Use URL for ESCAPE: %s" % self.ESCAPE_URL)
     self.initialize()
 
