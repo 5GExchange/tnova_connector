@@ -84,7 +84,6 @@ The RESPT-API calls use no prefix in path by default and follow the syntax: ``ht
 | /vnfd                         | VNFD desc. in JSON                | POST      | Send a VNFD to the connector and store it locally (for backward compatibility and testing purposes)|
 | /service                      | NSD id in JSON with key: "ns_id"  | POST      | Initiate a pre-defined NSD with the NSD id by sending the converted NFFG to ESCAPE                 |
 | /ns-instances                 | None                              | GET       | List services                                                                                      |
-| /ns-instances/{id}            | Service status JSON               | PUT       | Set service status - Not supported yet                                                             |
 | /ns-instances/{id}/terminate  | None                              | PUT       | Delete a defined service given by {id}                                                             |
 
 ## TNOVAConverter as a Docker container
