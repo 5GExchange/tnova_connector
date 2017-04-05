@@ -42,6 +42,7 @@ CATALOGUE_DIR = "vnf_catalogue"  # read VNFDs from dir if VNF Store is disabled
 
 # Communication related parameters
 USE_CALLBACK = False
+CALLBACK_URL = None
 USE_VIRTUALIZER_FORMAT = False
 
 # T-NOVA format constants
@@ -97,6 +98,7 @@ def main ():
                                logger=app.logger)
   # Create Callback Manager
   callback_mgr = CallbackManager(domain_name="RO",
+                                 callback_url=CALLBACK_URL,
                                  log=app.logger)
 
   def convert_service (nsd_file):
@@ -507,7 +509,8 @@ def main ():
 
   try:
     # Start Callback Manager first
-    callback_mgr.start()
+    if USE_CALLBACK:
+      callback_mgr.start()
     # Start Flask
     app.run(host='0.0.0.0', port=args.port, debug=args.debug,
             use_reloader=False)
@@ -525,19 +528,22 @@ if __name__ == "__main__":
   parser.add_argument("-d", "--debug", action="count", default=0,
                       help="run in debug mode (can use multiple times for more "
                            "verbose logging, default logging level: INFO)")
-  parser.add_argument("-c", "--callback", action="store_true", default=False,
-                      help="use callback between the connector and the RO")
+  parser.add_argument("-c", "--callback", action="store", type=str,
+                      metavar="URL", default="", nargs="?",
+                      help="enables callbacks from the RO with given URL, "
+                           "default: http://localhost:9000/callback")
   parser.add_argument("-r", "--ro", action="store", type=str, default=False,
                       help="RO's full URL, default: "
                            "http://localhost:8008/escape/sg")
   parser.add_argument("-p", "--port", action="store", default=5000,
                       type=int, help="REST-API port (default: 5000)")
   parser.add_argument("-v", "--vnfs", action="store", type=str, default=False,
-                      help="Enables remote VNFStore with given full URL, "
+                      help="enables remote VNFStore with given full URL, "
                            "default: http://localhost:8080/NFS/vnfds")
 
   args = parser.parse_args()
 
+  print args
   # Get logging level
   if args.debug == 0:
     level = logging.INFO
@@ -581,14 +587,19 @@ if __name__ == "__main__":
       "Use default value for VNFStore's URL: %s" % VNF_STORE_URL)
   # Set callbacks
   if args.callback:
-    USE_CALLBACK = args.callback
-    log.debug("Set using callbacks from command line: %s" % USE_CALLBACK)
+    log.debug("Enable callbacks with explicit URL from command line: %s"
+              % CALLBACK_URL)
+    CALLBACK_URL = args.callback
+    USE_CALLBACK = True
   elif 'USE_CALLBACK' in os.environ:
-    USE_CALLBACK = os.environ.get('USE_CALLBACK')
-    log.debug("Set using callbacks from environment variable (USE_CALLBACK): %s"
-              % USE_CALLBACK)
-  else:
-    log.debug("Use default value for callbacks: %s" % USE_CALLBACK)
+    log.debug("Set using callbacks from environment variable (CALLBACK_URL): %s"
+              % CALLBACK_URL)
+    CALLBACK_URL = os.environ.get('CALLBACK_URL')
+    USE_CALLBACK = True
+  elif args.callback is None:
+    log.debug("Enable callbacks with default URL")
+    CALLBACK_URL = args.callback
+    USE_CALLBACK = True
 
   # Run TNOVAConnector
   main()
