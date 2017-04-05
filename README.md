@@ -58,18 +58,19 @@ Connector tries to acquire the URLs in the following order:
 
 ```
 $ ./connector.py -h
-usage: connector.py [-h] [-p PORT] [-d] [-e ESC] [-v VNFS]
+usage: connector.py [-h] [-d] [-c] [-r RO] [-p PORT] [-v VNFS]
 
 TNOVAConnector: Middleware component which make the connection between
-Marketplace and ESCAPE with automatic request conversion
+Marketplace and RO with automatic request conversion
 
 optional arguments:
   -h, --help            show this help message and exit
-  -p PORT, --port PORT  REST-API port (default: 5000)
   -d, --debug           run in debug mode (can use multiple times for more
                         verbose logging, default logging level: INFO)
-  -e ESC, --esc ESC     ESCAPE full URL, default:
+  -c, --callback        use callback between the connector and the RO
+  -r RO, --ro RO        RO's full URL, default:
                         http://localhost:8008/escape/sg
+  -p PORT, --port PORT  REST-API port (default: 5000)
   -v VNFS, --vnfs VNFS  Enables remote VNFStore with given full URL, default:
                         http://localhost:8080/NFS/vnfds
 ```
@@ -101,14 +102,14 @@ installs the required Python dependencies listed in `requirement.txt` and sets t
 To create and start a persistent container based on the _tnova_connector_ image, use the following commands:
 
 ```bash
-$ docker run --name connector -p 5000:5000 -it tnova_connector
+$ docker run --name connector -p 5000:5000 -p 9000:9000 -it tnova_connector
 $ docker start -i connector
 ```
 
 To create a one-time container, use the following command:
 
 ```bash
-$ docker run --rm -p 5000:5000 -ti tnova_connector
+$ docker run --rm -p 5000:5000 -p 9000:9000 -ti tnova_connector
 ```
 
 ## License
