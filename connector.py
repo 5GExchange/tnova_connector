@@ -271,7 +271,12 @@ def main ():
                           params=params,
                           json=sg.dump_to_json())
       if USE_CALLBACK:
-        cb = callback_mgr.wait_for_callback(cb_id=si.id,
+        cb_id = ret.headers.get(MESSAGE_ID_NAME)
+        if cb_id is None:
+          log.warning("Missing %s from response! Using Service Instance ID..."
+                      % MESSAGE_ID_NAME)
+          cb_id = si.id
+        cb = callback_mgr.wait_for_callback(cb_id=cb_id,
                                             type="SERVICE")
         if cb.result_code == 0:
           log.error("Callback for request: %s exceeded timeout(%s)!"
@@ -433,7 +438,12 @@ def main ():
                          json=sg.dump_to_json())
 
       if USE_CALLBACK:
-        cb = callback_mgr.wait_for_callback(cb_id=si.id,
+        cb_id = ret.headers.get(MESSAGE_ID_NAME)
+        if cb_id is None:
+          log.warning("Missing %s from response! Using Service Instance ID..."
+                      % MESSAGE_ID_NAME)
+          cb_id = si.id
+        cb = callback_mgr.wait_for_callback(cb_id=cb_id,
                                             type="SERVICE")
         if cb.result_code == 0:
           log.warning("Callback for request: %s exceeded timeout(%s)"
