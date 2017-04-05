@@ -146,7 +146,7 @@ class Callback(object):
 
 
 class CallbackManager(HTTPServer, Thread):
-  DEFAULT_SERVER_ADDRESS = "localhost"
+  DEFAULT_SERVER_ADDRESS = "0.0.0.0"
   DEFAULT_PREFIX = "callbacks"
   DEFAULT_PORT = 9000
   DEFAULT_WAIT_TIMEOUT = 10.0
