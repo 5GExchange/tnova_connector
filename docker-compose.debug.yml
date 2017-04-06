@@ -1,0 +1,35 @@
+version: '3'
+services:
+  tnovaconnector:
+    image: mdo/tnova_connector:latest
+    ports:
+    - 5000:5000
+    command: -d -p 5000
+    environment:
+    - RO_URL=http://escape:8008/escape/sg
+    - CALLBACK_URL=http://tnovaconnector:9000/callback 8008
+    volumes:
+    - ${TNOVACONNECTORHOME}:/opt/tnova_connector
+    depends_on:
+    - escape
+  escape:
+    image: mdo/ro:latest
+    ports:
+    - 8008:8008
+    - 8888:8888
+    command: -d -c config/escape-dummy-test-docker.config
+    volumes:
+    - ${ESCAPEHOME}:/opt/escape
+    depends_on:
+    - dummy
+  dummy:
+    image: dummy:latest
+    ports:
+    - 8899:8899
+    command: "-i mininet -x xmls/00-mininet-mdo.xml
+              -i os -x xmls/00-openstack.xml
+              -i docker1 -x xmls/00-docker1.xml
+              -i docker2 -x xmls/00-docker2.xml
+              -i ryu -x xmls/00-ryu-sdn.xml"
+    volumes:
+    - ${DUMMYHOME}:/opt/dummy
