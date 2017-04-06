@@ -553,7 +553,6 @@ if __name__ == "__main__":
 
   args = parser.parse_args()
 
-  print args
   # Get logging level
   if args.debug == 0:
     level = logging.INFO
