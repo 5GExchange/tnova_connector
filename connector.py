@@ -596,19 +596,19 @@ if __name__ == "__main__":
       "Use default value for VNFStore's URL: %s" % VNF_STORE_URL)
   # Set callbacks
   if args.callback:
+    CALLBACK_URL = args.callback
+    USE_CALLBACK = True
     log.debug("Enable callbacks with explicit URL from command line: %s"
               % CALLBACK_URL)
-    CALLBACK_URL = args.callback
-    USE_CALLBACK = True
-  elif 'USE_CALLBACK' in os.environ:
-    log.debug("Set using callbacks from environment variable (CALLBACK_URL): %s"
-              % CALLBACK_URL)
+  elif 'CALLBACK_URL' in os.environ:
     CALLBACK_URL = os.environ.get('CALLBACK_URL')
     USE_CALLBACK = True
+    log.debug("Set using callbacks from environment variable (CALLBACK_URL): %s"
+              % CALLBACK_URL)
   elif args.callback is None:
-    log.debug("Enable callbacks with default URL")
     CALLBACK_URL = args.callback
     USE_CALLBACK = True
+    log.debug("Enable callbacks with default URL")
 
   # Run TNOVAConnector
   main()
