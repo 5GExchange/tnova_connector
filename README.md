@@ -39,13 +39,19 @@ git submodule update --init
 For simplicity every configuration parameter can be set as a global constant in the `connector.py` module:
 
 ```python
-ESCAPE_URL = "http://localhost:8008/escape/sg"  # ESCAPE's top level REST-API
+# Connector configuration parameters
+RO_URL = "http://localhost:8008/escape/sg"  # ESCAPE's top level REST-API
 VNF_STORE_URL = "http://localhost:8080/NFS/vnfds"
 
-USE_VNF_STORE = True  # enable dynamic VNFD acquiring from VNF Store
+USE_VNF_STORE = False  # enable dynamic VNFD acquiring from VNF Store
 NSD_DIR = "nsds"  # dir name used for storing received NSD files
 SERVICE_NFFG_DIR = "services"  # dir name used for storing converted services
 CATALOGUE_DIR = "vnf_catalogue"  # read VNFDs from dir if VNF Store is disabled
+
+# Communication related parameters
+USE_CALLBACK = False
+CALLBACK_URL = None
+USE_VIRTUALIZER_FORMAT = False
 ```
 
 Connector tries to acquire the URLs in the following order:
@@ -95,7 +101,7 @@ TNOVAConverter can be run in a Docker container. To create the basic image, issu
 in the project root:
 
 ```bash
-$ docker build --rm --no-cache -t tnova_connector .
+$ sudo docker build --rm --no-cache -t mdo/tnova_connector .
 ```
 
 This command creates a minimal image based on the alpine Python image with the name: _tnova_connector_, 
@@ -104,14 +110,58 @@ installs the required Python dependencies listed in `requirement.txt` and sets t
 To create and start a persistent container based on the _tnova_connector_ image, use the following commands:
 
 ```bash
-$ docker run --name connector -p 5000:5000 -p 9000:9000 -it tnova_connector
-$ docker start -i connector
+$ sudo docker run --name connector -p 5000:5000 -p 9000:9000 -it mdo/tnova_connector
+$ sudo docker start -i connector
 ```
 
 To create a one-time container, use the following command:
 
 ```bash
-$ docker run --rm -p 5000:5000 -p 9000:9000 -ti tnova_connector
+$ sudo docker run --rm -p 5000:5000 -p 9000:9000 -ti mdo/tnova_connector
+```
+
+# Testing
+
+The project contains a docker-compose config file to test the cooperation of 
+tnova_connector and the Resource Orchestrator aka ESCAPE.
+
+The config file requires pre-built Docker images with specific names:
+  * `tnova_connector` for the connector (partial NSO functions)
+  * `mdo/ro` for ESCAPE (RO)
+  * `dummy` for the dummy orchestrator (dataplane emulation)
+  
+These images can be built by the following commands:
+
+```bash
+tnova_connector$ sudo docker build --rm --no-cache -t mdo/tnova_connector .
+escape$ sudo docker build --rm --no-cache -t mdo/ro .
+dummy$ sudo docker build --no-cache --rm -t dummy .
+```
+
+To start the test setup use the following commands
+
+```bash
+$ sudo docker-compose up
+# Run in background
+$ sudo docker-compose up -d
+$ sudo docker-compose logs -f {escape|tnovaconnector|dummy}
+```
+
+To test the latest code the additional "debug" docker-compose file need to be 
+given. This additional config file attach the project folders into the containers.
+The locations of the project's code are extracted from environment variables.
+The following variables must be predefined:
+
+```bash
+export ESCAPEHOME=...
+export DUMMYHOME=...
+export TNOVACONNECTORHOME=...
+```
+
+To run the setup in "debug" mode use the following command:
+
+```bash
+$ sudo docker-compose -f docker-compose.yml -f docker-compose.debug.yml up
 ```
 
 ## License
