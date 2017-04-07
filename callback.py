@@ -140,6 +140,9 @@ class Callback(object):
       self.__timer.cancel()
       self.__timer = None
 
+  def get_timer_timeout (self):
+    return float(self.__timer.interval)
+
   def short (self):
     return "Callback(id: %s, request_id: %s, result: %s)" \
            % (self.callback_id, self.request_id, self.result_code)
@@ -246,8 +249,8 @@ class CallbackManager(HTTPServer, Thread):
       log.warning("No callable hook was defined for the received callback: %s!"
                   % msg_id)
 
-  def wait_for_callback (self, cb_id, type, req_id=None, data=None,
-                         timeout=None):
+  def register_and_block_wait (self, cb_id, type, req_id=None, data=None,
+                               timeout=None):
     cb = self.subscribe_callback(hook=None, cb_id=cb_id, type=type,
                                  req_id=req_id,
                                  data=data, timeout=timeout)
@@ -256,3 +259,10 @@ class CallbackManager(HTTPServer, Thread):
     self.__blocking_mutex.wait(timeout=_timeout)
     self.__blocking_mutex.clear()
     return self.unsubscribe_callback(cb_id=cb.callback_id)
+
+  def wait_for_callback (self, callback):
+    _timeout = callback.get_timer_timeout() + 1.0
+    log.debug("Waiting for callback result...")
+    self.__blocking_mutex.wait(timeout=_timeout)
+    self.__blocking_mutex.clear()
+    return self.unsubscribe_callback(cb_id=callback.callback_id)

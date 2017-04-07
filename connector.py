@@ -40,6 +40,9 @@ NSD_DIR = "nsds"  # dir name used for storing received NSD files
 SERVICE_NFFG_DIR = "services"  # dir name used for storing converted services
 CATALOGUE_DIR = "vnf_catalogue"  # read VNFDs from dir if VNF Store is disabled
 
+# Monitoring related parameters
+MONITORING_URL = None
+
 # Communication related parameters
 USE_CALLBACK = False
 CALLBACK_URL = None
@@ -54,6 +57,7 @@ CALLBACK_NAME = "call-back"
 PWD = os.path.realpath(os.path.dirname(__file__))
 POST_HEADERS = {"Content-Type": "application/json"}
 LOGGER_NAME = "TNOVAConnector"
+HTTP_GLOBAL_TIMEOUT = 5
 
 
 def _sigterm_handler (sig, stack):
@@ -266,25 +270,23 @@ def main ():
     app.logger.log(VERBOSE, "Forwarded request:\n%s" % sg.dump())
     # Try to orchestrate the service instance
     try:
-      ret = requests.post(url=RO_URL,
-                          headers=POST_HEADERS,
-                          params=params,
-                          json=sg.dump_to_json())
       if USE_CALLBACK:
-        cb_id = ret.headers.get(MESSAGE_ID_NAME)
-        if cb_id is None:
-          log.warning("Missing %s from response! Using Service Instance ID..."
-                      % MESSAGE_ID_NAME)
-          cb_id = si.id
-        cb = callback_mgr.wait_for_callback(cb_id=cb_id,
-                                            type="SERVICE")
+        cb = callback_mgr.subscribe_callback(hook=None,
+                                             cb_id=si.id,
+                                             type="SERVICE")
+        requests.post(url=RO_URL,
+                      headers=POST_HEADERS,
+                      params=params,
+                      json=sg.dump_to_json())
+        # Waiting for callback
+        cb = callback_mgr.wait_for_callback(callback=cb)
         if cb.result_code == 0:
-          log.error("Callback for request: %s exceeded timeout(%s)!"
-                    % (cb.callback_id, callback_mgr.wait_timeout))
+          app.logger.error("Callback for request: %s exceeded timeout(%s)!"
+                           % (cb.callback_id, callback_mgr.wait_timeout))
           # Something went wrong, status->error_creating
           service_mgr.set_service_status(id=si.id,
                                          status=ServiceInstance.STATUS_ERROR)
-          log.debug("Send back TIMEOUT result...")
+          app.logger.debug("Send back TIMEOUT result...")
           _status = httplib.REQUEST_TIMEOUT
         else:
           if 200 <= cb.result_code < 300:
@@ -298,10 +300,15 @@ def main ():
             # Something went wrong, status->error_creating
             service_mgr.set_service_status(id=si.id,
                                            status=ServiceInstance.STATUS_ERROR)
-            log.debug("Send back callback result code: %s" % cb.result_code)
+            app.logger.debug(
+              "Send back callback result code: %s" % cb.result_code)
           # Use status code that received from callback
           _status = cb.result_code
       else:
+        ret = requests.post(url=RO_URL,
+                            headers=POST_HEADERS,
+                            params=params,
+                            json=sg.dump_to_json())
         # Check result
         if ret.status_code == httplib.ACCEPTED:
           app.logger.info("Service initiation has been forwarded with result: "
@@ -316,9 +323,21 @@ def main ():
           # Something went wrong, status->error_creating
           service_mgr.set_service_status(id=si.id,
                                          status=ServiceInstance.STATUS_ERROR)
-        log.debug("Send back RO result code: %s" % ret.status_code)
+          app.logger.debug("Send back RO result code: %s" % ret.status_code)
         # Use status code that received from ESCAPE
         _status = ret.status_code
+      # Notify Monitoring element if configured
+      if service_mgr.get_service_status(si.id) == si.STATUS_START:
+        if MONITORING_URL:
+          app.logger.info(
+            "Monitoring notification is enabled! Send notification...")
+          params = {'serviceid': si.id}
+          try:
+            requests.get(url=MONITORING_URL,
+                         params=params)
+          except ConnectionError:
+            app.logger.warning("Monitoring component(%s) is unreachable!" %
+                               MONITORING_URL)
       # Return the status code
       return Response(status=_status)
     except ConnectionError:
@@ -432,22 +451,19 @@ def main ():
     app.logger.debug("Send request to RO on: %s" % RO_URL)
     app.logger.log(VERBOSE, "Forwarded deletion request:\n%s" % sg.dump())
     try:
-      ret = requests.put(url=RO_URL,
-                         headers=POST_HEADERS,
-                         params=params,
-                         json=sg.dump_to_json())
-
       if USE_CALLBACK:
-        cb_id = ret.headers.get(MESSAGE_ID_NAME)
-        if cb_id is None:
-          log.warning("Missing %s from response! Using Service Instance ID..."
-                      % MESSAGE_ID_NAME)
-          cb_id = si.id
-        cb = callback_mgr.wait_for_callback(cb_id=cb_id,
-                                            type="SERVICE")
+        cb = callback_mgr.subscribe_callback(hook=None,
+                                             cb_id=si.id,
+                                             type="SERVICE")
+        requests.post(url=RO_URL,
+                      headers=POST_HEADERS,
+                      params=params,
+                      json=sg.dump_to_json())
+        # Waiting for callback
+        cb = callback_mgr.wait_for_callback(callback=cb)
         if cb.result_code == 0:
-          log.warning("Callback for request: %s exceeded timeout(%s)"
-                      % (cb.callback_id, callback_mgr.wait_timeout))
+          app.logger.warning("Callback for request: %s exceeded timeout(%s)"
+                             % (cb.callback_id, callback_mgr.wait_timeout))
           # Something went wrong, status->error_creating
           service_mgr.set_service_status(id=si.id,
                                          status=ServiceInstance.STATUS_ERROR)
@@ -471,9 +487,14 @@ def main ():
             # Something went wrong, status->error_creating
             service_mgr.set_service_status(id=si.id,
                                            status=ServiceInstance.STATUS_ERROR)
-            log.debug("Send back callback result code: %s" % cb.result_code)
+            app.logger.debug(
+              "Send back callback result code: %s" % cb.result_code)
             return Response(status=cb.result_code)
       else:
+        ret = requests.post(url=RO_URL,
+                            headers=POST_HEADERS,
+                            params=params,
+                            json=sg.dump_to_json())
         # Check result
         if ret.status_code == httplib.ACCEPTED:
           app.logger.info("Service termination has been forwarded with result: "
@@ -493,7 +514,7 @@ def main ():
           # Something went wrong, status->error_creating
           service_mgr.set_service_status(id=si.id,
                                          status=ServiceInstance.STATUS_ERROR)
-          log.debug("Send back RO result code: %s" % ret.status_code)
+          app.logger.debug("Send back RO result code: %s" % ret.status_code)
           # Use status code that received from ESCAPE
           return Response(status=ret.status_code)
     except ConnectionError:
@@ -542,9 +563,12 @@ if __name__ == "__main__":
                       metavar="URL", default="", nargs="?",
                       help="enables callbacks from the RO with given URL, "
                            "default: http://localhost:9000/callback")
+  parser.add_argument("-m", "--monitoring", action="store", type=str,
+                      default=None, metavar="URL",
+                      help="URL of the monitoring component, default: None")
   parser.add_argument("-r", "--ro", action="store", type=str, default=False,
-                      help="RO's full URL, default: "
-                           "http://localhost:8008/escape/sg")
+                      metavar="URL", help="RO's full URL, default: "
+                                          "http://localhost:8008/escape/sg")
   parser.add_argument("-p", "--port", action="store", default=5000,
                       type=int, help="REST-API port (default: 5000)")
   parser.add_argument("-v", "--vnfs", action="store", type=str, default=False,
@@ -577,38 +601,51 @@ if __name__ == "__main__":
     log.debug("Set RO URL from command line: %s" % RO_URL)
   elif 'RO_URL' in os.environ:
     RO_URL = os.environ.get('RO_URL')
-    log.debug("Set RO's URL from environment variable (RO_URL): %s" % RO_URL)
+    log.info("Set RO's URL from environment variable (RO_URL): %s" % RO_URL)
   else:
-    log.debug("Use default value for RO's URL: %s" % RO_URL)
+    log.info("Use default value for RO's URL: %s" % RO_URL)
   # Set CATALOGUE_URL
   if args.vnfs:
     VNF_STORE_URL = args.vnfs
     USE_VNF_STORE = True
-    log.debug("Set VNFStore's URL from command line: %s" % VNF_STORE_URL)
+    log.info("Set VNFStore's URL from command line: %s" % VNF_STORE_URL)
   elif 'VNF_STORE_URL' in os.environ:
     VNF_STORE_URL = os.environ.get('VNF_STORE_URL')
     USE_VNF_STORE = True
-    log.debug(
+    log.info(
       "Set VNFStore's URL from environment variable (VNF_STORE_URL): %s" %
       VNF_STORE_URL)
   else:
-    log.debug(
+    log.info(
       "Use default value for VNFStore's URL: %s" % VNF_STORE_URL)
   # Set callbacks
   if args.callback:
     CALLBACK_URL = args.callback
     USE_CALLBACK = True
-    log.debug("Enable callbacks with explicit URL from command line: %s"
-              % CALLBACK_URL)
+    log.info("Enable callbacks with explicit URL from command line: %s"
+             % CALLBACK_URL)
   elif 'CALLBACK_URL' in os.environ:
     CALLBACK_URL = os.environ.get('CALLBACK_URL')
     USE_CALLBACK = True
-    log.debug("Set using callbacks from environment variable (CALLBACK_URL): %s"
-              % CALLBACK_URL)
+    log.info("Set using callbacks from environment variable (CALLBACK_URL): %s"
+             % CALLBACK_URL)
   elif args.callback is None:
     CALLBACK_URL = args.callback
     USE_CALLBACK = True
-    log.debug("Enable callbacks with default URL")
+    log.info("Enable callbacks with default URL")
+  else:
+    log.info("Disable callback-based communication")
+  # Store monitoring URL
+  if args.monitoring:
+    MONITORING_URL = args.monitoring
+    log.info("Enable monitoring notification with explicit URL from command "
+             "line: %s" % MONITORING_URL)
+  elif 'MONITORING_URL' in os.environ:
+    MONITORING_URL = os.environ.get('MONITORING_URL')
+    log.info("Enable monitoring notifications from environment variable "
+             "(MONITORING_URL): %s" % CALLBACK_URL)
+  else:
+    log.info("Disable monitoring notifications")
 
   # Run TNOVAConnector
   main()

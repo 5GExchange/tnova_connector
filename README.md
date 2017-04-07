@@ -133,12 +133,24 @@ The config file requires pre-built Docker images with specific names:
 These images can be built by the following commands:
 
 ```bash
+# Build connector image
 tnova_connector$ sudo docker build --rm --no-cache -t mdo/tnova_connector .
+# Build ESCAPE image
 escape$ sudo docker build --rm --no-cache -t mdo/ro .
+# Build Dummy Orchestrator image
 dummy$ sudo docker build --no-cache --rm -t dummy .
+
+# Created images
+$ sudo docker images
+REPOSITORY            TAG                 IMAGE ID            CREATED             SIZE
+dummy                 latest              1fddbe0c5647        19 hours ago        88.3 MB
+mdo/ro                latest              1148ca557fa5        19 hours ago        854 MB
+mdo/tnova_connector   latest              d26bf0c69424        19 hours ago        95.7 MB
+python                2.7.13-alpine       b63d02d8829b        4 weeks ago         71.5 MB
+python                2.7.13              b4b107fcc777        8 weeks ago         679 MB
 ```
 
-To start the test setup use the following commands
+To start the test setup use one of the following commands:
 
 ```bash
 $ sudo docker-compose up
