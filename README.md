@@ -57,7 +57,7 @@ USE_VIRTUALIZER_FORMAT = False
 Connector tries to acquire the URLs in the following order:
 
 1. Command line argument (-e; -v)
-2. Environment variable (use the name of the constants in the connector script: `ESCAPE_URL` and `VNF_STORE_URL`)
+2. Environment variable (use the name of the constants in the connector script: `ESCAPE_URL`, `CALLBACK_URL` and `VNF_STORE_URL`)
 3. Default value defined in the top of the script
 
 ## Usage
