@@ -277,7 +277,8 @@ def main ():
         requests.post(url=RO_URL,
                       headers=POST_HEADERS,
                       params=params,
-                      json=sg.dump_to_json())
+                      json=sg.dump_to_json(),
+                      timeout=HTTP_GLOBAL_TIMEOUT)
         # Waiting for callback
         cb = callback_mgr.wait_for_callback(callback=cb)
         if cb.result_code == 0:
@@ -308,7 +309,8 @@ def main ():
         ret = requests.post(url=RO_URL,
                             headers=POST_HEADERS,
                             params=params,
-                            json=sg.dump_to_json())
+                            json=sg.dump_to_json(),
+                            timeout=HTTP_GLOBAL_TIMEOUT)
         # Check result
         if ret.status_code == httplib.ACCEPTED:
           app.logger.info("Service initiation has been forwarded with result: "
@@ -334,7 +336,8 @@ def main ():
           params = {'serviceid': si.id}
           try:
             requests.get(url=MONITORING_URL,
-                         params=params)
+                         params=params,
+                         timeout=HTTP_GLOBAL_TIMEOUT)
           except ConnectionError:
             app.logger.warning("Monitoring component(%s) is unreachable!" %
                                MONITORING_URL)
@@ -458,7 +461,8 @@ def main ():
         requests.post(url=RO_URL,
                       headers=POST_HEADERS,
                       params=params,
-                      json=sg.dump_to_json())
+                      json=sg.dump_to_json(),
+                      timeout=HTTP_GLOBAL_TIMEOUT)
         # Waiting for callback
         cb = callback_mgr.wait_for_callback(callback=cb)
         if cb.result_code == 0:
@@ -494,7 +498,8 @@ def main ():
         ret = requests.post(url=RO_URL,
                             headers=POST_HEADERS,
                             params=params,
-                            json=sg.dump_to_json())
+                            json=sg.dump_to_json(),
+                            timeout=HTTP_GLOBAL_TIMEOUT)
         # Check result
         if ret.status_code == httplib.ACCEPTED:
           app.logger.info("Service termination has been forwarded with result: "
@@ -571,6 +576,9 @@ if __name__ == "__main__":
                                           "http://localhost:8008/escape/sg")
   parser.add_argument("-p", "--port", action="store", default=5000,
                       type=int, help="REST-API port (default: 5000)")
+  parser.add_argument("-t", "--timeout", action="store", default=5,
+                      type=int, help="timeout in sec for HTTP "
+                                     "communication, default: 5s")
   parser.add_argument("-v", "--vnfs", action="store", type=str, default=False,
                       help="enables remote VNFStore with given full URL, "
                            "default: http://localhost:8080/NFS/vnfds")

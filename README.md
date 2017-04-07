@@ -64,7 +64,8 @@ Connector tries to acquire the URLs in the following order:
 
 ```
 $ ./connector.py -h
-usage: connector.py [-h] [-d] [-c [URL]] [-m URL] [-r URL] [-p PORT] [-v VNFS]
+usage: connector.py [-h] [-d] [-c [URL]] [-m URL] [-r URL] [-p PORT]
+                    [-t TIMEOUT] [-v VNFS]
 
 TNOVAConnector: Middleware component which make the connection between
 Marketplace and RO with automatic request conversion
@@ -81,6 +82,8 @@ optional arguments:
   -r URL, --ro URL      RO's full URL, default:
                         http://localhost:8008/escape/sg
   -p PORT, --port PORT  REST-API port (default: 5000)
+  -t TIMEOUT, --timeout TIMEOUT
+                        timeout in sec for HTTP communication, default: 5s
   -v VNFS, --vnfs VNFS  enables remote VNFStore with given full URL, default:
                         http://localhost:8080/NFS/vnfds
 ```
