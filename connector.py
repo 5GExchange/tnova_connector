@@ -26,7 +26,6 @@ from requests.exceptions import ConnectionError
 
 from callback import CallbackManager
 from colored_logger import ColoredLogger, VERBOSE
-from connector import MONITORING_URL
 from converter import TNOVAConverter
 from nffg_lib.nffg import NFFG
 from service_mgr import ServiceManager, ServiceInstance
