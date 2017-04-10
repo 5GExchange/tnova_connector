@@ -2,3 +2,6 @@
 	path = nffg_lib
 	url = git@5gexgit.tmit.bme.hu:unify/nffg.git
 	branch = master
+[submodule "virtualizer"]
+	path = virtualizer
+	url = git@5gexgit.tmit.bme.hu:unify/virtualizer.git
