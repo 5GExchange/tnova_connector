@@ -26,6 +26,7 @@ from requests.exceptions import ConnectionError
 
 from callback import CallbackManager
 from colored_logger import ColoredLogger, VERBOSE
+from connector import MONITORING_URL
 from converter import TNOVAConverter
 from nffg_lib.nffg import NFFG
 from service_mgr import ServiceManager, ServiceInstance
@@ -651,7 +652,7 @@ if __name__ == "__main__":
   elif 'MONITORING_URL' in os.environ:
     MONITORING_URL = os.environ.get('MONITORING_URL')
     log.info("Enable monitoring notifications from environment variable "
-             "(MONITORING_URL): %s" % CALLBACK_URL)
+             "(MONITORING_URL): %s" % MONITORING_URL)
   else:
     log.info("Disable monitoring notifications")
 
