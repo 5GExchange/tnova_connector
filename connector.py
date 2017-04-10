@@ -88,6 +88,7 @@ def main ():
   # Adjust Flask logging to common logging
   app.logger.handlers[:] = [ColoredLogger.createHandler()]
   app.logger.propagate = False
+  app.logger.setLevel(log.getEffectiveLevel())
   # Create Catalogue for VNFDs
   catalogue = VNFCatalogue(remote_store=USE_VNF_STORE,
                            url=VNF_STORE_URL,
