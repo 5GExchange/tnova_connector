@@ -26,10 +26,10 @@ from requests.exceptions import ConnectionError
 
 from callback import CallbackManager
 from colored_logger import ColoredLogger, VERBOSE
-from converter import TNOVAConverter
+from conversion.converter import TNOVAConverter
+from conversion.vnf_catalogue import VNFCatalogue, MissingVNFDException
 from nffg_lib.nffg import NFFG
 from service_mgr import ServiceManager, ServiceInstance
-from vnf_catalogue import VNFCatalogue, MissingVNFDException
 
 # Connector configuration parameters
 RO_URL = "http://localhost:8008/escape/sg"  # ESCAPE's top level REST-API
