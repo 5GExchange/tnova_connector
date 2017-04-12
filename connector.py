@@ -26,13 +26,15 @@ from requests.exceptions import ConnectionError
 
 from callback import CallbackManager
 from colored_logger import ColoredLogger, VERBOSE
+from conversion.conversion import convert_service_request
 from conversion.converter import TNOVAConverter
 from conversion.vnf_catalogue import VNFCatalogue, MissingVNFDException
 from nffg_lib.nffg import NFFG
 from service_mgr import ServiceManager, ServiceInstance
-
 # Connector configuration parameters
-RO_URL = "http://localhost:8008/escape/sg"  # ESCAPE's top level REST-API
+from virtualizer.virtualizer import Virtualizer
+
+RO_URL = "http://localhost:8008/escape"  # ESCAPE's top level REST-API
 VNF_STORE_URL = "http://localhost:8080/NFS/vnfds"
 
 USE_VNF_STORE = False  # enable dynamic VNFD acquiring from VNF Store
@@ -46,12 +48,19 @@ MONITORING_URL = None
 # Communication related parameters
 USE_CALLBACK = False
 CALLBACK_URL = None
-USE_VIRTUALIZER_FORMAT = False
+USE_VIRTUALIZER_FORMAT = True
+ENABLE_DIFF = True
 
 # T-NOVA format constants
 NS_ID_NAME = "ns_id"
 MESSAGE_ID_NAME = "message-id"
 CALLBACK_NAME = "call-back"
+
+# Service request related constants
+NFFG_SERVICE_RPC = "sg"
+NFFG_TOPO_RPC = "topology"
+VIRTUALIZER_TOPO_RPC = "get-config"
+VIRTUALIZER_SERVICE_RPC = "edit-config"
 
 # Other constants
 PWD = os.path.realpath(os.path.dirname(__file__))
@@ -262,23 +271,53 @@ def main ():
     sg.mode = NFFG.MODE_ADD
     app.logger.debug("Set mapping mode: %s" % sg.mode)
     params = {MESSAGE_ID_NAME: si.id}
+    # Setup callback if it's necessary
     if USE_CALLBACK:
       app.logger.debug("Set callback URL: %s" % callback_mgr.url)
       params[CALLBACK_NAME] = callback_mgr.url
-      # params[]
     app.logger.debug("Using explicit message-id: %s" % params[MESSAGE_ID_NAME])
-    app.logger.debug("Send service request to RO on: %s" % RO_URL)
-    app.logger.log(VERBOSE, "Forwarded request:\n%s" % sg.dump())
+    # Setup format-related parameters
+    if USE_VIRTUALIZER_FORMAT:
+      app.logger.info("Virtualizer format enabled! Start conversion...")
+      app.logger.debug("Request topology view from RO...")
+      topo = get_topology_view()
+      if topo is None:
+        app.logger.error("Topology view is missing!")
+        return Response(status=httplib.INTERNAL_SERVER_ERROR,
+                        response=json.dumps(
+                          {"error": "RO is not available!",
+                           "RO": RO_URL}))
+      srv = convert_service_request(request=sg,
+                                    base=topo,
+                                    reinstall=False,
+                                    log=app.logger)
+      service_request_url = os.path.join(RO_URL, VIRTUALIZER_SERVICE_RPC)
+      headers = {"Content-Type": "application/xml"}
+      if ENABLE_DIFF:
+        app.logger.debug("Diff format enabled! Calculate diff...")
+        # Avoid undesired "replace" for id and name
+        topo.id.set_value(srv.id.get_value())
+        topo.name.set_value(srv.name.get_value())
+        raw_data = topo.diff(srv).xml()
+        app.logger.log(VERBOSE, "Calculated diff:\n%s" % raw_data)
+      else:
+        raw_data = srv.xml()
+    else:
+      service_request_url = os.path.join(RO_URL, NFFG_SERVICE_RPC)
+      raw_data = sg.dump()
+      headers = {"Content-Type": "application/json"}
+    # Sending service request
+    app.logger.debug("Send service request to RO on: %s" % service_request_url)
     # Try to orchestrate the service instance
     try:
       if USE_CALLBACK:
         cb = callback_mgr.subscribe_callback(hook=None,
                                              cb_id=si.id,
                                              type="SERVICE")
-        requests.post(url=RO_URL,
-                      headers=POST_HEADERS,
+        requests.post(url=service_request_url,
+                      headers=headers,
                       params=params,
-                      json=sg.dump_to_json(),
+                      data=raw_data,
                       timeout=HTTP_GLOBAL_TIMEOUT)
         # Waiting for callback
         cb = callback_mgr.wait_for_callback(callback=cb)
@@ -307,10 +346,10 @@ def main ():
           # Use status code that received from callback
           _status = cb.result_code
       else:
-        ret = requests.post(url=RO_URL,
-                            headers=POST_HEADERS,
+        ret = requests.post(url=service_request_url,
+                            headers=headers,
                             params=params,
-                            json=sg.dump_to_json(),
+                            data=raw_data,
                             timeout=HTTP_GLOBAL_TIMEOUT)
         # Check result
         if ret.status_code == httplib.ACCEPTED:
@@ -533,6 +572,39 @@ def main ():
       app.logger.exception(
         "Got unexpected exception during service termination!")
       return Response(status=httplib.INTERNAL_SERVER_ERROR)
+
+  def get_topology_view ():
+    """
+    Request and return with the topology provided by the RO.
+    
+    :return: requested and parser topology
+    :rtype: :class:`Virtualizer` or :class:`NFFG`
+    """
+    if USE_VIRTUALIZER_FORMAT:
+      topo_request_url = os.path.join(RO_URL, VIRTUALIZER_TOPO_RPC)
+    else:
+      topo_request_url = os.path.join(RO_URL, NFFG_TOPO_RPC)
+    app.logger.debug("Send topo request to RO on: %s" % topo_request_url)
+    try:
+      ret = requests.get(url=topo_request_url)
+      if USE_VIRTUALIZER_FORMAT:
+        try:
+          topo = Virtualizer.parse_from_text(text=ret.text)
+          app.logger.log(VERBOSE, "Received topology:\n%s" % topo.xml())
+          return topo
+        except Exception as e:
+          app.logger.error("Something went wrong during topo parsing "
+                           "into Virtualizer:\n%s" % e)
+      else:
+        try:
+          topo = NFFG.parse(raw_data=ret.text)
+          app.logger.log(VERBOSE, "Received topology:\n%s" % topo.dump())
+          return topo
+        except Exception as e:
+          app.logger.error("Something went wrong during topo parsing "
+                           "into NFFG:\n%s" % e)
+    except ConnectionError:
+      app.logger.error("RO is not available!")
 
   def _shutdown ():
     """
