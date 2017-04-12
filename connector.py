@@ -26,7 +26,7 @@ from requests.exceptions import ConnectionError
 
 from callback import CallbackManager
 from colored_logger import ColoredLogger, VERBOSE
-from conversion.conversion import convert_service_request
+from conversion.conversion import NFFGConverter
 from conversion.converter import TNOVAConverter
 from conversion.vnf_catalogue import VNFCatalogue, MissingVNFDException
 from nffg_lib.nffg import NFFG
@@ -116,30 +116,6 @@ def main ():
                                  log=app.logger)
 
   # Define REST API calls
-
-  def convert_service (nsd_file):
-    """
-    Perform the conversion of the received NSD and save the NFFG.
-
-    :param nsd_file: path of the stored NSD file
-    :type nsd_file: str
-    :return: conversion was successful or not
-    :rtype: bool
-    """
-    app.logger.info("Start converting received NSD...")
-    # Convert the NSD given by file name
-    sg = converter.convert(nsd_file=nsd_file)
-    app.logger.info("NSD conversion has been ended!")
-    if sg is None:
-      app.logger.error("Service conversion was failed! Service is not saved!")
-      return False
-    app.logger.log(VERBOSE, "Converted service:\n%s" % sg.dump())
-    # Save result NFFG into a file
-    sg_path = os.path.join(PWD, SERVICE_NFFG_DIR, "%s.nffg" % sg.id)
-    with open(sg_path, 'w') as f:
-      f.write(sg.dump())
-    app.logger.info("Converted NFFG has been saved! Path: %s" % sg_path)
-    return True
 
   @app.route("/nsd", methods=['POST'])
   def register_nsd ():
@@ -276,48 +252,23 @@ def main ():
     sg.mode = NFFG.MODE_ADD
     app.logger.debug("Set mapping mode: %s" % sg.mode)
     params = {MESSAGE_ID_NAME: si.id}
+    app.logger.debug("Using explicit message-id: %s" % params[MESSAGE_ID_NAME])
     # Setup callback if it's necessary
     if USE_CALLBACK:
       app.logger.debug("Set callback URL: %s" % callback_mgr.url)
       params[CALLBACK_NAME] = callback_mgr.url
-    app.logger.debug("Using explicit message-id: %s" % params[MESSAGE_ID_NAME])
     # Setup format-related parameters
     if USE_VIRTUALIZER_FORMAT:
-      app.logger.info("Virtualizer format enabled! Start conversion...")
-      app.logger.debug("Request topology view from RO...")
-      topo = get_topology_view()
-      if topo is None:
-        app.logger.error("Topology view is missing!")
-        return Response(status=httplib.INTERNAL_SERVER_ERROR,
-                        response=json.dumps(
-                          {"error": "RO is not available!",
-                           "RO": RO_URL}))
-      srv = convert_service_request(request=sg,
-                                    base=topo,
-                                    reinstall=False,
-                                    log=app.logger)
-      # Store converted XML
-      vpath = si.path.rsplit('.', 1)[0] + ".xml"
-      # Write into file
-      with open(vpath, 'w') as f:
-        f.write(srv.xml())
-      app.logger.info("Converted Virtualizer has been saved into %s!" % vpath)
+      app.logger.info("Virtualizer format enabled!")
       # Prepare REST call parameters
       service_request_url = os.path.join(RO_URL, VIRTUALIZER_SERVICE_RPC)
       headers = {"Content-Type": "application/xml"}
-      if ENABLE_DIFF:
-        app.logger.debug("Diff format enabled! Calculate diff...")
-        # Avoid undesired "replace" for id and name
-        topo.id.set_value(srv.id.get_value())
-        topo.name.set_value(srv.name.get_value())
-        raw_data = topo.diff(srv).xml()
-        app.logger.log(VERBOSE, "Calculated diff:\n%s" % raw_data)
-      else:
-        raw_data = srv.xml()
+      srv = _convert_service_request(service_graph=sg)
+      raw_data = srv.xml()
     else:
       service_request_url = os.path.join(RO_URL, NFFG_SERVICE_RPC)
-      raw_data = sg.dump()
       headers = {"Content-Type": "application/json"}
+      raw_data = sg.dump()
     # Sending service request
     app.logger.debug("Send service request to RO on: %s" % service_request_url)
     # Try to orchestrate the service instance
@@ -498,22 +449,33 @@ def main ():
       return Response(status=httplib.NOT_FOUND)
     # Set DELETE mode
     sg.mode = NFFG.MODE_DEL
+    app.logger.debug("Set mapping mode: %s" % sg.mode)
     params = {MESSAGE_ID_NAME: "%s-DELETE" % si.id}
+    app.logger.debug("Using explicit message-id: %s" % params[MESSAGE_ID_NAME])
     if USE_CALLBACK:
       app.logger.debug("Set callback URL: %s" % callback_mgr.url)
       params[CALLBACK_NAME] = callback_mgr.url
-    app.logger.debug("Set mapping mode: %s" % sg.mode)
-    app.logger.debug("Send request to RO on: %s" % RO_URL)
-    app.logger.log(VERBOSE, "Forwarded deletion request:\n%s" % sg.dump())
+    if USE_VIRTUALIZER_FORMAT:
+      app.logger.info("Virtualizer format enabled!")
+      # Prepare REST call parameters
+      service_request_url = os.path.join(RO_URL, VIRTUALIZER_SERVICE_RPC)
+      headers = {"Content-Type": "application/xml"}
+      srv = _convert_service_request(service_graph=sg, delete=True)
+      raw_data = srv.xml()
+    else:
+      service_request_url = os.path.join(RO_URL, NFFG_SERVICE_RPC)
+      headers = {"Content-Type": "application/json"}
+      raw_data = sg.dump()
+    app.logger.debug("Send request to RO on: %s" % service_request_url)
     try:
       if USE_CALLBACK:
         cb = callback_mgr.subscribe_callback(hook=None,
-                                             cb_id=si.id,
+                                             cb_id=params[MESSAGE_ID_NAME],
                                              type="SERVICE")
-        requests.post(url=RO_URL,
-                      headers=POST_HEADERS,
+        requests.post(url=service_request_url,
+                      headers=headers,
                       params=params,
-                      json=sg.dump_to_json(),
+                      data=raw_data,
                       timeout=HTTP_GLOBAL_TIMEOUT)
         # Waiting for callback
         cb = callback_mgr.wait_for_callback(callback=cb)
@@ -547,10 +509,10 @@ def main ():
               "Send back callback result code: %s" % cb.result_code)
             return Response(status=cb.result_code)
       else:
-        ret = requests.post(url=RO_URL,
-                            headers=POST_HEADERS,
+        ret = requests.post(url=service_request_url,
+                            headers=headers,
                             params=params,
-                            json=sg.dump_to_json(),
+                            data=raw_data,
                             timeout=HTTP_GLOBAL_TIMEOUT)
         # Check result
         if ret.status_code == httplib.ACCEPTED:
@@ -585,10 +547,34 @@ def main ():
         "Got unexpected exception during service termination!")
       return Response(status=httplib.INTERNAL_SERVER_ERROR)
 
+  def convert_service (nsd_file):
+    """
+    Perform the conversion of the received NSD and save the NFFG.
+
+    :param nsd_file: path of the stored NSD file
+    :type nsd_file: str
+    :return: conversion was successful or not
+    :rtype: bool
+    """
+    app.logger.info("Start converting received NSD...")
+    # Convert the NSD given by file name
+    sg = converter.convert(nsd_file=nsd_file)
+    app.logger.info("NSD conversion has been ended!")
+    if sg is None:
+      app.logger.error("Service conversion was failed! Service is not saved!")
+      return False
+    app.logger.log(VERBOSE, "Converted service:\n%s" % sg.dump())
+    # Save result NFFG into a file
+    sg_path = os.path.join(PWD, SERVICE_NFFG_DIR, "%s.nffg" % sg.id)
+    with open(sg_path, 'w') as f:
+      f.write(sg.dump())
+    app.logger.info("Converted NFFG has been saved! Path: %s" % sg_path)
+    return True
+
   def get_topology_view ():
     """
     Request and return with the topology provided by the RO.
-    
+
     :return: requested and parser topology
     :rtype: :class:`Virtualizer` or :class:`NFFG`
     """
@@ -618,6 +604,47 @@ def main ():
     except ConnectionError:
       app.logger.error("RO is not available!")
 
+  def _convert_service_request (service_graph, delete=False):
+    """
+    Convert given service request into Virtualizer format.
+    Base Virtualizer is requested from RO.
+
+    :param service_graph: service request
+    :type service_graph: :class:`NFFG`
+    :param delete: delete service request instead of adding to base virtualizer
+    :type delete: bool
+    :return: converted service request
+    :rtype: :class:`Virtualizer`
+    """
+    app.logger.debug("Request topology view from RO...")
+    topo = get_topology_view()
+    if topo is None:
+      app.logger.error("Topology view is missing!")
+      return Response(status=httplib.INTERNAL_SERVER_ERROR,
+                      response=json.dumps(
+                        {"error": "RO is not available!",
+                         "RO": RO_URL}))
+    if not delete:
+      app.logger.debug("Start service request (INITIATE) conversion...")
+      nc = NFFGConverter(logger=app.logger, ensure_unique_id=False)
+      srv_virtualizer = nc.convert_service_request_init(request=service_graph,
+                                                        base=topo,
+                                                        reinstall=False)
+    else:
+      app.logger.debug("Start service request (DELETE) conversion...")
+      nc = NFFGConverter(logger=app.logger, ensure_unique_id=False)
+      srv_virtualizer = nc.convert_service_request_del(request=service_graph,
+                                                       base=topo)
+    app.logger.log(VERBOSE, "Converted request:\n%s" % srv_virtualizer.xml())
+    if ENABLE_DIFF:
+      app.logger.debug("Diff format enabled! Calculate diff...")
+      # Avoid undesired "replace" for id and name
+      topo.id.set_value(srv_virtualizer.id.get_value())
+      topo.name.set_value(srv_virtualizer.name.get_value())
+      srv_virtualizer = topo.diff(srv_virtualizer)
+      app.logger.log(VERBOSE, "Calculated diff:\n%s" % srv_virtualizer.xml())
+    return srv_virtualizer
+
   def _shutdown ():
     """
     Shutdown running servers.
@@ -629,7 +656,6 @@ def main ():
     # No correct way to shutdown Flask
 
   # Entry point of main, start components
-
   try:
     # Start Callback Manager first
     if USE_CALLBACK:
