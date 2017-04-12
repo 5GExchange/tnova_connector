@@ -71,7 +71,7 @@ HTTP_GLOBAL_TIMEOUT = 5
 
 def _sigterm_handler (sig, stack):
   """
-  Specific signal handler for SIGTERM to stop ESCAPE by transforming the
+  Specific signal handler for SIGTERM to stop the connector by transforming the
   received signal to SIGINT.
 
   :param sig: received signal
@@ -88,7 +88,7 @@ signal.signal(signal.SIGTERM, _sigterm_handler)
 
 def main ():
   """
-  Main entry point of TNOVA Connector.
+  Main entry point of T-NOVA Connector.
 
   :return: None
   """
@@ -114,6 +114,8 @@ def main ():
   callback_mgr = CallbackManager(domain_name="RO",
                                  callback_url=CALLBACK_URL,
                                  log=app.logger)
+
+  # Define REST API calls
 
   def convert_service (nsd_file):
     """
@@ -156,15 +158,16 @@ def main ():
     app.logger.info("Call register_nsd() with path: POST /nsd")
     try:
       # Parse data as JSON
+      app.logger.debug("Parsing request body...")
       data = json.loads(request.data)
-      app.logger.log(VERBOSE, "Received body:\n%s" % pprint.pformat(data))
+      app.logger.log(VERBOSE, "Parsed body:\n%s" % pprint.pformat(data))
       # Filename based on the service ID
       filename = data['nsd']['id']
       path = os.path.join(PWD, NSD_DIR, "%s.json" % filename)
       # Write into file
       with open(path, 'w') as f:
         f.write(json.dumps(data, indent=2, sort_keys=True))
-      app.logger.info("Received NSD has been saved: %s!" % path)
+      app.logger.info("Received NSD has been saved into %s!" % path)
       if not convert_service(nsd_file=path):
         return Response(status=httplib.INTERNAL_SERVER_ERROR)
       # Response with 200 OK
@@ -206,8 +209,9 @@ def main ():
     """
     app.logger.info("Call register_vnfd() with path: POST /vnfd")
     try:
+      app.logger.debug("Parsing request body...")
       data = json.loads(request.data)
-      app.logger.log(VERBOSE, "Received body:\n%s" % pprint.pformat(data))
+      app.logger.log(VERBOSE, "Parsed body:\n%s" % pprint.pformat(data))
       # Filename based on the VNF ID
       filename = data['id']
       path = os.path.join(PWD, CATALOGUE_DIR, "%s.nffg" % filename)
@@ -242,8 +246,9 @@ def main ():
     """
     app.logger.info("Call initiate_service() with path: POST /service")
     try:
+      app.logger.debug("Parsing request body...")
       params = json.loads(request.data)
-      app.logger.log(VERBOSE, "Received body:\n%s" % pprint.pformat(params))
+      app.logger.log(VERBOSE, "Parsed body:\n%s" % pprint.pformat(params))
       if NS_ID_NAME not in params:
         app.logger.error(
           "Missing NSD id (%s) from service initiation request!" % NS_ID_NAME)
@@ -291,6 +296,13 @@ def main ():
                                     base=topo,
                                     reinstall=False,
                                     log=app.logger)
+      # Store converted XML
+      vpath = si.path.rsplit('.', 1)[0] + ".xml"
+      # Write into file
+      with open(vpath, 'w') as f:
+        f.write(srv.xml())
+      app.logger.info("Converted Virtualizer has been saved into %s!" % vpath)
+      # Prepare REST call parameters
       service_request_url = os.path.join(RO_URL, VIRTUALIZER_SERVICE_RPC)
       headers = {"Content-Type": "application/xml"}
       if ENABLE_DIFF:
@@ -463,7 +475,7 @@ def main ():
     # Get managed service instance
     si = service_mgr.get_service(id=instance_id)
     if si is None:
-      app.logger.error("Service instance : %s is not found!" % instance_id)
+      app.logger.error("Service instance: %s is not found!" % instance_id)
       return Response(status=httplib.NOT_FOUND)
     # If service instance is just created, stopped or error_created -> simply
     # delete
@@ -615,6 +627,8 @@ def main ():
     # Shutdown Callback Manager
     callback_mgr.shutdown()
     # No correct way to shutdown Flask
+
+  # Entry point of main, start components
 
   try:
     # Start Callback Manager first
