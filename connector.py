@@ -31,9 +31,10 @@ from conversion.converter import TNOVAConverter
 from conversion.vnf_catalogue import VNFCatalogue, MissingVNFDException
 from nffg_lib.nffg import NFFG
 from service_mgr import ServiceManager, ServiceInstance
-# Connector configuration parameters
 from virtualizer.virtualizer import Virtualizer
 
+# Connector configuration parameters
+LISTENING_PORT = 5000
 RO_URL = "http://localhost:8008/escape"  # ESCAPE's top level REST-API
 VNF_STORE_URL = "http://localhost:8080/NFS/vnfds"
 
@@ -47,7 +48,7 @@ MONITORING_URL = None
 
 # Communication related parameters
 USE_CALLBACK = False
-CALLBACK_URL = None
+CALLBACK_URL = "http://localhost:9000/callback"
 USE_VIRTUALIZER_FORMAT = True
 ENABLE_DIFF = True
 
@@ -680,21 +681,22 @@ if __name__ == "__main__":
   parser.add_argument("-c", "--callback", action="store", type=str,
                       metavar="URL", default="", nargs="?",
                       help="enables callbacks from the RO with given URL, "
-                           "default: http://localhost:9000/callback")
+                           "default: %s" % CALLBACK_URL)
   parser.add_argument("-m", "--monitoring", action="store", type=str,
                       default=None, metavar="URL",
                       help="URL of the monitoring component, default: None")
   parser.add_argument("-r", "--ro", action="store", type=str, default=False,
-                      metavar="URL", help="RO's full URL, default: "
-                                          "http://localhost:8008/escape/sg")
-  parser.add_argument("-p", "--port", action="store", default=5000,
-                      type=int, help="REST-API port (default: 5000)")
-  parser.add_argument("-t", "--timeout", action="store", default=5,
-                      type=int, help="timeout in sec for HTTP "
-                                     "communication, default: 5s")
+                      metavar="URL", help="RO's full URL, default: %s" % RO_URL)
+  parser.add_argument("-p", "--port", action="store", default=LISTENING_PORT,
+                      type=int, help="REST-API port, default: %s"
+                                     % LISTENING_PORT)
+  parser.add_argument("-t", "--timeout", action="store", type=int, metavar="t",
+                      default=HTTP_GLOBAL_TIMEOUT,
+                      help="timeout in sec for HTTP communication, default: %ss"
+                           % HTTP_GLOBAL_TIMEOUT)
   parser.add_argument("-v", "--vnfs", action="store", type=str, default=False,
                       help="enables remote VNFStore with given full URL, "
-                           "default: http://localhost:8080/NFS/vnfds")
+                           "default: %s" % VNF_STORE_URL)
 
   args = parser.parse_args()
 
@@ -716,6 +718,9 @@ if __name__ == "__main__":
   log.info("Set logging level: %s",
            logging.getLevelName(log.getEffectiveLevel()))
 
+  if args.port:
+    LISTENING_PORT = args.port
+    log.debug("Using explicit listening port: %s" % LISTENING_PORT)
   # Set ESCAPE_URL
   if args.ro:
     RO_URL = args.ro
