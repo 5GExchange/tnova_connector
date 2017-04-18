@@ -204,7 +204,7 @@ class VNFCatalogue(object):
   """
   LOGGER_NAME = "VNFCatalogue"
   # VNF_STORE_ENABLED = False
-  VNF_CATALOGUE_DIR = "vnf_catalogue"
+  VNF_CATALOGUE_DIR = "../vnf_catalogue"
   VNF_STORE_ENABLED = False
   STORE_VNFD_LOCALLY = True
   REQUEST_TIMEOUT = 1
@@ -291,6 +291,18 @@ class VNFCatalogue(object):
       if vnf.id == id:
         return vnf
 
+  def get_full_path (self):
+    """
+    Return the full path of the VNF catalogue.
+    
+    :return: full path
+    :rtype: str
+    """
+    if self._full_catalogue_path is None:
+      self._full_catalogue_path = os.path.realpath(
+        os.path.join(os.path.dirname(__file__), self.VNF_CATALOGUE_DIR))
+    return self._full_catalogue_path
+
   def parse_vnf_catalogue_from_folder (self, catalogue_dir=None):
     """
     Parse the given VNFDs as :any:`VNFWrapper` from files under the
@@ -302,17 +314,14 @@ class VNFCatalogue(object):
     :return: created VNFCatalogue instance
     :rtype: VNFCatalogue
     """
-    if catalogue_dir is None:
-      catalogue_dir = os.path.realpath(
-        os.path.join(os.path.dirname(__file__), self.VNF_CATALOGUE_DIR))
-      self._full_catalogue_path = catalogue_dir
+    full_path = self.get_full_path()
     self.log.debug(
-      "Parse VNFDs from local folder: %s ..." % self._full_catalogue_path)
+      "Parse VNFDs from local folder: %s ..." % full_path)
     # Iterate over catalogue dir
-    for vnf in os.listdir(self._full_catalogue_path):
+    for vnf in os.listdir(full_path):
       if vnf.startswith('.'):
         continue
-      vnfd_file = os.path.join(catalogue_dir, vnf)
+      vnfd_file = os.path.join(full_path, vnf)
       with open(vnfd_file) as f:
         # Parse VNFD from JSOn files as VNFWrapper class
         vnfd = json.load(f, object_hook=self.__vnfd_object_hook)

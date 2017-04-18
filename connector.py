@@ -41,7 +41,7 @@ VNF_STORE_URL = "http://localhost:8080/NFS/vnfds"
 USE_VNF_STORE = False  # enable dynamic VNFD acquiring from VNF Store
 NSD_DIR = "nsds"  # dir name used for storing received NSD files
 SERVICE_NFFG_DIR = "services"  # dir name used for storing converted services
-CATALOGUE_DIR = "vnf_catalogue"  # read VNFDs from dir if VNF Store is disabled
+CATALOGUE_DIR = "../vnf_catalogue"  # read VNFDs from dir if VNF Store is disabled
 
 # Monitoring related parameters
 MONITORING_URL = None
@@ -140,7 +140,7 @@ def main ():
       app.logger.log(VERBOSE, "Parsed body:\n%s" % pprint.pformat(data))
       # Filename based on the service ID
       filename = data['nsd']['id']
-      path = os.path.join(PWD, NSD_DIR, "%s.json" % filename)
+      path = os.path.realpath(os.path.join(PWD, NSD_DIR, "%s.json" % filename))
       # Write into file
       with open(path, 'w') as f:
         f.write(json.dumps(data, indent=2, sort_keys=True))
@@ -191,7 +191,7 @@ def main ():
       app.logger.log(VERBOSE, "Parsed body:\n%s" % pprint.pformat(data))
       # Filename based on the VNF ID
       filename = data['id']
-      path = os.path.join(PWD, CATALOGUE_DIR, "%s.nffg" % filename)
+      path = os.path.join(catalogue.get_full_path(), "%s.nffg" % filename)
       # Write into file
       with open(path, 'w') as f:
         f.write(json.dumps(data))
