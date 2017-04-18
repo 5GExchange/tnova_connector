@@ -1,0 +1,90 @@
+{
+  "nsd": {
+    "id": "single-ws",
+    "name": "single-webservice",
+    "vendor": "3",
+    "version": "1",
+    "vnfds": [
+      "domain#001:vnf#7"
+    ],
+    "vnffgd": {
+      "vnffgs": [
+        {
+          "vnffg_id": "vnffg0",
+          "number_of_endpoints": 0,
+          "number_of_virtual_links": 0,
+          "dependent_virtual_links": [],
+          "network_forwarding_path": [
+            {
+              "nfp_id": "nfp0",
+              "graph": [],
+              "connection_points": [],
+              "constituent_vnfs": [
+                {
+                  "vnf_ref_id": "7@001",
+                  "vnf_flavor_key_ref": "gold"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "lifecycle_events": {
+      "start": [],
+      "stop": [],
+      "scale_out": [],
+      "scale_in": []
+    },
+    "vnf_depedency": [],
+    "monitoring_parameters": [
+      {
+        "desc": "Availability",
+        "metric": "availability",
+        "unit": "%"
+      },
+      {
+        "desc": "End-to-End Bandwidth",
+        "metric": "end-to-end bandwidth",
+        "unit": "Mbps"
+      }
+    ],
+    "vld": {
+      "number_of_endpoints": 0,
+      "virtual_links": []
+    },
+    "sla": [
+      {
+        "id": "sla0",
+        "assurance_parameters": [],
+        "billing": {
+          "model": "PAYG",
+          "price": {
+            "price_per_period": 1,
+            "setup": 1,
+            "unit": "EUR"
+          }
+        },
+        "constituent_vnf": [
+          {
+            "number_of_instances": 1,
+            "redundancy_model": "Active",
+            "vnf_flavour_id_reference": "gold",
+            "vnf_reference": "7@001"
+          }
+        ],
+        "sla_key": "basic"
+      }
+    ],
+    "auto_scale_policy": {
+      "criteria": [],
+      "basic": []
+    },
+    "connection_points": [],
+    "vnf_dependency": [],
+    "provider": "5GEx",
+    "description": "single-webservice",
+    "provider_id": "3",
+    "descriptor_version": "1"
+  }
+}
