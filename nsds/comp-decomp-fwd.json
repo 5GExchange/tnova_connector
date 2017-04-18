@@ -1,0 +1,237 @@
+{
+  "nsd": {
+    "id": "comp-decomp-fwd",
+    "name": "comp-decomp-fwd",
+    "vendor": "3",
+    "version": "1",
+    "vnfds": [
+      "domain#001:vnf#4",
+      "domain#001:vnf#2",
+      "domain#001:vnf#1"
+    ],
+    "vnffgd": {
+      "vnffgs": [
+        {
+          "vnffg_id": "vnffg0",
+          "number_of_endpoints": 4,
+          "number_of_virtual_links": 5,
+          "dependent_virtual_links": [
+            "vld0",
+            "vld1",
+            "vld2",
+            "vld3",
+            "vld4"
+          ],
+          "network_forwarding_path": [
+            {
+              "nfp_id": "nfp0",
+              "graph": [
+                "vld0",
+                "vld1",
+                "vld2",
+                "vld3",
+                "vld4"
+              ],
+              "connection_points": [
+                "ns_ext_SAP1:in",
+                "domain#001:vnf#1:ext_1",
+                "domain#001:vnf#1:ext_1",
+                "domain#001:vnf#2:ext_1",
+                "ns_ext_SAP2:out",
+                "domain#001:vnf#2:ext_1",
+                "ns_ext_SAP2:in",
+                "domain#001:vnf#4:ext_1",
+                "ns_ext_SAP1:out",
+                "domain#001:vnf#4:ext_1"
+              ],
+              "constituent_vnfs": [
+                {
+                  "vnf_ref_id": "1@001",
+                  "vnf_flavor_key_ref": "gold"
+                },
+                {
+                  "vnf_ref_id": "2@001",
+                  "vnf_flavor_key_ref": "gold"
+                },
+                {
+                  "vnf_ref_id": "4@001",
+                  "vnf_flavor_key_ref": "gold"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "lifecycle_events": {
+      "start": [],
+      "stop": [],
+      "scale_out": [],
+      "scale_in": []
+    },
+    "vnf_depedency": [],
+    "monitoring_parameters": [
+      {
+        "desc": "Availability",
+        "metric": "availability",
+        "unit": "%"
+      },
+      {
+        "desc": "End-to-End Bandwidth",
+        "metric": "end-to-end bandwidth",
+        "unit": "Mbps"
+      }
+    ],
+    "vld": {
+      "number_of_endpoints": 0,
+      "virtual_links": [
+        {
+          "vld_id": "vld0",
+          "alias": "SAP1:in",
+          "root_requirements": "",
+          "leaf_requirement": "",
+          "qos": {
+            "peak": "",
+            "burst": "",
+            "delay": "",
+            "flowclass": "",
+            "params": ""
+          },
+          "connections": [
+            "domain#001:vnf#1:ext_1"
+          ],
+          "connectivity_type": "E-LINE",
+          "external_access": true,
+          "merge": false,
+          "sla_ref_id": "sla0"
+        },
+        {
+          "vld_id": "vld1",
+          "alias": "comp-decomp",
+          "root_requirements": "",
+          "leaf_requirement": "",
+          "qos": {
+            "peak": "",
+            "burst": "",
+            "delay": "",
+            "flowclass": "",
+            "params": ""
+          },
+          "connections": [
+            "domain#001:vnf#1:ext_1",
+            "domain#001:vnf#2:ext_1"
+          ],
+          "connectivity_type": "E-LINE",
+          "external_access": false,
+          "merge": false,
+          "sla_ref_id": "sla0"
+        },
+        {
+          "vld_id": "vld2",
+          "alias": "SAP2:out",
+          "root_requirements": "",
+          "leaf_requirement": "",
+          "qos": {
+            "peak": "",
+            "burst": "",
+            "delay": "",
+            "flowclass": "",
+            "params": ""
+          },
+          "connections": [
+            "domain#001:vnf#2:ext_1"
+          ],
+          "connectivity_type": "E-LINE",
+          "external_access": true,
+          "merge": false,
+          "sla_ref_id": "sla0"
+        },
+        {
+          "vld_id": "vld3",
+          "alias": "SAP2:in",
+          "root_requirements": "",
+          "leaf_requirement": "",
+          "qos": {
+            "peak": "",
+            "burst": "",
+            "delay": "",
+            "flowclass": "",
+            "params": ""
+          },
+          "connections": [
+            "domain#001:vnf#4:ext_1"
+          ],
+          "connectivity_type": "E-LINE",
+          "external_access": true,
+          "merge": false,
+          "sla_ref_id": "sla0"
+        },
+        {
+          "vld_id": "vld4",
+          "alias": "SAP1:out",
+          "root_requirements": "",
+          "leaf_requirement": "",
+          "qos": {
+            "peak": "",
+            "burst": "",
+            "delay": "",
+            "flowclass": "",
+            "params": ""
+          },
+          "connections": [
+            "domain#001:vnf#4:ext_1"
+          ],
+          "connectivity_type": "E-LINE",
+          "external_access": true,
+          "merge": false,
+          "sla_ref_id": "sla0"
+        }
+      ]
+    },
+    "sla": [
+      {
+        "id": "sla0",
+        "assurance_parameters": [],
+        "billing": {
+          "model": "PAYG",
+          "price": {
+            "price_per_period": 1,
+            "setup": 1,
+            "unit": "EUR"
+          }
+        },
+        "constituent_vnf": [
+          {
+            "number_of_instances": 1,
+            "redundancy_model": "Active",
+            "vnf_flavour_id_reference": "gold",
+            "vnf_reference": "1@001"
+          },
+          {
+            "number_of_instances": 1,
+            "redundancy_model": "Active",
+            "vnf_flavour_id_reference": "gold",
+            "vnf_reference": "2@001"
+          },
+          {
+            "number_of_instances": 1,
+            "redundancy_model": "Active",
+            "vnf_flavour_id_reference": "gold",
+            "vnf_reference": "4@001"
+          }
+        ],
+        "sla_key": "basic"
+      }
+    ],
+    "auto_scale_policy": {
+      "criteria": [],
+      "basic": []
+    },
+    "connection_points": [],
+    "vnf_dependency": [],
+    "provider": "5GEx",
+    "description": "comp-decomp-fwd",
+    "provider_id": "3",
+    "descriptor_version": "1"
+  }
+}
