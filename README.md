@@ -40,18 +40,40 @@ For simplicity every configuration parameter can be set as a global constant in 
 
 ```python
 # Connector configuration parameters
-RO_URL = "http://localhost:8008/escape/sg"  # ESCAPE's top level REST-API
+LISTENING_PORT = 5000
+RO_URL = "http://localhost:8008/escape"  # ESCAPE's top level REST-API
 VNF_STORE_URL = "http://localhost:8080/NFS/vnfds"
 
 USE_VNF_STORE = False  # enable dynamic VNFD acquiring from VNF Store
 NSD_DIR = "nsds"  # dir name used for storing received NSD files
 SERVICE_NFFG_DIR = "services"  # dir name used for storing converted services
-CATALOGUE_DIR = "vnf_catalogue"  # read VNFDs from dir if VNF Store is disabled
+CATALOGUE_DIR = "../vnf_catalogue"  # read VNFD from dir if VNFStore is disabled
+
+# Monitoring related parameters
+MONITORING_URL = None
+MONITORING_TIMEOUT = 2  # sec
 
 # Communication related parameters
 USE_CALLBACK = False
-CALLBACK_URL = None
+CALLBACK_URL = "http://localhost:9000/callback"
 USE_VIRTUALIZER_FORMAT = False
+ENABLE_DIFF = True
+
+# T-NOVA format constants
+NS_ID_NAME = "ns_id"
+MESSAGE_ID_NAME = "message-id"
+CALLBACK_NAME = "call-back"
+
+# Service request related constants
+NFFG_SERVICE_RPC = "sg"
+NFFG_TOPO_RPC = "topology"
+VIRTUALIZER_TOPO_RPC = "get-config"
+VIRTUALIZER_SERVICE_RPC = "edit-config"
+
+# Other constants
+PWD = os.path.realpath(os.path.dirname(__file__))
+LOGGER_NAME = "TNOVAConnector"
+HTTP_GLOBAL_TIMEOUT = 10  # sec
 ```
 
 Connector tries to acquire the URLs in the following order:
@@ -65,7 +87,7 @@ Connector tries to acquire the URLs in the following order:
 ```
 $ ./connector.py -h
 usage: connector.py [-h] [-d] [-c [URL]] [-m URL] [-r URL] [-p PORT]
-                    [-t TIMEOUT] [-v VNFS]
+                    [-s STORE] [-t t] [-v]
 
 TNOVAConnector: Middleware component which make the connection between
 Marketplace and RO with automatic request conversion
@@ -75,17 +97,17 @@ optional arguments:
   -d, --debug           run in debug mode (can use multiple times for more
                         verbose logging, default logging level: INFO)
   -c [URL], --callback [URL]
-                        enables callbacks from the RO with given URL, default:
+                        enable callbacks from the RO with given URL, default:
                         http://localhost:9000/callback
   -m URL, --monitoring URL
                         URL of the monitoring component, default: None
-  -r URL, --ro URL      RO's full URL, default:
-                        http://localhost:8008/escape/sg
-  -p PORT, --port PORT  REST-API port (default: 5000)
-  -t TIMEOUT, --timeout TIMEOUT
-                        timeout in sec for HTTP communication, default: 5s
-  -v VNFS, --vnfs VNFS  enables remote VNFStore with given full URL, default:
+  -r URL, --ro URL      RO's full URL, default: http://localhost:8008/escape
+  -p PORT, --port PORT  REST-API port, default: 5000
+  -s STORE, --store STORE
+                        enable remote VNFStore with given full URL, default:
                         http://localhost:8080/NFS/vnfds
+  -t t, --timeout t     timeout in sec for HTTP communication, default: 10s
+  -v, --virtualizer     enable Virtualizer format, default: False
 ```
 
 ## REST-API
