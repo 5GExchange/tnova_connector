@@ -41,15 +41,16 @@ VNF_STORE_URL = "http://localhost:8080/NFS/vnfds"
 USE_VNF_STORE = False  # enable dynamic VNFD acquiring from VNF Store
 NSD_DIR = "nsds"  # dir name used for storing received NSD files
 SERVICE_NFFG_DIR = "services"  # dir name used for storing converted services
-CATALOGUE_DIR = "../vnf_catalogue"  # read VNFDs from dir if VNF Store is disabled
+CATALOGUE_DIR = "../vnf_catalogue"  # read VNFD from dir if VNFStore is disabled
 
 # Monitoring related parameters
 MONITORING_URL = None
+MONITORING_TIMEOUT = 2  # sec
 
 # Communication related parameters
 USE_CALLBACK = False
 CALLBACK_URL = "http://localhost:9000/callback"
-USE_VIRTUALIZER_FORMAT = True
+USE_VIRTUALIZER_FORMAT = False
 ENABLE_DIFF = True
 
 # T-NOVA format constants
@@ -65,9 +66,8 @@ VIRTUALIZER_SERVICE_RPC = "edit-config"
 
 # Other constants
 PWD = os.path.realpath(os.path.dirname(__file__))
-POST_HEADERS = {"Content-Type": "application/json"}
 LOGGER_NAME = "TNOVAConnector"
-HTTP_GLOBAL_TIMEOUT = 5
+HTTP_GLOBAL_TIMEOUT = 10  # sec
 
 
 def _sigterm_handler (sig, stack):
@@ -341,7 +341,7 @@ def main ():
           try:
             requests.get(url=MONITORING_URL,
                          params=params,
-                         timeout=HTTP_GLOBAL_TIMEOUT)
+                         timeout=MONITORING_TIMEOUT)
           except ConnectionError:
             app.logger.warning("Monitoring component(%s) is unreachable!" %
                                MONITORING_URL)
@@ -680,7 +680,7 @@ if __name__ == "__main__":
                            "verbose logging, default logging level: INFO)")
   parser.add_argument("-c", "--callback", action="store", type=str,
                       metavar="URL", default="", nargs="?",
-                      help="enables callbacks from the RO with given URL, "
+                      help="enable callbacks from the RO with given URL, "
                            "default: %s" % CALLBACK_URL)
   parser.add_argument("-m", "--monitoring", action="store", type=str,
                       default=None, metavar="URL",
@@ -690,13 +690,16 @@ if __name__ == "__main__":
   parser.add_argument("-p", "--port", action="store", default=LISTENING_PORT,
                       type=int, help="REST-API port, default: %s"
                                      % LISTENING_PORT)
+  parser.add_argument("-s", "--store", action="store", type=str, default=False,
+                      help="enable remote VNFStore with given full URL, "
+                           "default: %s" % VNF_STORE_URL)
   parser.add_argument("-t", "--timeout", action="store", type=int, metavar="t",
                       default=HTTP_GLOBAL_TIMEOUT,
                       help="timeout in sec for HTTP communication, default: %ss"
                            % HTTP_GLOBAL_TIMEOUT)
-  parser.add_argument("-v", "--vnfs", action="store", type=str, default=False,
-                      help="enables remote VNFStore with given full URL, "
-                           "default: %s" % VNF_STORE_URL)
+  parser.add_argument("-v", "--virtualizer", action="store_true", default=False,
+                      help="enable Virtualizer format, default: %s"
+                           % USE_VIRTUALIZER_FORMAT)
 
   args = parser.parse_args()
 
@@ -731,8 +734,8 @@ if __name__ == "__main__":
   else:
     log.info("Use default value for RO's URL: %s" % RO_URL)
   # Set CATALOGUE_URL
-  if args.vnfs:
-    VNF_STORE_URL = args.vnfs
+  if args.store:
+    VNF_STORE_URL = args.store
     USE_VNF_STORE = True
     log.info("Set VNFStore's URL from command line: %s" % VNF_STORE_URL)
   elif 'VNF_STORE_URL' in os.environ:
@@ -772,6 +775,17 @@ if __name__ == "__main__":
              "(MONITORING_URL): %s" % MONITORING_URL)
   else:
     log.info("Disable monitoring notifications")
+  # Virtualizer format
+  if args.virtualizer:
+    USE_VIRTUALIZER_FORMAT = args.virtualizer
+    log.info("Enable Virtualizer format from command line: %s" %
+             USE_VIRTUALIZER_FORMAT)
+  elif 'USE_VIRTUALIZER_FORMAT' in os.environ:
+    USE_VIRTUALIZER_FORMAT = os.environ.get('USE_VIRTUALIZER_FORMAT')
+    log.info("Enable Virtualizer format from environment variable "
+             "(USE_VIRTUALIZER_FORMAT): %s" % USE_VIRTUALIZER_FORMAT)
+  else:
+    log.info("Used format for RO: NFFG")
 
   # Run TNOVAConnector
   main()
