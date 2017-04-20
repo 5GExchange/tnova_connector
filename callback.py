@@ -158,7 +158,8 @@ class CallbackManager(HTTPServer, Thread):
                 port=DEFAULT_PORT, timeout=DEFAULT_WAIT_TIMEOUT,
                 callback_url=None, **kwargs):
     Thread.__init__(self, name=self.__class__.__name__)
-    HTTPServer.__init__(self, (address, port), CallbackHandler)
+    HTTPServer.__init__(self, (address, port), CallbackHandler,
+                        bind_and_activate=False)
     self.domain_name = domain_name
     self.wait_timeout = float(timeout)
     self.__register = {}
@@ -176,6 +177,9 @@ class CallbackManager(HTTPServer, Thread):
       return "http://%s:%s/callback" % self.server_address
 
   def run (self):
+    # Bind and activate here
+    self.server_bind()
+    self.server_activate()
     try:
       log.debug("Start %s for domain: %s on %s:%s" % (self.__class__.__name__,
                                                       self.domain_name,
