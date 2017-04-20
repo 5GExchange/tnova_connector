@@ -13,10 +13,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import datetime
+import httplib
+import json
 import logging
 import os
+import pprint
 import uuid
 
+import requests
+from requests import Timeout
+from requests.exceptions import ConnectionError
+
+from colored_logger import VERBOSE
+from conversion.vnf_catalogue import MissingVNFDException
 from nffg_lib.nffg import NFFG
 
 
@@ -33,15 +42,32 @@ class ServiceInstance(object):
   STATUS_STOPPED = "stopped"
 
   def __init__ (self, service_id, instance_id=None, name=None, path=None,
-                status=None):
+                status=STATUS_INIT):
+    """
+    Init service instance.
+    
+    :param service_id: service id
+    :type service_id: str
+    :param instance_id: unique instance id
+    :type instance_id: str
+    :param name: service name
+    :type name: str
+    :param path: path of cached service file
+    :type path: str
+    :param status: service status
+    :type status: str 
+    """
     self.id = instance_id if instance_id else str(uuid.uuid1())
     self.service_id = service_id  # Converted NFFG the service created from
     # The id of the service instance
     self.name = name
     self.path = path
-    self.__status = status if status else self.STATUS_INIT
-    self.created_at = datetime.datetime.fromtimestamp(
-      os.path.getctime(self.path)).isoformat()
+    self.__status = status
+    if self.path:
+      self.created_at = datetime.datetime.fromtimestamp(
+        os.path.getctime(self.path)).isoformat()
+    else:
+      self.created_at = self.__touch()
     self.updated_at = self.__touch()
 
   def __touch (self):
@@ -109,22 +135,58 @@ class ServiceManager(object):
   Very primitive.
   """
   LOGGER_NAME = "ServiceManager"
-  # Default ESCAPE RUL
-  ESCAPE_URL = "http://localhost:8008"
+  # Default ESCAPE URL
+  RO_URL = "http://localhost:8008"
+  # Default NSD cache
+  NSD_DIR = "nsds"
+  # Default Service Catalog attributes
+  SERVICE_DIR = "services"
+  SERVICE_CATALOG_ENABLED = False
+  REQUEST_TIMEOUT = 3
 
-  def __init__ (self, service_dir, ro_url, logger=None):
-    self.service_dir = service_dir
-    # service-id: ServiceInstance object
-    self.instances = {}
+  def __init__ (self, converter, use_remote=False, service_catalog_url=None,
+                cache_dir=None, nsd_dir=None, ro_url=None, logger=None):
+    """
+    Init Service Manager.
+    
+    :param converter: used Converter object
+    :type converter: :class:`TNOVAConverter`
+    :param use_remote: enable remote service catalog
+    :type use_remote: bool
+    :param service_catalog_url: service catalog URL
+    :type service_catalog_url: str
+    :param cache_dir: directory path of cached servcie files
+    :type cache_dir: str
+    :param nsd_dir: directory path of cached NSD files
+    :type nsd_dir: str
+    :param ro_url: Resource Orchestrator URL
+    :type ro_url: str
+    :param logger: optional logger object
+    :type logger: :class:`logging.Logger`
+    """
     if logger is not None:
       self.log = logger.getChild(self.LOGGER_NAME)
-      # self.log.name = self.LOGGER_NAME
     else:
       logging.getLogger(self.__class__.__name__)
-    self.log.debug("Use directory for service cache: %s" % self.service_dir)
-    self.ESCAPE_URL = ro_url
-    self.log.info("Use URL for ESCAPE: %s" % self.ESCAPE_URL)
-    self.initialize()
+    # service-id: ServiceInstance object
+    self.converter = converter
+    self.log.debug("Using converter: %s" % self.converter)
+    self.__instances = {}
+    self.RO_URL = ro_url
+    self.log.debug("Use URL for RO: %s" % self.RO_URL)
+    if nsd_dir:
+      self.NSD_DIR = nsd_dir
+    self.log.debug("Use directory for NSD cache: %s" % self.NSD_DIR)
+    if cache_dir:
+      self.SERVICE_DIR = cache_dir
+    self.log.debug("Use directory for service cache: %s" % self.SERVICE_DIR)
+    self.service_catalog_url = service_catalog_url
+    if use_remote:
+      self.SERVICE_CATALOG_ENABLED = True
+      self.log.debug(
+        "Set Service Catalog with URL: %s" % self.service_catalog_url)
+    else:
+      self.log.info("Using Service Catalog is disabled!")
 
   def initialize (self):
     """
@@ -132,11 +194,51 @@ class ServiceManager(object):
 
     :return: None
     """
-    self.log.debug("Read defined services from location: %s" % self.service_dir)
-    for filename in os.listdir(self.service_dir):
+    self.log.info("Initialize %s..." % self.__class__.__name__)
+    self.log.debug("Read defined services from location: %s" % self.SERVICE_DIR)
+    for filename in os.listdir(self.SERVICE_DIR):
       if not filename.startswith('.') and filename.endswith('.nffg'):
         service_id = os.path.splitext(filename)[0]
         self.log.debug("Detected cached service NFFG: %s" % service_id)
+
+  def store_nsd (self, raw):
+    """
+    Parse the given raw NSD string and store it into a file.
+    Returns with the file path.
+
+    :param raw: raw NSD data in JSON
+    :type raw: str
+    :return: cache file path
+    :rtype: str
+    """
+    try:
+      # Parse data as JSON
+      self.log.debug("Parsing NSD body...")
+      data = json.loads(raw)
+      self.log.log(VERBOSE, "Parsed body:\n%s" % pprint.pformat(data))
+      # Filename based on the service ID
+      filename = data['nsd']['id']
+      path = os.path.realpath(os.path.join(self.NSD_DIR, "%s.json" % filename))
+      # Write into file
+      with open(path, 'w') as f:
+        f.write(json.dumps(data, indent=2, sort_keys=True))
+        self.log.info("Received NSD has been saved into %s!" % path)
+      return path
+    except ValueError:
+      self.log.exception("Received data is not valid JSON!")
+      self.log.debug("Received body:\n%s" % raw)
+      return
+    except KeyError:
+      self.log.exception("Received data is not valid NSD!")
+      self.log.debug("Received body:\n%s" % raw)
+      return
+    except MissingVNFDException:
+      self.log.exception("Unrecognisable VNFD has been found in NSD!")
+      raise
+    except:
+      self.log.exception(
+        "Got unexpected exception during NSD -> NFFG conversion!")
+      raise
 
   def instantiate_ns (self, ns_id, path=None, name=None,
                       status=ServiceInstance.STATUS_INIT):
@@ -153,26 +255,118 @@ class ServiceManager(object):
     :return: service instance
     :rtype: ServiceInstance
     """
-    # If path is missing then assembly if from ns id
+    # If path is missing then assembly if from ns_id
     if not path:
-      path = os.path.join(self.service_dir, "%s.nffg" % ns_id)
+      path = os.path.join(self.SERVICE_DIR, "%s.nffg" % ns_id)
+    # Create Service Instance trunk
+    si = ServiceInstance(service_id=ns_id)
     self.log.debug("Assembled path for requested service: %s " % path)
-    try:
-      # Load the requested service descriptor3
-      sg = NFFG.parse_from_file(path)
-      self.log.debug("Service has been loaded!")
-    except IOError:
-      self.log.warning("NFFG file for service instance creation is not found in"
-                       " %s! Skip service processing..." % self.service_dir)
-      return None
-    si = ServiceInstance(service_id=ns_id,
-                         name=name if name else sg.name,  # Inherited from NSD
-                         path=path,
-                         status=status)
-    self.instances[si.id] = si
-    self.log.info("Add managed service: %s with instance id: %s " % (
-      ns_id, si.id))
+    if not os.path.exists(path=path):
+      self.log.warning("Service with id: %s is not found in cache dir: %s!"
+                       % (ns_id, self.SERVICE_DIR))
+      # Search for cached NSD and convert it on-the-fly
+      nsd_path = os.path.join(self.NSD_DIR, "%s.json" % ns_id)
+      self.log.debug("Trying to convert service from NSD: %s..." % nsd_path)
+      if not os.path.exists(path=nsd_path):
+        self.log.warning("NSD with id: %s is not found in cache dir: %s!"
+                         % (ns_id, self.NSD_DIR))
+        if self.SERVICE_CATALOG_ENABLED:
+          # Try to acquire the NSD from remote service catalog and convert it
+          nsd_path = self.request_nsd_from_remote_store(ns_id=ns_id)
+          if not nsd_path:
+            self.log.error("Failed to acquire NSD: %s" % ns_id)
+            si.status = si.STATUS_ERROR
+            return si
+        else:
+          self.log.warning("Using service-catalog is disabled!")
+          return
+      # Convert the NSD given by file name
+      sg = self.convert_service(nsd_file=nsd_path)
+      self.log.info("NSD conversion has been ended!")
+      if sg is None:
+        self.log.error("Service conversion was failed! Service is not saved!")
+        si.status = si.STATUS_ERROR
+        return si
+    else:
+      try:
+        # Load the requested service descriptor3
+        sg = NFFG.parse_from_file(path)
+        self.log.debug("Service has been loaded!")
+      except IOError:
+        self.log.warning("NFFG file for service instance creation is not found "
+                         "in %s! Skip service processing..." % self.SERVICE_DIR)
+        si.status = si.STATUS_ERROR
+        return si
+    # Update Service Instance
+    si.name = name if name else sg.name,  # Inherited from NSD
+    si.path = path
+    si.status = ServiceInstance.STATUS_INIT
+    # Store Service Instance
+    self.__instances[si.id] = si
+    self.log.info("Add managed service: %s with instance id: %s " % (ns_id,
+                                                                     si.id))
     return si
+
+  def request_nsd_from_remote_store (self, ns_id):
+    """
+    
+    :param ns_id: 
+    :return: path
+    """
+    self.log.debug("Fetching NSD: %s from service-catalog: %s"
+                   % (ns_id, self.service_catalog_url))
+    if not self.service_catalog_url:
+      self.log.error("Missing Service Catalog URL from %s"
+                     % self.__class__.__name__)
+      return
+    url = os.path.join(self.service_catalog_url, str(ns_id))
+    self.log.debug("Used URL for NSD request: %s" % url)
+    try:
+      response = requests.get(url=url,
+                              timeout=self.REQUEST_TIMEOUT)
+    except Timeout:
+      self.log.error("Request timeout: %ss exceeded! Service Catalog: %s is "
+                     "unreachable!" % (self.REQUEST_TIMEOUT,
+                                       self.service_catalog_url))
+      return
+    except ConnectionError as e:
+      self.log.error(str(e))
+      return
+    if not response.ok:
+      if response.status_code == httplib.NOT_FOUND:
+        self.log.warning("Got %s! NSD (id: %s) is missing from Service Catalog!"
+                         % (httplib.NOT_FOUND, ns_id))
+      else:
+        self.log.error("Got error during requesting NSD with id: %s!" % ns_id)
+      return
+    self.log.info("NSD: %s has been acquired from Service Catalog: %s" %
+                  (ns_id, self.service_catalog_url))
+    self.log.log(VERBOSE, "Received body:\n%s" % pprint.pformat(response.json))
+    return self.store_nsd(raw=response.text)
+
+  def convert_service (self, nsd_file):
+    """
+    Perform the conversion of the received NSD and save the NFFG.
+
+    :param nsd_file: path of the stored NSD file
+    :type nsd_file: str
+    :return: conversion was successful or not
+    :rtype: bool
+    """
+    self.log.info("Start converting received NSD...")
+    # Convert the NSD given by file name
+    sg = self.converter.convert(nsd_file=nsd_file)
+    self.log.info("NSD conversion has been ended!")
+    if sg is None:
+      self.log.error("Service conversion was failed! Service is not saved!")
+      return
+    self.log.log(VERBOSE, "Converted service:\n%s" % sg.dump())
+    # Save result NFFG into a file
+    sg_path = os.path.join(self.SERVICE_DIR, "%s.nffg" % sg.id)
+    with open(sg_path, 'w') as f:
+      f.write(sg.dump())
+      self.log.info("Converted NFFG has been saved! Path: %s" % sg_path)
+    return sg
 
   def remove_service_instance (self, id):
     """
@@ -184,9 +378,9 @@ class ServiceManager(object):
     :rtype: ServiceInstance
     """
     self.log.debug("Remove service instance: %s from ServiceManager!" % id)
-    if id in self.instances:
+    if id in self.__instances:
       si = self.get_service(id=id)
-      del self.instances[id]
+      del self.__instances[id]
       si.status = ServiceInstance.STATUS_STOPPED
       return si
     else:
@@ -202,10 +396,10 @@ class ServiceManager(object):
     :type status: str
     :return: None
     """
-    if id not in self.instances:
+    if id not in self.__instances:
       self.log.warning("Missing service instance: %s from ServiceManager!" % id)
     else:
-      self.instances[id].status = status
+      self.__instances[id].status = status
       self.log.info("Status for service: %s updated with value: %s" %
                     (id, status))
 
@@ -218,8 +412,8 @@ class ServiceManager(object):
     :return: service instance object
     :rtype: ServiceInstance
     """
-    if id in self.instances:
-      return self.instances[id]
+    if id in self.__instances:
+      return self.__instances[id]
     else:
       self.log.warning("Missing service instance: %s from ServiceManager!" % id)
 
@@ -232,8 +426,8 @@ class ServiceManager(object):
     :return: service status
     :rtype: str
     """
-    if id in self.instances:
-      return self.instances[id].status
+    if id in self.__instances:
+      return self.__instances[id].status
     else:
       self.log.warning("Missing service instance: %s from ServiceManager!" % id)
 
@@ -246,8 +440,8 @@ class ServiceManager(object):
     :return: service name
     :rtype: str
     """
-    if id in self.instances:
-      return self.instances[id].name
+    if id in self.__instances:
+      return self.__instances[id].name
     else:
       self.log.warning("Missing service instance: %s from ServiceManager!" % id)
 
@@ -260,7 +454,7 @@ class ServiceManager(object):
     """
     self.log.info("Collect running services from ServiceManager...")
     ret = []
-    for si in self.instances.itervalues():
+    for si in self.__instances.itervalues():
       if si.status == ServiceInstance.STATUS_START:
         ret.append(si.get_json())
     return ret
@@ -274,6 +468,6 @@ class ServiceManager(object):
     """
     self.log.info("Collect managed services from ServiceManager...")
     ret = []
-    for si in self.instances.itervalues():
+    for si in self.__instances.itervalues():
       ret.append(si.get_json())
     return ret

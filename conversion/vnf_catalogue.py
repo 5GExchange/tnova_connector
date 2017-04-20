@@ -203,13 +203,12 @@ class VNFCatalogue(object):
   Container class for VNFDs.
   """
   LOGGER_NAME = "VNFCatalogue"
-  # VNF_STORE_ENABLED = False
-  VNF_CATALOGUE_DIR = "../vnf_catalogue"
+  VNF_CATALOGUE_DIR = "vnf_catalogue"
   VNF_STORE_ENABLED = False
   STORE_VNFD_LOCALLY = True
   REQUEST_TIMEOUT = 1
 
-  def __init__ (self, remote_store=False, url=None, catalogue_dir=None,
+  def __init__ (self, use_remote=False, vnf_store_url=None, cache_dir=None,
                 logger=None):
     """
     Constructor.
@@ -221,15 +220,25 @@ class VNFCatalogue(object):
       # self.log.name = self.LOGGER_NAME
     else:
       logging.getLogger(self.__class__.__name__)
-    self.catalogue = {}
-    if catalogue_dir:
-      self.VNF_CATALOGUE_DIR = catalogue_dir
-      self.log.info("Use directory for VNF cache: %s" % self.VNF_CATALOGUE_DIR)
-    self._full_catalogue_path = None
-    self.vnf_store_url = url
-    if remote_store:
+    self.__catalogue = {}
+    if cache_dir:
+      self.VNF_CATALOGUE_DIR = cache_dir
+    self.log.debug("Use directory for VNF cache: %s" % self.VNF_CATALOGUE_DIR)
+    self.vnf_store_url = vnf_store_url
+    if use_remote:
       self.VNF_STORE_ENABLED = True
-      self.log.info("Enabled VNFStore with URL: %s" % self.vnf_store_url)
+      self.log.debug("Set VNF Store with URL: %s" % self.vnf_store_url)
+    else:
+      self.log.debug("Using VNF Store is disabled!")
+
+  def initialize (self):
+    """
+    Initialize VNFCatalogue by reading cached VNFDs from file.
+    
+    :return: None
+    """
+    self.log.info("Initialize %s..." % self.__class__.__name__)
+    self.parse_vnf_catalogue_from_folder()
 
   def __str__ (self):
     """
@@ -255,9 +264,9 @@ class VNFCatalogue(object):
     :rtype: bool
     """
     if isinstance(vnfd, VNFWrapper):
-      if id not in self.catalogue:
-        self.catalogue[id] = vnfd
-        self.log.info("Register VNFD with id: %s" % id)
+      if id not in self.__catalogue:
+        self.__catalogue[id] = vnfd
+        self.log.debug("Register VNFD with id: %s" % id)
       else:
         self.log.debug("VNFD has been already registered with id: %s!" % id)
       return True
@@ -272,9 +281,15 @@ class VNFCatalogue(object):
     :type id: str
     :return: None
     """
-    del self.catalogue[id]
-    self.log.info(
+    del self.__catalogue[id]
+    self.log.debug(
       "VNFD with id: %s is removed from %s" % (id, self.__class__.__name__))
+
+  def registered (self, id):
+    return id in self.__catalogue
+
+  def get_registered_vnfs (self):
+    return self.__catalogue.keys()
 
   def get_by_id (self, id):
     """
@@ -287,21 +302,9 @@ class VNFCatalogue(object):
     """
     if self.VNF_STORE_ENABLED:
       return self.request_vnf_from_remote_store(id)
-    for vnf in self.catalogue.itervalues():
+    for vnf in self.__catalogue.itervalues():
       if vnf.id == id:
         return vnf
-
-  def get_full_path (self):
-    """
-    Return the full path of the VNF catalogue.
-    
-    :return: full path
-    :rtype: str
-    """
-    if self._full_catalogue_path is None:
-      self._full_catalogue_path = os.path.realpath(
-        os.path.join(os.path.dirname(__file__), self.VNF_CATALOGUE_DIR))
-    return self._full_catalogue_path
 
   def parse_vnf_catalogue_from_folder (self, catalogue_dir=None):
     """
@@ -314,20 +317,21 @@ class VNFCatalogue(object):
     :return: created VNFCatalogue instance
     :rtype: VNFCatalogue
     """
-    full_path = self.get_full_path()
     self.log.debug(
-      "Parse VNFDs from local folder: %s ..." % full_path)
+      "Parse VNFDs from local folder: %s ..." % self.VNF_CATALOGUE_DIR)
     # Iterate over catalogue dir
-    for vnf in os.listdir(full_path):
+    for vnf in os.listdir(self.VNF_CATALOGUE_DIR):
       if vnf.startswith('.'):
         continue
-      vnfd_file = os.path.join(full_path, vnf)
+      vnfd_file = os.path.join(self.VNF_CATALOGUE_DIR, vnf)
       with open(vnfd_file) as f:
         # Parse VNFD from JSOn files as VNFWrapper class
         vnfd = json.load(f, object_hook=self.__vnfd_object_hook)
         vnfd.vnfd_file = vnfd_file
-        # Register VNF into catalogue
-        self.register(id=os.path.splitext(vnf)[0], vnfd=vnfd)
+        vnfd_id = os.path.splitext(vnf)[0]
+        if not self.registered(id=vnfd_id):
+          # Register VNF into catalogue
+          self.register(id=vnfd_id, vnfd=vnfd)
     return self
 
   def request_vnf_from_remote_store (self, vnf_id):
@@ -340,9 +344,9 @@ class VNFCatalogue(object):
     :rtype: VNFWrapper
     """
     if all((self.VNF_STORE_ENABLED, self.STORE_VNFD_LOCALLY,
-            vnf_id in self.catalogue)):
+            vnf_id in self.__catalogue)):
       self.log.debug("Return with cached VNFD(id: %s)" % vnf_id)
-      return self.catalogue[vnf_id]
+      return self.__catalogue[vnf_id]
     self.log.debug("Request VNFD with id: %s from VNF Store..." % vnf_id)
     if not self.vnf_store_url:
       self.log.error("Missing VNF Store URL from %s" % self.__class__.__name__)
@@ -350,7 +354,7 @@ class VNFCatalogue(object):
     url = os.path.join(self.vnf_store_url, str(vnf_id))
     self.log.debug("Used URL for VNFD request: %s" % url)
     try:
-      response = requests.get(url=os.path.join(self.vnf_store_url, str(vnf_id)),
+      response = requests.get(url=url,
                               timeout=self.REQUEST_TIMEOUT)
     except Timeout:
       self.log.error(
@@ -366,7 +370,7 @@ class VNFCatalogue(object):
           "Got HTTP 404! VNFD (id: %s) is missing from VNF Store!" % vnf_id)
       else:
         self.log.error("Got error during requesting VNFD with id: %s!" % vnf_id)
-      return None
+      return
     self.log.log(VERBOSE,
                  "Received body:\n%s" % pprint.pformat(response.json()))
     vnfd = json.loads(response.text, object_hook=self.__vnfd_object_hook)
@@ -385,10 +389,10 @@ class VNFCatalogue(object):
   # Container-like magic functions
 
   def iteritems (self):
-    return self.catalogue.iteritems()
+    return self.__catalogue.iteritems()
 
   def __getitem__ (self, item):
-    return self.catalogue[item]
+    return self.__catalogue[item]
 
   def __iter__ (self):
-    return self.catalogue.__iter__()
+    return self.__catalogue.__iter__()

@@ -39,15 +39,21 @@ git submodule update --init
 For simplicity every configuration parameter can be set as a global constant in the `connector.py` module:
 
 ```python
-# Connector configuration parameters
+# Listening port
 LISTENING_PORT = 5000
+
+# Connector configuration parameters
 RO_URL = "http://localhost:8008/escape"  # ESCAPE's top level REST-API
-VNF_STORE_URL = "http://localhost:8080/NFS/vnfds"
 
 USE_VNF_STORE = False  # enable dynamic VNFD acquiring from VNF Store
+VNF_STORE_URL = "http://localhost:8080/NFS/vnfds"
+CATALOGUE_DIR = "vnf_catalogue"  # read VNFD from dir if VNFStore is disabled
+
+USE_SERVICE_CATALOG = True  # enable dynamic NSD acquiring from service-catalog
+SERVICE_CATALOG_URL = "http://localhost:42050/service/catalog"
 NSD_DIR = "nsds"  # dir name used for storing received NSD files
+
 SERVICE_NFFG_DIR = "services"  # dir name used for storing converted services
-CATALOGUE_DIR = "../vnf_catalogue"  # read VNFD from dir if VNFStore is disabled
 
 # Monitoring related parameters
 MONITORING_URL = None
@@ -87,7 +93,7 @@ Connector tries to acquire the URLs in the following order:
 ```
 $ ./connector.py -h
 usage: connector.py [-h] [-d] [-c [URL]] [-m URL] [-r URL] [-p PORT]
-                    [-s STORE] [-t t] [-v]
+                    [-s VNFSTORE] [-S SERVICECATALOG] [-t t] [-v]
 
 TNOVAConnector: Middleware component which make the connection between
 Marketplace and RO with automatic request conversion
@@ -103,9 +109,12 @@ optional arguments:
                         URL of the monitoring component, default: None
   -r URL, --ro URL      RO's full URL, default: http://localhost:8008/escape
   -p PORT, --port PORT  REST-API port, default: 5000
-  -s STORE, --store STORE
+  -s VNFSTORE, --vnfstore VNFSTORE
                         enable remote VNFStore with given full URL, default:
                         http://localhost:8080/NFS/vnfds
+  -S SERVICECATALOG, --servicecatalog SERVICECATALOG
+                        enable remote Service Catalog with given full URL,
+                        default: http://localhost:42050/service/catalog
   -t t, --timeout t     timeout in sec for HTTP communication, default: 10s
   -v, --virtualizer     enable Virtualizer format, default: False
 ```

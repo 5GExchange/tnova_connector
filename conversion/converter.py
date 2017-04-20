@@ -45,12 +45,22 @@ class TNOVAConverter(object):
     else:
       logging.getLogger(self.__class__.__name__)
     if vnf_catalogue is not None:
-      self.catalogue = vnf_catalogue
+      self.__catalogue = vnf_catalogue
     else:
-      self.catalogue = VNFCatalogue(logger=logger)
-      self.catalogue.parse_vnf_catalogue_from_folder()
-    self.log.debug("Use VNFCatalogue: %s" % self.catalogue)
+      self.__catalogue = VNFCatalogue(logger=logger)
     self.vlan_register = {}
+
+  def __str__ (self):
+    return "%s()" % self.__class__.__name__
+
+  def initialize (self):
+    """
+    Initialize TNOVAConverter by reading cached VNFDs from file.
+    
+    :return: None
+    """
+    self.log.info("Initialize %s..." % self.__class__.__name__)
+    self.log.debug("Use VNFCatalogue: %s" % self.__catalogue)
 
   def parse_nsd_from_file (self, nsd_file):
     """
@@ -68,6 +78,18 @@ class TNOVAConverter(object):
     except IOError as e:
       self.log.error("Got error during NSD parse: %s" % e)
       sys.exit(1)
+
+  @classmethod
+  def parse_nsd_from_text (cls, raw):
+    """
+    Parse the given NFD as :any`NSWrapper` from raw data.
+
+    :param raw: raw NSD data
+    :type raw: str
+    :return: parsed NSD
+    :rtype: NSWrapper
+    """
+    return json.load(raw, object_hook=cls.__nsd_object_hook)
 
   @staticmethod
   def __nsd_object_hook (obj):
@@ -334,25 +356,25 @@ class TNOVAConverter(object):
     :rtype: :any:`NFFG`
     """
     # Parse required descriptors
-    self.log.info("Parse Network Service (NS) from NSD file: %s" % nsd_file)
+    self.log.info("Parsing Network Service (NS) from NSD file: %s" % nsd_file)
     ns = self.parse_nsd_from_file(nsd_file)
-    if not self.catalogue.VNF_STORE_ENABLED:
-      self.log.info("Parse VNFs from VNFD files under: %s" %
-                    self.catalogue.VNF_CATALOGUE_DIR)
-      vnfs = self.catalogue.parse_vnf_catalogue_from_folder()
-      self.log.debug("Registered VNFs: %s" % vnfs.catalogue.keys())
+    if not self.__catalogue.VNF_STORE_ENABLED:
+      self.log.info("Parsing new VNFs from VNFD files under: %s" %
+                    self.__catalogue.VNF_CATALOGUE_DIR)
+      vnfs = self.__catalogue.parse_vnf_catalogue_from_folder()
+      self.log.debug("Registered VNFs: %s" % vnfs.get_registered_vnfs())
     # Create main NFFG object
     nffg = NFFG(id=ns.id, service_id=ns.id, name=ns.name)
     # Convert NFFG elements
     try:
       self.log.debug("Convert NF nodes...")
-      self.__convert_nfs(nffg=nffg, ns=ns, vnfs=self.catalogue)
+      self.__convert_nfs(nffg=nffg, ns=ns, vnfs=self.__catalogue)
       self.log.debug("Convert SAP nodes...")
-      self.__convert_saps(nffg=nffg, ns=ns, vnfs=self.catalogue)
+      self.__convert_saps(nffg=nffg, ns=ns, vnfs=self.__catalogue)
       self.log.debug("Convert Service Graph hop edges...")
-      self.__convert_sg_hops(nffg=nffg, ns=ns, vnfs=self.catalogue)
+      self.__convert_sg_hops(nffg=nffg, ns=ns, vnfs=self.__catalogue)
       self.log.debug("Convert E2E Requirement edges...")
-      self.__convert_e2e_reqs(nffg=nffg, ns=ns, vnfs=self.catalogue)
+      self.__convert_e2e_reqs(nffg=nffg, ns=ns, vnfs=self.__catalogue)
     except MissingVNFDException as e:
       self.log.error(e)
       return None
@@ -389,9 +411,9 @@ if __name__ == "__main__":
   # log = logging.getLogger(__name__)
   # log.setLevel(args.loglevel)
   log = ColoredLogger.configure(level=args.loglevel)
-  catalogue = VNFCatalogue(remote_store=False, logger=log,
-                           catalogue_dir=args.catalogue,
-                           url="http://172.16.178.128:8080/NFS/vnfds")
+  catalogue = VNFCatalogue(use_remote=False, logger=log,
+                           cache_dir=args.catalogue,
+                           vnf_store_url="http://172.16.178.128:8080/NFS/vnfds")
   # catalogue.VNF_STORE_ENABLED = True
   catalogue.VNF_STORE_ENABLED = not args.offline
   converter = TNOVAConverter(logger=log, vnf_catalogue=catalogue)
