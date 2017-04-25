@@ -130,8 +130,14 @@ class TNOVAConverter(object):
         self.log.debug("Added NF port: %s" % nf_port)
       # Detect INTERNET ports
       for iport in vnf.get_internet_ports():
-        port = node_nf.ports[iport]
-        port.sap = "INTERNET"
+        if iport not in node_nf.ports:
+          # INTERNET port is not external
+          nf_port = node_nf.add_port(id=iport, sap="INTERNET")
+          self.log.debug("Added new INTERNET port: %s" % nf_port)
+        else:
+          nf_port = node_nf.ports[iport]
+          # Set SAP attribute for INTERNET port
+          nf_port.sap = "INTERNET"
       # Add metadata
       for md, value in vnf.get_metadata().iteritems():
         if md == 'bootstrap_script':

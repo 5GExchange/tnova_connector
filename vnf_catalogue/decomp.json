@@ -91,10 +91,6 @@
         {
           "vlink_ref": "vl0",
           "id": "CPzuei"
-        },
-        {
-          "vlink_ref": "vl1",
-          "id": "CPtest"
         }
       ],
       "monitoring_parameters": [

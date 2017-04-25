@@ -201,18 +201,14 @@ class VNFWrapper(AbstractDescriptorWrapper):
           "simple VNFs!")
         return
       ports = []
-      # return self.data['vdu'][0]["connection_points"]
-      for cp in self.data['vdu'][0]["connection_points"]:
-        ref = cp['id']
-        for vlink in self.data["vlinks"]:
-          if ref in vlink['connection_points_reference']:
-            if str(vlink['connectivity_type']).upper() == 'INTERNET':
-              try:
-                port_id = int(vlink['alias'])
-              except ValueError:
-                port_id = vlink['alias']
-              ports.append(port_id)
-              self.log.debug("Detected INTERNET port: %s" % vlink['alias'])
+      for vlink in self.data["vlinks"]:
+          if str(vlink['connectivity_type']).upper() == 'INTERNET':
+            try:
+              port_id = int(vlink['alias'])
+            except ValueError:
+              port_id = vlink['alias']
+            ports.append(port_id)
+            self.log.debug("Detected INTERNET port: %s" % vlink['alias'])
       return ports
     except KeyError:
       self.log.error("Missing required field for 'ports' in VNF: %s!" % self.id)
