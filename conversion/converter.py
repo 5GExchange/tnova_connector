@@ -126,13 +126,46 @@ class TNOVAConverter(object):
       self.log.debug("Create VNF: %s" % node_nf)
       # Add ports to NF
       for port in vnf.get_ports():
-        try:
-          port_id = int(port)
-        except ValueError:
-          port_id = port
-        nf_port = node_nf.add_port(id=port_id)
+        nf_port = node_nf.add_port(id=port)
         self.log.debug("Added NF port: %s" % nf_port)
+      # Detect INTERNET ports
+      for iport in vnf.get_internet_ports():
+        port = node_nf.ports[iport]
+        port.sap = "INTERNET"
+      # Add metadata
+      for md, value in vnf.get_metadata().iteritems():
+        if md == 'bootstrap_script':
+          node_nf.add_metadata(name='command', value=value)
+          self.log.debug("Found command: %s", value)
+        elif md == 'vm_image':
+          node_nf.add_metadata(name='image', value=value)
+          self.log.debug("Found image: %s", value)
+        elif md == 'variables':
+          node_nf.add_metadata(name='environment',
+                               value=self._parse_variables(value=value))
+          self.log.debug("Found environment: %s",
+                         node_nf.metadata['environment'])
+        # Add port bindings
+        elif md == 'networking_resources':
+          for iport in vnf.get_internet_ports():
+            port = node_nf.ports[iport]
+            port.l4 = [self._parse_binding(value=value)]
+            self.log.debug("Detected port bindings: %s" % port.l4)
       self.log.info("Added NF: %s" % node_nf)
+
+  @staticmethod
+  def _parse_variables (value):
+    envs = {}
+    envs.update(map(lambda x: x.split('=', 1) if '=' in x else (x, None),
+                    [str(kv) for kv in value.split()]))
+    return str(envs).replace('"', "'")
+
+  @staticmethod
+  def _parse_binding (value):
+    ports = {}
+    ports.update(map(lambda x: ("%s/tcp" % x, ('', x)),
+                     [int(p) for p in value.replace(',', ' ').split()]))
+    return str(ports).replace('"', "'")
 
   def __convert_saps (self, nffg, ns, vnfs):
     """

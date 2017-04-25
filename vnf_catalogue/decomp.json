@@ -37,8 +37,6 @@
         },
         "cpu_support_accelerator": "AES-NI"
       },
-      "vm_image": "http://10.10.1.167:8080/NFS/files/PXaaS-180216.qcow2",
-      "networking_resources": "",
       "monitoring_parameters_specific": [
         {
           "metric": "httpnum",
@@ -93,6 +91,10 @@
         {
           "vlink_ref": "vl0",
           "id": "CPzuei"
+        },
+        {
+          "vlink_ref": "vl1",
+          "id": "CPtest"
         }
       ],
       "monitoring_parameters": [
@@ -175,7 +177,11 @@
       "scale_in_out": {
         "minimum": 1,
         "maximum": 1
-      }
+      },
+      "bootstrap_script": "/sbin/entrypoint.sh",
+      "vm_image": "https://5gex.tmit.bme.hu/vcdn:latest",
+      "variables": "WSE_MGR_USER=wowza\nWSE_MGR_PASS=wowza\nWSE_LIC=ENGP4-ct4de-8EXrt-awhcd-E6tNV-fYbZE",
+      "networking_resources": "1935, 8086, 8087, 8088"
     }
   ],
   "name": "decompressor",
@@ -197,6 +203,23 @@
       "root_requirement": "10Mbps",
       "dhcp": true,
       "id": "vl0",
+      "qos": ""
+    },
+    {
+      "leaf_requirement": "10Mbps",
+      "connectivity_type": "INTERNET",
+      "vdu_reference": [
+        "vdu0"
+      ],
+      "external_access": false,
+      "connection_points_reference": [
+        "CPtest"
+      ],
+      "access": true,
+      "alias": "2",
+      "root_requirement": "10Mbps",
+      "dhcp": true,
+      "id": "vl1",
       "qos": ""
     }
   ],

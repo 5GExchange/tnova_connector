@@ -80,6 +80,10 @@ class VNFWrapper(AbstractDescriptorWrapper):
   """
   Wrapper class for VNFD data structure.
   """
+  METADATA = ('bootstrap_script',  # Entry point for Docker
+              'vm_image',  # Image reference
+              'variables',  # Environment variables
+              'networking_resources')  # Port binding
 
   def __init__ (self, raw):
     """
@@ -174,8 +178,41 @@ class VNFWrapper(AbstractDescriptorWrapper):
         ref = cp['id']
         for vlink in self.data["vlinks"]:
           if ref in vlink['connection_points_reference']:
-            ports.append(vlink['alias'])
+            try:
+              port_id = int(vlink['alias'])
+            except ValueError:
+              port_id = vlink['alias']
+            ports.append(port_id)
             self.log.debug("Found VNF port: %s" % vlink['alias'])
+      return ports
+    except KeyError:
+      self.log.error("Missing required field for 'ports' in VNF: %s!" % self.id)
+      return ()
+
+  def get_internet_ports (self):
+    """
+    
+    :return: 
+    """
+    try:
+      if len(self.data['vdu']) > 1:
+        self.log.error(
+          "Multiple VDU element are detected! Conversion does only support "
+          "simple VNFs!")
+        return
+      ports = []
+      # return self.data['vdu'][0]["connection_points"]
+      for cp in self.data['vdu'][0]["connection_points"]:
+        ref = cp['id']
+        for vlink in self.data["vlinks"]:
+          if ref in vlink['connection_points_reference']:
+            if str(vlink['connectivity_type']).upper() == 'INTERNET':
+              try:
+                port_id = int(vlink['alias'])
+              except ValueError:
+                port_id = vlink['alias']
+              ports.append(port_id)
+              self.log.debug("Detected INTERNET port: %s" % vlink['alias'])
       return ports
     except KeyError:
       self.log.error("Missing required field for 'ports' in VNF: %s!" % self.id)
@@ -196,6 +233,24 @@ class VNFWrapper(AbstractDescriptorWrapper):
     except KeyError:
       self.log.error(
         "Missing required field for 'deployment_type' in VNF: %s!" % self.id)
+
+  def get_metadata (self):
+    """
+    Return with additional data defined for VNF.
+    
+    :return: dict of metadata
+    :rtype: dict
+    """
+    rv = {}
+    try:
+      for md in self.METADATA:
+        if md in self.data['vdu'][0]:
+          rv[md] = self.data['vdu'][0][md]
+      return rv
+    except KeyError as e:
+      self.log.error(
+        "Missing required field for metadata: %s in VNF: %s!" % (e.message,
+                                                                 self.id))
 
 
 class VNFCatalogue(object):
