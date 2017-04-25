@@ -217,7 +217,8 @@ def initiate_service ():
   app.logger.debug("Loading Service Descriptor from file: %s..." % ns_path)
   sg = si.load_sg_from_file()
   if sg is None:
-    app.logger.error("Service with id: %s is not found!" % ns_id)
+    service_mgr.set_service_status(id=si.id,
+                                   status=ServiceInstance.STATUS_ERROR)
     return Response(status=httplib.NOT_FOUND)
   # Set ADD mode
   sg.mode = NFFG.MODE_ADD
@@ -236,6 +237,8 @@ def initiate_service ():
     headers = {"Content-Type": "application/xml"}
     virt_srv = _convert_service_request(service_graph=sg)
     if virt_srv is None:
+      service_mgr.set_service_status(id=si.id,
+                                     status=ServiceInstance.STATUS_ERROR)
       return Response(status=httplib.INTERNAL_SERVER_ERROR,
                       response=json.dumps({"error": "RO is not available!",
                                            "RO": RO_URL}))
