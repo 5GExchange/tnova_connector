@@ -234,8 +234,12 @@ def initiate_service ():
     # Prepare REST call parameters
     service_request_url = os.path.join(RO_URL, VIRTUALIZER_SERVICE_RPC)
     headers = {"Content-Type": "application/xml"}
-    srv = _convert_service_request(service_graph=sg)
-    raw_data = srv.xml()
+    virt_srv = _convert_service_request(service_graph=sg)
+    if virt_srv is None:
+      return Response(status=httplib.INTERNAL_SERVER_ERROR,
+                      response=json.dumps({"error": "RO is not available!",
+                                           "RO": RO_URL}))
+    raw_data = virt_srv.xml()
   else:
     service_request_url = os.path.join(RO_URL, NFFG_SERVICE_RPC)
     headers = {"Content-Type": "application/json"}
@@ -433,8 +437,12 @@ def terminate_service (instance_id):
     # Prepare REST call parameters
     service_request_url = os.path.join(RO_URL, VIRTUALIZER_SERVICE_RPC)
     headers = {"Content-Type": "application/xml"}
-    srv = _convert_service_request(service_graph=sg, delete=True)
-    raw_data = srv.xml()
+    virt_srv = _convert_service_request(service_graph=sg, delete=True)
+    if virt_srv is None:
+      return Response(status=httplib.INTERNAL_SERVER_ERROR,
+                      response=json.dumps({"error": "RO is not available!",
+                                           "RO": RO_URL}))
+    raw_data = virt_srv.xml()
   else:
     service_request_url = os.path.join(RO_URL, NFFG_SERVICE_RPC)
     headers = {"Content-Type": "application/json"}
@@ -575,10 +583,7 @@ def _convert_service_request (service_graph, delete=False):
   topo = _get_topology_view()
   if topo is None:
     app.logger.error("Topology view is missing!")
-    return Response(status=httplib.INTERNAL_SERVER_ERROR,
-                    response=json.dumps(
-                      {"error": "RO is not available!",
-                       "RO": RO_URL}))
+    return
   if not delete:
     app.logger.debug("Start service request (INITIATE) conversion...")
     nc = NFFGConverter(logger=app.logger, ensure_unique_id=False)
@@ -757,7 +762,7 @@ if __name__ == "__main__":
     SERVICE_CATALOG_URL = args.servicecatalog
     USE_SERVICE_CATALOG = True
     log.debug("Set Service Catalog's URL from command line: %s"
-             % SERVICE_CATALOG_URL)
+              % SERVICE_CATALOG_URL)
   elif 'SERVICE_CATALOG_URL' in os.environ:
     SERVICE_CATALOG_URL = os.environ.get('SERVICE_CATALOG_URL')
     USE_SERVICE_CATALOG = True
