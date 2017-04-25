@@ -27,6 +27,7 @@ from requests.exceptions import ConnectionError
 from colored_logger import VERBOSE
 from conversion.vnf_catalogue import MissingVNFDException
 from nffg_lib.nffg import NFFG
+from virtualizer.virtualizer import Virtualizer
 
 
 class ServiceInstance(object):
@@ -63,15 +64,16 @@ class ServiceInstance(object):
     self.name = name
     self.path = path
     self.__status = status
-    if self.path:
+    self.vnf_addresses = {}
+    if self.path and os.path.exists(self.path):
       self.created_at = datetime.datetime.fromtimestamp(
         os.path.getctime(self.path)).isoformat()
     else:
       self.created_at = self.__touch()
-    print self.created_at
     self.updated_at = self.__touch()
 
-  def __touch (self):
+  @staticmethod
+  def __touch ():
     """
     Update the updated_at attribute.
 
@@ -101,7 +103,8 @@ class ServiceInstance(object):
             "name": self.name,
             "status": self.__status,
             "created_at": self.created_at,
-            "updated_at": self.updated_at}
+            "updated_at": self.updated_at,
+            "vnf_addresses": self.vnf_addresses}
 
   def load_sg_from_file (self, path=None, mode=None):
     """
@@ -171,6 +174,8 @@ class ServiceManager(object):
     self.converter = converter
     self.log.debug("Using converter: %s" % self.converter)
     self.__instances = {}
+    # Store NF id --> ServiceInstance id
+    self.__vnf_cache = {}
     if nsd_dir:
       self.NSD_DIR = nsd_dir
     self.log.debug("Use directory for NSD cache: %s" % self.NSD_DIR)
@@ -237,8 +242,7 @@ class ServiceManager(object):
         "Got unexpected exception during NSD -> NFFG conversion!")
       raise
 
-  def instantiate_ns (self, ns_id, path=None, name=None,
-                      status=ServiceInstance.STATUS_INIT):
+  def instantiate_ns (self, ns_id, path=None, name=None):
     """
     Create a service (NS) instance with optional status.
 
@@ -246,7 +250,6 @@ class ServiceManager(object):
     :type ns_id: str
     :param name: service name (optional, inherited from ns)
     :type name: str
-    :param status: service status (optional)
     :param path: path of the service NFFG
     :type path: str
     :return: service instance
@@ -256,7 +259,7 @@ class ServiceManager(object):
     if not path:
       path = os.path.join(self.SERVICE_DIR, "%s.nffg" % ns_id)
     # Create Service Instance trunk
-    si = ServiceInstance(service_id=ns_id)
+    si = ServiceInstance(service_id=ns_id, name=name, path=path)
     self.log.debug("Assembled path for requested service: %s " % path)
     if not os.path.exists(path=path):
       self.log.warning("Service with id: %s is not found in cache dir: %s!"
@@ -295,14 +298,20 @@ class ServiceManager(object):
         si.status = si.STATUS_ERROR
         return si
     # Update Service Instance
-    si.name = name if name else sg.name,  # Inherited from NSD
+    si.name = name if name else sg.name  # Inherited from NSD
     si.path = path
     si.status = ServiceInstance.STATUS_INIT
     # Store Service Instance
     self.__instances[si.id] = si
+    self.__update_vnf_cache(data=sg, si_id=si.id)
     self.log.info("Add managed service: %s with instance id: %s " % (ns_id,
                                                                      si.id))
     return si
+
+  def __update_vnf_cache (self, data, si_id):
+    if isinstance(data, NFFG):
+      self.__vnf_cache.update(((nf.id, si_id) for nf in data.nfs))
+      self.log.debug("Updated VNF cache: %s" % self.__vnf_cache)
 
   def request_nsd_from_remote_store (self, ns_id):
     """
@@ -347,8 +356,8 @@ class ServiceManager(object):
 
     :param nsd_file: path of the stored NSD file
     :type nsd_file: str
-    :return: conversion was successful or not
-    :rtype: bool
+    :return: converted NFFG
+    :rtype: :class:`NFFG`
     """
     self.log.info("Start converting received NSD...")
     # Convert the NSD given by file name
@@ -469,6 +478,63 @@ class ServiceManager(object):
       ret.append(si.get_json())
     return ret
 
-  def update_si_status_from_ro (self, topo):
-    pass
+  def update_si_addresses_from_ro (self, topo):
+    """
+    
+    :param topo: 
+    :return: 
+    """
+    self.log.debug("Collect IP addresses from received topology...")
+    if isinstance(topo, NFFG):
+      vnf_address = self.__collect_addr_from_nffg(nffg=topo)
+    elif isinstance(topo, Virtualizer):
+      vnf_address = self.__collect_addr_from_virtualizer(virt=topo)
+    else:
+      self.log.error("Unrecognized topology format: %s" % type(topo))
+      return
+    # Update SI based on collected NF<->IPs
+    for vnf_id, ip in vnf_address.iteritems():
+      if vnf_id not in self.__vnf_cache:
+        self.log.warning("VNF: %s is missing from cache!" % vnf_id)
+        continue
+      si = self.get_service(id=self.__vnf_cache[vnf_id])
+      si.vnf_addresses.update({vnf_id: ip})
+      self.log.debug("Updated IP: %s ---> %s" % (vnf_id, ip))
 
+  @staticmethod
+  def __collect_addr_from_nffg (nffg):
+    """
+    
+    :param nffg: 
+    :return: 
+    """
+    collected = {}
+    for nf in nffg.nfs:
+      for port in nf.ports:
+        for l3 in port.l3:
+          if l3.provided:
+            if nf.id not in collected:
+              collected[nf.id] = str(l3.provided)
+            else:
+              collected[nf.id] = "%s, %s" % (collected[nf.id], l3.provided)
+    return collected
+
+  @staticmethod
+  def __collect_addr_from_virtualizer (virt):
+    """
+    
+    :param virt: 
+    :return: 
+    """
+    collected = {}
+    for node in virt.nodes:
+      for nf in node.NF_instances:
+        for port in nf.ports:
+          for l3 in port.addresses:
+            if l3.provided.get_value():
+              if nf.id.get_value() not in collected:
+                collected[nf.id.get_value()] = str(l3.provided.get_value())
+              else:
+                collected[nf.id.get_value()] = "%s, %s" % (
+                  collected[nf.id.get_value()], l3.provided.get_value())
+    return collected

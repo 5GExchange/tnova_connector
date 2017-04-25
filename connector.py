@@ -56,6 +56,7 @@ MONITORING_TIMEOUT = 2  # sec
 # Communication related parameters
 USE_CALLBACK = False
 CALLBACK_URL = "http://localhost:9000/callback"
+DYNAMIC_UPDATE_ENABLED = True # Always request topology from RO for updates
 USE_VIRTUALIZER_FORMAT = False
 ENABLE_DIFF = True
 
@@ -200,7 +201,7 @@ def initiate_service ():
       app.logger.error(
         "Missing NSD id (%s) from service initiation request!" % NS_ID_NAME)
       return Response(status=httplib.BAD_REQUEST)
-    ns_id = params[NS_ID_NAME]
+    ns_id = str(params[NS_ID_NAME])
     app.logger.info("Received service initiation with id: %s" % ns_id)
   except ValueError:
     app.logger.error("Received POST params are not valid JSON!")
@@ -209,8 +210,7 @@ def initiate_service ():
   ns_path = os.path.join(PWD, SERVICE_NFFG_DIR, "%s.nffg" % ns_id)
   # Create the service instantiation request, status->instantiated
   si = service_mgr.instantiate_ns(ns_id=ns_id,
-                                  path=ns_path,
-                                  status=ServiceInstance.STATUS_INST)
+                                  path=ns_path)
   if si is None or si.status == ServiceInstance.STATUS_ERROR:
     app.logger.error("Service instance creation has been failed!")
     return Response(status=httplib.INTERNAL_SERVER_ERROR)
@@ -366,7 +366,10 @@ def list_service_instances ():
   """
   app.logger.info(
     "Call list_service_instances() with path: GET /ns-instances")
-  # services = service_mgr.get_running_services()
+  if DYNAMIC_UPDATE_ENABLED:
+    topo = _get_topology_view()
+    if topo:
+      service_mgr.update_si_addresses_from_ro(topo=topo)
   resp = service_mgr.get_services_status()
   app.logger.log(VERBOSE, "Sent response:\n%s" % pprint.pformat(resp))
   return Response(status=httplib.OK,
