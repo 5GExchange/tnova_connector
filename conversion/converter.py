@@ -155,7 +155,7 @@ class TNOVAConverter(object):
         elif md == 'networking_resources':
           for iport in vnf.get_internet_ports():
             port = node_nf.ports[iport]
-            port.l4 = [self._parse_binding(value=value)]
+            port.l4 = self._parse_binding(value=value)
             self.log.debug("Detected port bindings: %s" % port.l4)
       self.log.info("Added NF: %s" % node_nf)
 
