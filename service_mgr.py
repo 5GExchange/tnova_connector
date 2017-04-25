@@ -68,6 +68,7 @@ class ServiceInstance(object):
         os.path.getctime(self.path)).isoformat()
     else:
       self.created_at = self.__touch()
+    print self.created_at
     self.updated_at = self.__touch()
 
   def __touch (self):
@@ -77,7 +78,7 @@ class ServiceInstance(object):
     :return: new value
     :rtype: str
     """
-    self.updated_at = datetime.datetime.now().isoformat()
+    return datetime.datetime.now().isoformat()
 
   @property
   def status (self):
@@ -145,7 +146,7 @@ class ServiceManager(object):
   REQUEST_TIMEOUT = 3
 
   def __init__ (self, converter, use_remote=False, service_catalog_url=None,
-                cache_dir=None, nsd_dir=None, ro_url=None, logger=None):
+                cache_dir=None, nsd_dir=None, logger=None):
     """
     Init Service Manager.
     
@@ -159,8 +160,6 @@ class ServiceManager(object):
     :type cache_dir: str
     :param nsd_dir: directory path of cached NSD files
     :type nsd_dir: str
-    :param ro_url: Resource Orchestrator URL
-    :type ro_url: str
     :param logger: optional logger object
     :type logger: :class:`logging.Logger`
     """
@@ -172,8 +171,6 @@ class ServiceManager(object):
     self.converter = converter
     self.log.debug("Using converter: %s" % self.converter)
     self.__instances = {}
-    self.RO_URL = ro_url
-    self.log.debug("Use URL for RO: %s" % self.RO_URL)
     if nsd_dir:
       self.NSD_DIR = nsd_dir
     self.log.debug("Use directory for NSD cache: %s" % self.NSD_DIR)
@@ -471,3 +468,7 @@ class ServiceManager(object):
     for si in self.__instances.itervalues():
       ret.append(si.get_json())
     return ret
+
+  def update_si_status_from_ro (self, topo):
+    pass
+

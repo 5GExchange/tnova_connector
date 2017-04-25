@@ -667,7 +667,6 @@ def main ():
                                    PWD + "/" + SERVICE_NFFG_DIR),
                                  nsd_dir=os.path.realpath(
                                    PWD + "/" + NSD_DIR),
-                                 ro_url=RO_URL,
                                  logger=app.logger)
     service_mgr.initialize()
     # Create Callback Manager
