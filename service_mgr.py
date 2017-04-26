@@ -512,11 +512,12 @@ class ServiceManager(object):
     for nf in nffg.nfs:
       for port in nf.ports:
         for l3 in port.l3:
-          if l3.provided:
+          if l3.provided is not None:
+            key = "%s-%s" % (l3.id, port.id)
             if nf.id not in collected:
-              collected[nf.id] = {str(l3.id): str(l3.provided)}
+              collected[nf.id] = {key: l3.provided}
             else:
-              collected[nf.id][str(l3.id)] = str(l3.provided)
+              collected[nf.id][key] = l3.provided
     return collected
 
   @staticmethod
@@ -531,11 +532,10 @@ class ServiceManager(object):
       for nf in node.NF_instances:
         for port in nf.ports:
           for l3 in port.addresses:
-            if l3.provided.get_value():
+            if l3.provided.is_initialized():
+              key = "%s-%s" % (l3.id.get_value(), port.id.get_value())
               if nf.id.get_value() not in collected:
-                collected[nf.id.get_value()] = {str(l3.id.get_value()):
-                                                  str(l3.provided.get_value())}
+                collected[nf.id.get_value()] = {key: l3.provided.get_value()}
               else:
-                collected[nf.id.get_value()][str(l3.id.get_value())] = str(
-                  l3.provided.get_value())
+                collected[nf.id.get_value()][key] = l3.provided.get_value()
     return collected
