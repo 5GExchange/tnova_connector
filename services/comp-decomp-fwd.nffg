@@ -15,7 +15,11 @@
           "addresses": {
             "l3": [
               {
-                "id": "testip1",
+                "id": "private",
+                "provided": "192.168.0.1"
+              },
+              {
+                "id": "public",
                 "provided": "1.2.3.4"
               }
             ]
@@ -43,8 +47,8 @@
           "addresses": {
             "l3": [
               {
-                "id": "testip2",
-                "provided": "11.22.33.44"
+                "id": "public",
+                "provided": "5.6.7.8"
               }
             ]
           }

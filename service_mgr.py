@@ -514,9 +514,9 @@ class ServiceManager(object):
         for l3 in port.l3:
           if l3.provided:
             if nf.id not in collected:
-              collected[nf.id] = str(l3.provided)
+              collected[nf.id] = {str(l3.id): str(l3.provided)}
             else:
-              collected[nf.id] = "%s, %s" % (collected[nf.id], l3.provided)
+              collected[nf.id][str(l3.id)] = str(l3.provided)
     return collected
 
   @staticmethod
@@ -533,8 +533,9 @@ class ServiceManager(object):
           for l3 in port.addresses:
             if l3.provided.get_value():
               if nf.id.get_value() not in collected:
-                collected[nf.id.get_value()] = str(l3.provided.get_value())
+                collected[nf.id.get_value()] = {str(l3.id.get_value()):
+                                                  str(l3.provided.get_value())}
               else:
-                collected[nf.id.get_value()] = "%s, %s" % (
-                  collected[nf.id.get_value()], l3.provided.get_value())
+                collected[nf.id.get_value()][str(l3.id.get_value())] = str(
+                  l3.provided.get_value())
     return collected
