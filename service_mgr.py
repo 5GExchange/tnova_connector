@@ -498,6 +498,10 @@ class ServiceManager(object):
         self.log.warning("VNF: %s is missing from cache!" % vnf_id)
         continue
       si = self.get_service(id=self.__vnf_cache[vnf_id])
+      if si.status != ServiceInstance.STATUS_START:
+        self.log.debug("Service Instance: %s is not started. "
+                       "Skip IP address update..." % si.id)
+        continue
       si.vnf_addresses.update({vnf_id: ip})
       self.log.debug("Updated IP: %s ---> %s" % (vnf_id, ip))
 
