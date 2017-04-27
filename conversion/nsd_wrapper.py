@@ -22,7 +22,7 @@ class NSWrapper(AbstractDescriptorWrapper):
   Wrapper class for VNFD data structure.
   """
   # Constants
-  LINK_TYPE = "E-LINE"
+  LINK_TYPE = ("E-LINE", "INTERNET")
   NS_EXTERNAL_PORT_PREFIX = 'ns_ext_'
   VNFDS_SEPARATOR = ':'
   VNFD_DOMAIN_PREFIX = 'domain#'
@@ -149,10 +149,9 @@ class NSWrapper(AbstractDescriptorWrapper):
       hops = []
       srcSAP_list = []
       for vlink in self.data['vld']['virtual_links']:
-        if vlink['connectivity_type'] != self.LINK_TYPE:
-          self.log.warning(
-            "Only Link type: %s is supported! Skip Virtual link "
-            "processing:\n%s" % (self.LINK_TYPE, vlink))
+        if vlink['connectivity_type'] not in self.LINK_TYPE:
+          self.log.warning("Only Link types: %s are supported! Skip Virtual"
+                           " link processing:\n%s" % (self.LINK_TYPE, vlink))
           continue
         hop = {'flowclass': None,
                'delay': None,
