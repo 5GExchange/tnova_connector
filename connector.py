@@ -668,7 +668,7 @@ def main ():
     # Create Callback Manager
     callback_mgr = CallbackManager(domain_name="RO",
                                    callback_url=CALLBACK_URL,
-                                   log=app.logger)
+                                   logger=app.logger.getChild("callback"))
     if USE_CALLBACK:
       callback_mgr.start()
     # Start Flask

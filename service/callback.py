@@ -17,8 +17,6 @@ import urlparse
 from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
 from threading import Thread, Timer
 
-log = logging.getLogger('callback')
-
 
 class CallbackHandler(BaseHTTPRequestHandler):
   RESULT_PARAM_NAME = "response-code"
@@ -44,19 +42,20 @@ class CallbackHandler(BaseHTTPRequestHandler):
     self.end_headers()
 
   def __process_request (self):
-    log.debug("Received callback request with path: %s" % self.path)
+    self.server.log.debug("Received callback request with path: %s" % self.path)
     params = self.__get_request_params()
     if self.RESULT_PARAM_NAME in params and self.MESSAGE_ID_NAME in params:
       body = self._get_body()
       if body:
-        log.debug("Received callback body size: %s" % len(body))
+        self.server.log.debug("Received callback body size: %s" % len(body))
       else:
-        log.debug("No callback body")
+        self.server.log.debug("No callback body")
       self.server.invoke_hook(msg_id=params.get(self.MESSAGE_ID_NAME),
                               result=params.get(self.RESULT_PARAM_NAME),
                               body=body)
     else:
-      log.warning("Received callback with missing params: %s" % params)
+      self.server.log.warning("Received callback with missing params: %s"
+                              % params)
 
   def _get_body (self):
     """
@@ -87,12 +86,13 @@ class CallbackHandler(BaseHTTPRequestHandler):
     except KeyError as e:
       # Content-Length header is not defined
       # or charset is not defined in Content-Type header.
-      log.warning(str(e))
+      self.server.log.warning(str(e))
       if e.args[0] == 'Content-Length':
-        log.warning("Missing content-type from request: %s" % e.args[0])
+        self.server.log.warning("Missing content-type from request: %s" %
+                                e.args[0])
     except ValueError as e:
       # Failed to parse request body to JSON
-      self.log_error("Request parsing failed: %s", e)
+      self.server.log.error("Request parsing failed: %s", e)
 
   def __get_request_params (self):
     params = {}
@@ -125,15 +125,10 @@ class Callback(object):
 
   def setup_timer (self, timeout, hook, **kwargs):
     if not timeout:
-      log.debug("Timeout disabled for request callback: %s" % self.request_id)
       return
     if not self.__timer:
-      log.debug("Setup timeout: %s for callback: %s"
-                % (timeout, self.callback_id))
       self.__timer = Timer(timeout, hook, kwargs=kwargs)
       self.__timer.start()
-    else:
-      log.warning("Callback timer has already been set up!")
 
   def stop_timer (self):
     if self.__timer:
@@ -156,7 +151,7 @@ class CallbackManager(HTTPServer, Thread):
 
   def __init__ (self, domain_name, address=DEFAULT_SERVER_ADDRESS,
                 port=DEFAULT_PORT, timeout=DEFAULT_WAIT_TIMEOUT,
-                callback_url=None, **kwargs):
+                callback_url=None, logger=None, **kwargs):
     Thread.__init__(self, name=self.__class__.__name__)
     HTTPServer.__init__(self, (address, port), CallbackHandler,
                         bind_and_activate=False)
@@ -166,14 +161,15 @@ class CallbackManager(HTTPServer, Thread):
     self.daemon = True
     self.__callback = callback_url
     self.__blocking_mutex = threading.Event()
+    self.log = logger if logger is not None else logging.getLogger('callback')
 
   @property
   def url (self):
     if self.__callback:
-      log.debug("Using explicit URL for callback: %s" % self.__callback)
+      self.log.debug("Using explicit URL for callback: %s" % self.__callback)
       return self.__callback
     else:
-      log.debug("Using generated callback URL...")
+      self.log.debug("Using generated callback URL...")
       return "http://%s:%s/callback" % self.server_address
 
   def run (self):
@@ -181,22 +177,23 @@ class CallbackManager(HTTPServer, Thread):
     self.server_bind()
     self.server_activate()
     try:
-      log.debug("Start %s for domain: %s on %s:%s" % (self.__class__.__name__,
-                                                      self.domain_name,
-                                                      self.server_address[0],
-                                                      self.server_address[1]))
+      self.log.debug("Start %s for domain: %s on %s:%s"
+                     % (self.__class__.__name__,
+                        self.domain_name,
+                        self.server_address[0],
+                        self.server_address[1]))
       self.serve_forever()
     except KeyboardInterrupt:
       raise
     except Exception as e:
-      log.error("Got exception in %s: %s" % (self.__class__.__name__, e))
+      self.log.error("Got exception in %s: %s" % (self.__class__.__name__, e))
     finally:
       self.server_close()
 
   def subscribe_callback (self, hook, cb_id, type, req_id=None, data=None,
                           timeout=None):
-    log.debug("Register callback for response: %s on domain: %s" %
-              (cb_id, self.domain_name))
+    self.log.debug("Register callback for response: %s on domain: %s" %
+                   (cb_id, self.domain_name))
     if cb_id not in self.__register:
       cb = Callback(hook=hook, callback_id=cb_id, type=type,
                     request_id=req_id, data=data)
@@ -206,8 +203,8 @@ class CallbackManager(HTTPServer, Thread):
       self.__register[cb_id] = cb
       return cb
     else:
-      log.warning("Hook is already registered for id: %s on domain: %s"
-                  % (cb_id, self.domain_name))
+      self.log.warning("Hook is already registered for id: %s on domain: %s"
+                       % (cb_id, self.domain_name))
 
   def unsubscribe_callback (self, cb_id):
     """
@@ -216,8 +213,8 @@ class CallbackManager(HTTPServer, Thread):
     :return:
     :rtype: Callback
     """
-    log.debug("Unregister callback for response: %s from domain: %s"
-              % (cb_id, self.domain_name))
+    self.log.debug("Unregister callback for response: %s from domain: %s"
+                   % (cb_id, self.domain_name))
     cb = self.__register.pop(cb_id, None)
     if cb:
       cb.stop_timer()
@@ -227,31 +224,33 @@ class CallbackManager(HTTPServer, Thread):
     try:
       result = int(result)
     except ValueError:
-      log.error("Received response code is not valid: %s! Abort callback..."
-                % result)
+      self.log.error("Received response code is not valid: %s! "
+                     "Abort callback..." % result)
       return
     if msg_id not in self.__register:
-      log.warning("Received unregistered callback with id: %s from domain: %s"
-                  % (msg_id, self.domain_name))
+      self.log.warning("Received unregistered callback with id: %s from domain:"
+                       " %s" % (msg_id, self.domain_name))
       return
-    log.debug("Received valid callback with id: %s, result: %s from domain: %s"
-              % (msg_id, "TIMEOUT" if not result else result, self.domain_name))
+    self.log.debug("Received valid callback with id: %s, result: %s "
+                   "from domain: %s" % (msg_id,
+                                        "TIMEOUT" if not result else result,
+                                        self.domain_name))
     cb = self.__register.get(msg_id)
     if cb is None:
-      log.error("Missing callback: %s from register!" % msg_id)
+      self.log.error("Missing callback: %s from register!" % msg_id)
       return
     cb.result_code = result
     cb.body = body
     if cb.hook is None:
-      log.debug("No hook was defined!")
+      self.log.debug("No hook was defined!")
       self.__blocking_mutex.set()
       return
     elif callable(cb.hook):
-      log.debug("Schedule callback hook: %s" % cb.short())
+      self.log.debug("Schedule callback hook: %s" % cb.short())
       cb.hook(callback=cb)
     else:
-      log.warning("No callable hook was defined for the received callback: %s!"
-                  % msg_id)
+      self.log.warning("No callable hook was defined for the received callback:"
+                       " %s!" % msg_id)
 
   def register_and_block_wait (self, cb_id, type, req_id=None, data=None,
                                timeout=None):
@@ -259,14 +258,14 @@ class CallbackManager(HTTPServer, Thread):
                                  req_id=req_id,
                                  data=data, timeout=timeout)
     _timeout = timeout if timeout is not None else self.wait_timeout + 1
-    log.debug("Waiting for callback result...")
+    self.log.debug("Waiting for callback result...")
     self.__blocking_mutex.wait(timeout=_timeout)
     self.__blocking_mutex.clear()
     return self.unsubscribe_callback(cb_id=cb.callback_id)
 
   def wait_for_callback (self, callback):
     _timeout = callback.get_timer_timeout() + 1.0
-    log.debug("Waiting for callback result...")
+    self.log.debug("Waiting for callback result...")
     self.__blocking_mutex.wait(timeout=_timeout)
     self.__blocking_mutex.clear()
     return self.unsubscribe_callback(cb_id=callback.callback_id)
