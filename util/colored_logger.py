@@ -2,6 +2,13 @@ import logging
 
 # Additional logging level
 VERBOSE = 5
+# Add logger level to the log entries in test mode
+FILE_LOGGER_FORMAT = "|%(levelname)s" \
+                     "|%(name)s" \
+                     "|%(asctime)s" \
+                     "|---|%(message)s"
+# Log file name
+LOG_FILE = "log/connector.log"
 
 
 class ColoredLogger(logging.Logger):
@@ -86,3 +93,22 @@ class ColoredLogger(logging.Logger):
     log = logging.getLogger(name if name is not None else '__main__')
     # log.setLevel(level)
     return log
+
+
+def setup_flask_logging (app, log_file=LOG_FILE):
+  # Configure root logging
+  logging.addLevelName(VERBOSE, 'VERBOSE')
+  log = logging.getLogger()
+  # Configure a DEBUG level logger for initialization
+  log.setLevel(logging.DEBUG)
+  # Add file logger first to avoid magic chars in log file
+  hdlr = logging.FileHandler(filename=log_file, mode='w')
+  hdlr.setFormatter(fmt=logging.Formatter(fmt=FILE_LOGGER_FORMAT))
+  log.addHandler(hdlr=hdlr)
+  # Add colored console logging
+  log.addHandler(ColoredLogger.createHandler())
+  # Adjust Flask logging to common logging
+  app.logger.handlers[:] = [hdlr, ColoredLogger.createHandler()]
+  app.logger.propagate = False
+  app.logger.setLevel(log.getEffectiveLevel())
+  return log

@@ -30,7 +30,7 @@ from conversion.vnf_catalogue import VNFCatalogue
 from nffg_lib.nffg import NFFG
 from service.callback import CallbackManager
 from service.service_mgr import ServiceManager, ServiceInstance
-from util.colored_logger import ColoredLogger, VERBOSE
+from util.colored_logger import VERBOSE, setup_flask_logging
 from virtualizer.virtualizer import Virtualizer
 
 # Listening port
@@ -76,19 +76,12 @@ PWD = os.path.realpath(os.path.dirname(__file__))
 LOGGER_NAME = "TNOVAConnector"
 HTTP_GLOBAL_TIMEOUT = 10  # sec
 
-# Configure root logging
-logging.addLevelName(VERBOSE, 'VERBOSE')
-log = logging.getLogger()
-log.addHandler(ColoredLogger.createHandler())
-# Configure a DEBUG level logger for initialization
-log.setLevel(logging.DEBUG)
-
 # Create REST-API handler app
 app = Flask(LOGGER_NAME)
+
 # Adjust Flask logging to common logging
-app.logger.handlers[:] = [ColoredLogger.createHandler()]
-app.logger.propagate = False
-app.logger.setLevel(log.getEffectiveLevel())
+setup_flask_logging(app=app)
+
 # Create VNFCatalogue
 catalogue = None
 """type: VNFCatalogue"""
