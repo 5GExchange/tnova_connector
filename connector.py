@@ -24,13 +24,13 @@ import requests
 from flask import Flask, Response, request
 from requests.exceptions import ConnectionError
 
-from callback import CallbackManager
-from colored_logger import ColoredLogger, VERBOSE
 from conversion.conversion import NFFGConverter
 from conversion.converter import TNOVAConverter
 from conversion.vnf_catalogue import VNFCatalogue
 from nffg_lib.nffg import NFFG
-from service_mgr import ServiceManager, ServiceInstance
+from service.callback import CallbackManager
+from service.service_mgr import ServiceManager, ServiceInstance
+from util.colored_logger import ColoredLogger, VERBOSE
 from virtualizer.virtualizer import Virtualizer
 
 # Listening port
@@ -56,7 +56,7 @@ MONITORING_TIMEOUT = 2  # sec
 # Communication related parameters
 USE_CALLBACK = False
 CALLBACK_URL = "http://localhost:9000/callback"
-DYNAMIC_UPDATE_ENABLED = True # Always request topology from RO for updates
+DYNAMIC_UPDATE_ENABLED = True  # Always request topology from RO for updates
 USE_VIRTUALIZER_FORMAT = False
 ENABLE_DIFF = True
 

@@ -19,9 +19,9 @@ import os
 import re
 import sys
 
-from colored_logger import ColoredLogger
 from nffg_lib.nffg import NFFG
 from nsd_wrapper import NSWrapper
+from util.colored_logger import ColoredLogger
 from vnf_catalogue import VNFCatalogue, MissingVNFDException
 
 

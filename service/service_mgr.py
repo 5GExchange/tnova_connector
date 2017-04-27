@@ -24,9 +24,9 @@ import requests
 from requests import Timeout
 from requests.exceptions import ConnectionError
 
-from colored_logger import VERBOSE
 from conversion.vnf_catalogue import MissingVNFDException
 from nffg_lib.nffg import NFFG
+from util.colored_logger import VERBOSE
 from virtualizer.virtualizer import Virtualizer
 
 

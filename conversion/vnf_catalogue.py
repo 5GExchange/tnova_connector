@@ -21,7 +21,7 @@ import pprint
 import requests
 from requests.exceptions import ConnectionError, Timeout
 
-from colored_logger import VERBOSE
+from util.colored_logger import VERBOSE
 
 
 class MissingVNFDException(Exception):
@@ -202,13 +202,13 @@ class VNFWrapper(AbstractDescriptorWrapper):
         return
       ports = []
       for vlink in self.data["vlinks"]:
-          if str(vlink['connectivity_type']).upper() == 'INTERNET':
-            try:
-              port_id = int(vlink['alias'])
-            except ValueError:
-              port_id = vlink['alias']
-            ports.append(port_id)
-            self.log.debug("Detected INTERNET port: %s" % vlink['alias'])
+        if str(vlink['connectivity_type']).upper() == 'INTERNET':
+          try:
+            port_id = int(vlink['alias'])
+          except ValueError:
+            port_id = vlink['alias']
+          ports.append(port_id)
+          self.log.debug("Detected INTERNET port: %s" % vlink['alias'])
       return ports
     except KeyError:
       self.log.error("Missing required field for 'ports' in VNF: %s!" % self.id)
