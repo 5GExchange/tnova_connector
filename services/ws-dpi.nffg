@@ -1,0 +1,82 @@
+{
+  "parameters": {
+    "id": "ws-dpi", 
+    "name": "ws-dpi", 
+    "service_id": "ws-dpi", 
+    "version": "1.0"
+  }, 
+  "node_nfs": [
+    {
+      "id": "Webserver", 
+      "name": "Webserver", 
+      "ports": [
+        {
+          "id": 1
+        }
+      ], 
+      "functional_type": "webserver", 
+      "specification": {
+        "resources": {
+          "cpu": 1, 
+          "mem": 2, 
+          "storage": 8
+        }
+      }
+    }, 
+    {
+      "id": "DPI", 
+      "name": "DPI", 
+      "ports": [
+        {
+          "id": 1
+        }, 
+        {
+          "id": 2
+        }
+      ], 
+      "functional_type": "dpi", 
+      "specification": {
+        "resources": {
+          "cpu": 1, 
+          "mem": 2, 
+          "storage": 8
+        }
+      }
+    }
+  ], 
+  "node_saps": [
+    {
+      "id": "SAP1", 
+      "name": "SAP1", 
+      "ports": [
+        {
+          "id": 1
+        }
+      ]
+    }
+  ], 
+  "edge_sg_nexthops": [
+    {
+      "id": 2, 
+      "src_node": "Webserver", 
+      "src_port": 1, 
+      "dst_node": "DPI", 
+      "dst_port": 1, 
+      "flowclass": "dl_dst=FF:FF:FF:FF:FF:FF"
+    }, 
+    {
+      "id": 1, 
+      "src_node": "SAP1", 
+      "src_port": 1, 
+      "dst_node": "Webserver", 
+      "dst_port": 1
+    }, 
+    {
+      "id": 3, 
+      "src_node": "DPI", 
+      "src_port": 2, 
+      "dst_node": "SAP1", 
+      "dst_port": 1
+    }
+  ]
+}

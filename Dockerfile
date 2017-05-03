@@ -6,7 +6,7 @@ MAINTAINER Janos Czentye <czentye@tmit.bme.hu>
 LABEL Description="TNOVA-Connector" Project="5GEx" version="1.0.0+"
 WORKDIR /opt/tnova_connector
 COPY . ./
-RUN pip install -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 EXPOSE 5000 9000
 ENV PYTHONUNBUFFERED 1
 ENTRYPOINT ["python", "connector.py"]

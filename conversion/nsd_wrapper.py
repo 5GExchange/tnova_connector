@@ -22,7 +22,7 @@ class NSWrapper(AbstractDescriptorWrapper):
   Wrapper class for VNFD data structure.
   """
   # Constants
-  LINK_TYPE = "E-LINE"
+  LINK_TYPE = ("E-LINE", "INTERNET")
   NS_EXTERNAL_PORT_PREFIX = 'ns_ext_'
   VNFDS_SEPARATOR = ':'
   VNFD_DOMAIN_PREFIX = 'domain#'
@@ -106,8 +106,14 @@ class NSWrapper(AbstractDescriptorWrapper):
     :rtype: list
     """
     try:
-      # return self.data['connection_points']
-      # return self.data['connection_points']
+      if len(self.data['vnffgd']['vnffgs']) < 1:
+        self.log.error("No VNF-FG instance is detected!")
+        return
+      if len(self.data['vnffgd']['vnffgs']) > 1:
+        self.log.error("Only 1 VNF-FG instance is supported (detected: %s)!"
+                       % len(self.data['vnffgd']['vnffgs']))
+        self.log.warning("Using the first found VNF-FG: %s"
+                         % self.data['vnffgd']['vnffgs'][0]['vnffg_id'])
       saps = []
       for cp in self.data['vnffgd']['vnffgs'][0]['network_forwarding_path'][0][
         'connection_points']:
@@ -149,10 +155,9 @@ class NSWrapper(AbstractDescriptorWrapper):
       hops = []
       srcSAP_list = []
       for vlink in self.data['vld']['virtual_links']:
-        if vlink['connectivity_type'] != self.LINK_TYPE:
-          self.log.warning(
-            "Only Link type: %s is supported! Skip Virtual link "
-            "processing:\n%s" % (self.LINK_TYPE, vlink))
+        if vlink['connectivity_type'] not in self.LINK_TYPE:
+          self.log.warning("Only Link types: %s are supported! Skip Virtual"
+                           " link processing:\n%s" % (self.LINK_TYPE, vlink))
           continue
         hop = {'flowclass': None,
                'delay': None,
@@ -269,9 +274,14 @@ class NSWrapper(AbstractDescriptorWrapper):
     :rtype: list
     """
     try:
-      if len(self.data['vnffgd']['vnffgs']) > 1:
-        self.log.error("Only 1 VNF-FG instance is supported!")
+      if len(self.data['vnffgd']['vnffgs']) < 1:
+        self.log.error("No VNF-FG instance is detected!")
         return
+      if len(self.data['vnffgd']['vnffgs']) > 1:
+        self.log.error("Only 1 VNF-FG instance is supported (detected: %s)!"
+                       % len(self.data['vnffgd']['vnffgs']))
+        self.log.warning("Using the first found VNF-FG: %s"
+                         % self.data['vnffgd']['vnffgs'][0]['vnffg_id'])
       nfps = self.data['vnffgd']['vnffgs'][0]['network_forwarding_path']
       return [nfp['graph'] for nfp in nfps]
     except KeyError as e:

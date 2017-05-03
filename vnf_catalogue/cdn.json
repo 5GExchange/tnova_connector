@@ -1,0 +1,183 @@
+{
+  "provider_id": 4,
+  "vdu": [
+    {
+      "resource_requirements": {
+        "network_interface_bandwidth_unit": "",
+        "hypervisor_parameters": {
+          "version": "10002|12001|2.6.32-358.el6.x86_64",
+          "type": "QEMU-KVM"
+        },
+        "memory_unit": "GB",
+        "network_interface_card_capabilities": {
+          "SR-IOV": true,
+          "mirroring": false
+        },
+        "storage": {
+          "size_unit": "GB",
+          "persistence": false,
+          "size": 8
+        },
+        "network_interface_bandwidth": "",
+        "platform_pcie_parameters": {
+          "SR-IOV": true,
+          "device_pass_through": true
+        },
+        "vcpus": 1,
+        "vswitch_capabilities": {
+          "version": "2.0",
+          "type": "ovs",
+          "overlay_tunnel": "GRE"
+        },
+        "data_processing_acceleration_library": "",
+        "memory": 2,
+        "memory_parameters": {
+          "large_pages_required": false,
+          "numa_allocation_policy": ""
+        },
+        "cpu_support_accelerator": "AES-NI"
+      },
+      "alias": "cdn",
+      "networking_resources": "8086, 8087, 8088",
+      "monitoring_parameters_specific": [],
+      "wc_notify": false,
+      "vm_image": "vcdn:latest",
+      "controller": true,
+      "connection_points": [
+        {
+          "vlink_ref": "vl0",
+          "id": "CP8wla"
+        }
+      ],
+      "monitoring_parameters": [
+        {
+          "metric": "cpuidle",
+          "unit": "%",
+          "desc": "CPU Idle"
+        },
+        {
+          "metric": "cpu_util",
+          "unit": "%",
+          "desc": "CPU Utilization"
+        },
+        {
+          "metric": "fsfree",
+          "unit": "GB",
+          "desc": "Free Storage"
+        },
+        {
+          "metric": "memfree",
+          "unit": "MB",
+          "desc": "Free Memory"
+        },
+        {
+          "metric": "network_incoming",
+          "unit": "Mbps",
+          "desc": "Network Incoming"
+        }
+      ],
+      "scale_in_out": {
+        "minimum": 1,
+        "maximum": 1
+      },
+      "id": "vdu0"
+    }
+  ],
+  "name": "vCDN",
+  "created_at": "2017-04-18T17:09:08Z",
+  "modified_at": "2017-04-18T17:09:08Z",
+  "trade": false,
+  "descriptor_version": "1",
+  "deployment_flavours": [
+    {
+      "vdu_reference": [
+        "vdu0"
+      ],
+      "constraint": "",
+      "flavour_key": "gold",
+      "vlink_reference": [
+        "vl0"
+      ],
+      "id": "flavor0",
+      "assurance_parameters": [
+        {
+          "violation": [
+            {
+              "interval": 300,
+              "breaches_count": 2
+            }
+          ],
+          "value": 70,
+          "penalty": {
+            "expression": 2,
+            "type": "Discount",
+            "unit": "%",
+            "validity": "P1D"
+          },
+          "formula": "cpu_util LT 70",
+          "rel_id": "param0",
+          "id": "cpu_util",
+          "unit": "%"
+        }
+      ]
+    }
+  ],
+  "version": "1",
+  "vnf_lifecycle_events": [
+    {
+      "authentication_username": "vagrant",
+      "driver": "ssh",
+      "authentication_type": "PubKeyAuthentication",
+      "authentication": "",
+      "authentication_port": 22,
+      "vnf_container": "/home/vagrant/container/",
+      "events": {
+        "start": {
+          "command": "/home/vagrant/scripts/start",
+          "template_file": "{\"controller\":\"get_attr[vdu0,PublicIp]\", \"vdu0\":\"get_attr[vdu1,PublicIp]\"}",
+          "template_file_format": "JSON"
+        },
+        "stop": {
+          "command": "/home/vagrant/scripts/stop",
+          "template_file": "{}",
+          "template_file_format": "JSON"
+        }
+      },
+      "flavor_id_ref": "flavor0"
+    }
+  ],
+  "billing_model": {
+    "price": {
+      "setup": 5,
+      "max_per_period": 10,
+      "min_per_period": 10,
+      "unit": "EUR"
+    },
+    "model": "PAYG",
+    "period": "P1M"
+  },
+  "provider": "TEIC",
+  "release": "5GEx",
+  "vlinks": [
+    {
+      "leaf_requirement": "1Gbps",
+      "connectivity_type": "E-LINE",
+      "vdu_reference": [
+        "vdu0"
+      ],
+      "alias": "1",
+      "connection_points_reference": [
+        "CP8wla"
+      ],
+      "access": true,
+      "external_access": true,
+      "dhcp": true,
+      "root_requirement": "1Gbps",
+      "port_security_enabled": false,
+      "id": "vl0"
+    }
+  ],
+  "type": "vPXAAS",
+  "description": "vCDN VNF",
+  "id": 6
+}

@@ -1,0 +1,27 @@
+{
+  "parameters": {
+    "id": "single-ws", 
+    "name": "single-webservice", 
+    "service_id": "single-ws", 
+    "version": "1.0"
+  }, 
+  "node_nfs": [
+    {
+      "id": "Webserver", 
+      "name": "Webserver", 
+      "ports": [
+        {
+          "id": 1
+        }
+      ], 
+      "functional_type": "webserver", 
+      "specification": {
+        "resources": {
+          "cpu": 1, 
+          "mem": 2, 
+          "storage": 8
+        }
+      }
+    }
+  ]
+}

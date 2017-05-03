@@ -3,3 +3,4 @@
 services/*.nffg
 nsds/*.json
 .idea/
+log/*
