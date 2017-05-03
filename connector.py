@@ -309,7 +309,7 @@ def initiate_service ():
           "Monitoring notification is enabled! Send notification...")
         params = {'serviceid': si.id}
         try:
-          requests.get(url=MONITORING_URL,
+          requests.post(url=MONITORING_URL,
                        params=params,
                        timeout=MONITORING_TIMEOUT)
         except ConnectionError:
