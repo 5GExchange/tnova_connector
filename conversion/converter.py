@@ -134,12 +134,12 @@ class TNOVAConverter(object):
           # INTERNET port is not external
           nf_port = node_nf.add_port(id=iport, sap="INTERNET")
           self.log.debug("Added new INTERNET port: %s" % nf_port)
-          nf_port.l3.add_l3address(id="INTERNET-public",
-                                   configure="True",
-                                   client="dhcp-client",
-                                   requested="public")
-          self.log.debug("Added public IP address request to port: %s"
-                         % nf_port)
+          # nf_port.l3.add_l3address(id="INTERNET-public",
+          #                          configure="True",
+          #                          client="dhcp-client",
+          #                          requested="public")
+          # self.log.debug("Added public IP address request to port: %s"
+          #                % nf_port)
         else:
           nf_port = node_nf.ports[iport]
           # Set SAP attribute for INTERNET port

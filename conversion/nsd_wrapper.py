@@ -22,7 +22,7 @@ class NSWrapper(AbstractDescriptorWrapper):
   Wrapper class for VNFD data structure.
   """
   # Constants
-  LINK_TYPE = ("E-LINE", "INTERNET")
+  SG_LINK_TYPE = "E-LINE"
   NS_EXTERNAL_PORT_PREFIX = 'ns_ext_'
   VNFDS_SEPARATOR = ':'
   VNFD_DOMAIN_PREFIX = 'domain#'
@@ -121,7 +121,7 @@ class NSWrapper(AbstractDescriptorWrapper):
           ext_point = cp.lstrip(self.NS_EXTERNAL_PORT_PREFIX)
           if ext_point not in saps:
             saps.append(ext_point)
-            self.log.debug("Found SAP: %s" % ext_point)
+            self.log.debug("Found new SAP: %s" % ext_point)
       return saps
     except KeyError as e:
       self.log.error("Missing required field: %s for SAPs in "
@@ -155,9 +155,9 @@ class NSWrapper(AbstractDescriptorWrapper):
       hops = []
       srcSAP_list = []
       for vlink in self.data['vld']['virtual_links']:
-        if vlink['connectivity_type'] not in self.LINK_TYPE:
-          self.log.warning("Only Link types: %s are supported! Skip Virtual"
-                           " link processing:\n%s" % (self.LINK_TYPE, vlink))
+        if vlink['connectivity_type'] != self.SG_LINK_TYPE:
+          self.log.debug("Virtual link: %s is not %s. Skip..."
+                         % (vlink['vld_id'], self.SG_LINK_TYPE))
           continue
         hop = {'flowclass': None,
                'delay': None,
@@ -167,7 +167,12 @@ class NSWrapper(AbstractDescriptorWrapper):
         except ValueError:
           hop['id'] = vlink['vld_id']
         # Inter-VNF link
-        if len(vlink['connections']) == 2:
+        if vlink['external_access'] is False:
+          if not len(vlink['connections']) == 2:
+            self.log.error("Regular NF-NF link: %s must have 2 endpoint! "
+                             "Detected: %s" % (vlink['vld_id'],
+                                               len(vlink['connections'])))
+            continue
           self.log.debug("Detected inter-VNF link: %s" % hop['id'])
           # Check src node/port
           hop['src_node'], hop['src_port'] = self.__parse_vlink_connection(

@@ -317,7 +317,8 @@ class VNFCatalogue(object):
     if isinstance(vnfd, VNFWrapper):
       if id not in self.__catalogue:
         self.__catalogue[id] = vnfd
-        self.log.debug("Register VNFD with id: %s" % id)
+        self.log.debug("Register VNFD with id: %s, name: %s" % (vnfd.id,
+                                                                vnfd.name))
       else:
         self.log.debug("VNFD has been already registered with id: %s!" % id)
       return True
