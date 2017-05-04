@@ -12,6 +12,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import ast
 import datetime
 import httplib
 import json
@@ -492,6 +493,7 @@ class ServiceManager(object):
     else:
       self.log.error("Unrecognized topology format: %s" % type(topo))
       return
+    self.log.debug("Collected IP info:\n%s" % pprint.pformat(vnf_address))
     # Update SI based on collected NF<->IPs
     for vnf_id, ip in vnf_address.iteritems():
       if vnf_id not in self.__vnf_cache:
@@ -515,6 +517,19 @@ class ServiceManager(object):
     collected = {}
     for nf in nffg.nfs:
       for port in nf.ports:
+        if port.l4:
+          try:
+            binding = ast.literal_eval(port.l4)
+            for k, v in binding.iteritems():
+              # k ~ 'tcp/22'
+              # v ~ ('192.168.0.1', '22')
+              ips = ":".join([str(e) for e in v])
+              if nf.id not in collected:
+                collected[nf.id] = {"port-%s" % k: ips}
+              else:
+                collected[nf.id]["port-%s" % k] = ips
+          except (ValueError, KeyError):
+            pass
         for l3 in port.l3:
           if l3.provided is not None:
             key = "%s-%s" % (l3.id, port.id)
@@ -535,6 +550,20 @@ class ServiceManager(object):
     for node in virt.nodes:
       for nf in node.NF_instances:
         for port in nf.ports:
+          if port.addresses.l4.is_initialized():
+            try:
+              binding = ast.literal_eval(port.addresses.l4.get_value())
+              for k, v in binding.iteritems():
+                # k ~ tcp/22
+                # v ~ ('192.168.0.1', '22')
+                print k, v
+                ips = ":".join([str(e) for e in v])
+                if nf.id.get_value() not in collected:
+                  collected[nf.id.get_value()] = {"port-%s" % k: ips}
+                else:
+                  collected[nf.id.get_value()]["port-%s" % k] = ips
+            except (ValueError, KeyError):
+              pass
           for l3 in port.addresses:
             if l3.provided.is_initialized():
               key = "%s-%s" % (l3.id.get_value(), port.id.get_value())
