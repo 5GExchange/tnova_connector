@@ -3,6 +3,8 @@
 ################################################################################
 FROM python:2.7.13-alpine
 MAINTAINER Janos Czentye <czentye@tmit.bme.hu>
+ARG GIT_REVISION=unknown
+LABEL git-revision=$GIT_REVISION    
 LABEL Description="TNOVA-Connector" Project="5GEx" version="1.0.0+"
 WORKDIR /opt/tnova_connector
 COPY . ./
