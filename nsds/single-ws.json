@@ -26,7 +26,7 @@
         "unit": "Mbps"
       }
     ], 
-    "name": "single-webservice", 
+    "name": "single-ws", 
     "provider": "5GEx", 
     "provider_id": "3", 
     "sla": [
@@ -45,7 +45,7 @@
             "number_of_instances": 1, 
             "redundancy_model": "Active", 
             "vnf_flavour_id_reference": "gold", 
-            "vnf_reference": "7@001"
+            "vnf_reference": "11@001"
           }
         ], 
         "id": "sla0", 
@@ -61,7 +61,7 @@
     "vnf_depedency": [], 
     "vnf_dependency": [], 
     "vnfds": [
-      "domain#001:vnf#7"
+      "domain#001:vnf#11"
     ], 
     "vnffgd": {
       "vnffgs": [
@@ -73,7 +73,7 @@
               "constituent_vnfs": [
                 {
                   "vnf_flavor_key_ref": "gold", 
-                  "vnf_ref_id": "7@001"
+                  "vnf_ref_id": "11@001"
                 }
               ], 
               "graph": [], 

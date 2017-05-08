@@ -45,13 +45,13 @@
             "number_of_instances": 1, 
             "redundancy_model": "Active", 
             "vnf_flavour_id_reference": "gold", 
-            "vnf_reference": "7@001"
+            "vnf_reference": "6@001"
           }, 
           {
             "number_of_instances": 1, 
             "redundancy_model": "Active", 
             "vnf_flavour_id_reference": "gold", 
-            "vnf_reference": "3@001"
+            "vnf_reference": "11@001"
           }
         ], 
         "id": "sla0", 
@@ -66,7 +66,7 @@
         {
           "alias": "SAP1:in", 
           "connections": [
-            "domain#001:vnf#7:ext_1"
+            "domain#001:vnf#11:ext_1"
           ], 
           "connectivity_type": "E-LINE", 
           "external_access": true, 
@@ -86,8 +86,8 @@
         {
           "alias": "ws-dpi", 
           "connections": [
-            "domain#001:vnf#7:ext_1", 
-            "domain#001:vnf#3:ext_1"
+            "domain#001:vnf#11:ext_1", 
+            "domain#001:vnf#6:ext_1"
           ], 
           "connectivity_type": "E-LINE", 
           "external_access": false, 
@@ -107,7 +107,7 @@
         {
           "alias": "SAP1:out", 
           "connections": [
-            "domain#001:vnf#3:ext_2"
+            "domain#001:vnf#6:ext_2"
           ], 
           "connectivity_type": "E-LINE", 
           "external_access": true, 
@@ -129,8 +129,8 @@
     "vnf_depedency": [], 
     "vnf_dependency": [], 
     "vnfds": [
-      "domain#001:vnf#3", 
-      "domain#001:vnf#7"
+      "domain#001:vnf#6", 
+      "domain#001:vnf#11"
     ], 
     "vnffgd": {
       "vnffgs": [
@@ -144,20 +144,20 @@
             {
               "connection_points": [
                 "ns_ext_SAP1:in", 
-                "domain#001:vnf#7:ext_1", 
-                "domain#001:vnf#7:ext_1", 
-                "domain#001:vnf#3:ext_1", 
+                "domain#001:vnf#11:ext_1", 
+                "domain#001:vnf#11:ext_1", 
+                "domain#001:vnf#6:ext_1", 
                 "ns_ext_SAP1:out", 
-                "domain#001:vnf#3:ext_2"
+                "domain#001:vnf#6:ext_2"
               ], 
               "constituent_vnfs": [
                 {
                   "vnf_flavor_key_ref": "gold", 
-                  "vnf_ref_id": "7@001"
+                  "vnf_ref_id": "6@001"
                 }, 
                 {
                   "vnf_flavor_key_ref": "gold", 
-                  "vnf_ref_id": "3@001"
+                  "vnf_ref_id": "11@001"
                 }
               ], 
               "graph": [
