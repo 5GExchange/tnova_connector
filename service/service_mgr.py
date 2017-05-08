@@ -66,11 +66,7 @@ class ServiceInstance(object):
     self.path = path
     self.__status = status
     self.vnf_addresses = {}
-    if self.path and os.path.exists(self.path):
-      self.created_at = datetime.datetime.fromtimestamp(
-        os.path.getctime(self.path)).isoformat()
-    else:
-      self.created_at = self.__touch()
+    self.created_at = self.__touch()
     self.updated_at = self.__touch()
 
   @staticmethod
