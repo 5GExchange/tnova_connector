@@ -1,0 +1,260 @@
+{
+  "billing_model": {
+    "period": "P1D",
+    "price": {
+      "unit": "EUR",
+      "setup": 1,
+      "min_per_period": 1,
+      "max_per_period": 1
+    },
+    "model": "PAYG"
+  },
+  "vdu": [
+    {
+      "vm_image_format": "qcow2",
+      "controller": true,
+      "vm_image_md5": "1276481102f218c981e0324180bafd9f",
+      "resource_requirements": {
+        "data_processing_acceleration_library": "",
+        "network_interface_card_capabilities": {
+          "SR-IOV": true,
+          "mirroring": false
+        },
+        "memory": 2,
+        "platform_pcie_parameters": {
+          "device_pass_through": true,
+          "SR-IOV": true
+        },
+        "storage": {
+          "size": 8,
+          "persistence": false,
+          "size_unit": "GB"
+        },
+        "vcpus": 1,
+        "hypervisor_parameters": {
+          "type": "QEMU-KVM",
+          "version": "10002|12001|2.6.32-358.el6.x86_64"
+        },
+        "network_interface_bandwidth_unit": "",
+        "memory_unit": "GB",
+        "vswitch_capabilities": {
+          "type": "ovs",
+          "overlay_tunnel": "GRE",
+          "version": "2.0"
+        },
+        "memory_parameters": {
+          "numa_allocation_policy": "",
+          "large_pages_required": false
+        },
+        "network_interface_bandwidth": "",
+        "cpu_support_accelerator": "AES-NI"
+      },
+      "networking_resources": "",
+      "monitoring_parameters_specific": [
+        {
+          "unit": "INT",
+          "metric": "httpnum",
+          "desc": "Number of HTTP requests received by Squid"
+        },
+        {
+          "unit": "%",
+          "metric": "hits",
+          "desc": "Cache hits percentage of all requests for the last 5 minutes"
+        },
+        {
+          "unit": "%",
+          "metric": "hits_bytes",
+          "desc": "Cache hits percentage of bytes sent for the last 5 minutes"
+        },
+        {
+          "unit": "%",
+          "metric": "memoryhits",
+          "desc": "Memory hits percentage for the last 5 minutes (hits that are logged as TCP_MEM_HIT)"
+        },
+        {
+          "unit": "%",
+          "metric": "diskhits",
+          "desc": "Disk hits percentage for the last 5 minutes (hits that are logged as TCP_HIT)"
+        },
+        {
+          "unit": "%",
+          "metric": "cachediskutilization",
+          "desc": "Cache disk utilization"
+        },
+        {
+          "unit": "%",
+          "metric": "cachememkutilization",
+          "desc": "Cache memory utilization"
+        },
+        {
+          "unit": "INT",
+          "metric": "usernum",
+          "desc": "Number of users accessing the proxy"
+        },
+        {
+          "unit": "%",
+          "metric": "cpuusage",
+          "desc": "CPU consumed by Squid for the last 5 minutes"
+        }
+      ],
+      "scale_in_out": {
+        "maximum": 1,
+        "minimum": 1
+      },
+      "connection_points": [
+        {
+          "vlink_ref": "vl1",
+          "id": "CP1e4v"
+        }
+      ],
+      "monitoring_parameters": [
+        {
+          "unit": "%",
+          "metric": "cpuidle",
+          "desc": "CPU Idle"
+        },
+        {
+          "unit": "%",
+          "metric": "cpu_util",
+          "desc": "CPU Utilization"
+        },
+        {
+          "unit": "GB",
+          "metric": "fsfree",
+          "desc": "Free Storage"
+        },
+        {
+          "unit": "MB",
+          "metric": "memfree",
+          "desc": "Free Memory"
+        },
+        {
+          "unit": "Mbps",
+          "metric": "network_incoming",
+          "desc": "Network Incoming"
+        },
+        {
+          "unit": "Mbps",
+          "metric": "network_outgoing",
+          "desc": "Network Outgoing"
+        },
+        {
+          "unit": "%",
+          "metric": "load_shortterm",
+          "desc": "Load Average (1 Minute)"
+        },
+        {
+          "unit": "%",
+          "metric": "load_midterm",
+          "desc": "Load Average (5 Minutes)"
+        },
+        {
+          "unit": "%",
+          "metric": "load_longterm",
+          "desc": "Load Average (15 Minutes)"
+        },
+        {
+          "unit": "INT",
+          "metric": "processes_blocked",
+          "desc": "Blocked Processes"
+        },
+        {
+          "unit": "INT",
+          "metric": "processes_paging",
+          "desc": "Paging Processes"
+        },
+        {
+          "unit": "INT",
+          "metric": "processes_running",
+          "desc": "Running Processes"
+        },
+        {
+          "unit": "INT",
+          "metric": "processes_sleeping",
+          "desc": "Sleeping Processes"
+        },
+        {
+          "unit": "INT",
+          "metric": "processes_stopped",
+          "desc": "Stopped Processes"
+        },
+        {
+          "unit": "INT",
+          "metric": "processes_zombie",
+          "desc": "Zombie Processes"
+        }
+      ],
+      "alias": "balance_server",
+      "vm_image": "http://nfs:8080/NFS/files/dummy_image.qcow2",
+      "id": "vdu0"
+    }
+  ],
+  "release": "T-NOVA",
+  "created_at": "2016-11-30T11:24:34Z",
+  "description": "Robot Balancer: PID Controller",
+  "type": "vPXAAS",
+  "deployment_flavours": [
+    {
+      "flavour_key": "gold",
+      "vlink_reference": [
+        "vl1"
+      ],
+      "vdu_reference": [
+        "vdu0"
+      ],
+      "constraint": "",
+      "id": "flavor0",
+      "assurance_parameters": []
+    }
+  ],
+  "version": "1",
+  "vnf_lifecycle_events": [
+    {
+      "authentication_port": 22,
+      "driver": "ssh",
+      "flavor_id_ref": "flavor0",
+      "vnf_container": "/home/vagrant/container/",
+      "authentication_type": "PubKeyAuthentication",
+      "events": {
+        "stop": {
+          "command": "/home/vagrant/scripts/stop",
+          "template_file": "{}",
+          "template_file_format": "JSON"
+        },
+        "start": {
+          "command": "/home/vagrant/scripts/start",
+          "template_file": "{\"controller\":\"get_attr[vdu0,PublicIp]\", \"vdu0\":\"get_attr[vdu1,PublicIp]\"}",
+          "template_file_format": "JSON"
+        }
+      },
+      "authentication_username": "vagrant",
+      "authentication": "-----BEGIN RSA PRIVATE KEY-----\nMIIEpAIBAAKCAQEAqKzv1O+8SG53PJsMWHpAaBbbwQ5bEbHMplnOvnfWiL21cfU+\nEQdY2JgjsLMJyMnS2mMBmopJQ8y2c1KS2yz30oz/2ac/PcbiRmX4PV2qqUgDdVj1\n5w5YQreSBMNfi+hXs2uhs5dsDfG1mbedXhyT9QFlimeiZH+WwmX+91A9GQrCTrQU\nSp7FQsiXyDBNUYmVsYYdP19XcNNc1OoReY8oCBzrrBR+vOf7XA6dh86HlM/ZBuQf\nSUEn8SdYeQM0975aDIrjhW8m3Fd3ZE3ZZKuCl7rbMLY8RRB8pSAkpFrBtyeqtN0H\nRj7HpAd+BGjfgrL+ivXmG5AZ3fSehTFSKsGDDQIDAQABAoIBACgFkIpXr7cH7ubE\nazN7HlkUQ2QVQep643H9ER8EVDTxvmGhrO5hbeVGhAFjGck4if0jTLgcY7HgmtHW\nH949VzfwGKzOECVaUUoe273DwcCUw61ORFpkfvClmdHjgYIyyMxbl2yDWzIbzdkB\nRieUZE7X2/3xBQkPdPf/N3X65eRQ1FYRR6wOp2dAONzw0xpq2TYOKdVBqgZS3Sa6\npksSDycaLlSJA/NN2y/FiIU8kkoUShYflRrsyheipQ9D5KMEmQASxWkDQu3xW+Wl\n60aUwnOrEGoMNAXAHUshfpbrsu3A6d59/6rykhc37z9tVUdTnPbX5KPDkWbKqC7H\nDdMSMsECgYEA34kRR8+nBd+fBNHPGsn++S8eaeczX0kMqRiATWq0ZPspcIbA2ojS\n0X5txoEFBjcZ8C2Nq56MjZtqfZRZCLfm1e/Dk2LP0x8vRS9BQRKwL//hypYqEC5l\norokfy91Ow0kxnHxiYvJy2riinTcqSc4/8u2PuDVGW6JnLRxCIcW1kUCgYEAwSw0\n9jVjwQCWhkRJr/17vCLuCmkSMzmTFSu9SEsrVAmrYeE2qJPNRySjTfnDa/yA3OxG\nj620F5yMrD0ONCtoSqU6VQt23KiS0DPmWkeCuv6eOYMxXGy721idHshCtY9PlSZg\nC/QKa2KQnKV/88UfHUt/3hcAlpJzSdWBSku4iikCgYEAgv1LRw2EDokQIj7gYg5k\nf5kA9YYqMHgaFyzoYnVY6KPVkL8mW+k5wNGZem04iH/Zj0jib+Mk8gZUzOoVkmpR\ntqQds0yABHONu7kJQBy3ailEIvcEBx9pJ4Z0xKMGy2fUWQWESNnFkpI71m7Mr8Lw\nP9UcIpSVy6Vetpl2c0zWMRECgYAGBlbwhuHBlz8amO6jaoh9aal68aP7rQQFWQPi\nSVXknRiXSOrnfxSb72yYdf2+VHXAbi4VNRm00tEgXhcfUWtDSLv1AxKF90v86mF4\n11ogcuiEaq8TbuC9Cpp750sNVpbo0/WS6d2ZU82m1RKUi8VYqI4oYxdFmvO1jc8m\nfg4XYQKBgQCebRk5OiGmHTKUHHuBnFyA1ZJpVPGzBBmyQo83gRQ9+KvBOHQHYQcC\nv8JYWnuTwKCcIJhcqA8UbIGhRKHtBnqLr3Ipg97gKBElO3bTzUUut0QcMd14i6ab\n9oaS/tg7BhxKkQyuYwIpSeqFeZeecID4dfMCMHgaPaAsz+epjv1NIw==\n-----END RSA PRIVATE KEY-----"
+    }
+  ],
+  "trade": false,
+  "provider": "TEIC",
+  "name": "balance_server",
+  "provider_id": 4,
+  "descriptor_version": "1",
+  "modified_at": "2016-11-30T11:24:34Z",
+  "vlinks": [
+    {
+      "root_requirement": "10Gbps",
+      "connection_points_reference": [
+        "CP1e4v"
+      ],
+      "access": false,
+      "qos": "",
+      "vdu_reference": [
+        "vdu0"
+      ],
+      "alias": "1",
+      "id": "vl1",
+      "connectivity_type": "E-LINE",
+      "dhcp": false,
+      "leaf_requirement": "10Gbps",
+      "external_access": true
+    }
+  ],
+  "id": 3
+}
