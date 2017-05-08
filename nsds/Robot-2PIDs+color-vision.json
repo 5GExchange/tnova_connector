@@ -1,0 +1,322 @@
+{
+  "nsd": {
+    "auto_scale_policy": {
+      "basic": [], 
+      "criteria": []
+    }, 
+    "connection_points": [], 
+    "description": "test", 
+    "descriptor_version": "1", 
+    "id": "Robot-2PIDs+color-vision", 
+    "lifecycle_events": {
+      "scale_in": [], 
+      "scale_out": [], 
+      "start": [], 
+      "stop": []
+    }, 
+    "monitoring_parameters": [
+      {
+        "desc": "Availability", 
+        "metric": "availability", 
+        "unit": "%"
+      }, 
+      {
+        "desc": "End-to-End Bandwidth", 
+        "metric": "end-to-end bandwidth", 
+        "unit": "Mbps"
+      }
+    ], 
+    "name": "Robot-2PIDs+color-vision", 
+    "provider": "5GEx", 
+    "provider_id": "3", 
+    "sla": [
+      {
+        "assurance_parameters": [], 
+        "billing": {
+          "model": "PAYG", 
+          "price": {
+            "price_per_period": 10, 
+            "setup": 100, 
+            "unit": "USD"
+          }
+        }, 
+        "constituent_vnf": [
+          {
+            "number_of_instances": 1, 
+            "redundancy_model": "Active", 
+            "vnf_flavour_id_reference": "gold", 
+            "vnf_reference": "3@001"
+          }, 
+          {
+            "number_of_instances": 1, 
+            "redundancy_model": "Active", 
+            "vnf_flavour_id_reference": "gold", 
+            "vnf_reference": "2@001"
+          }, 
+          {
+            "number_of_instances": 1, 
+            "redundancy_model": "Active", 
+            "vnf_flavour_id_reference": "gold", 
+            "vnf_reference": "9@001"
+          }, 
+          {
+            "number_of_instances": 1, 
+            "redundancy_model": "Active", 
+            "vnf_flavour_id_reference": "gold", 
+            "vnf_reference": "1@001"
+          }
+        ], 
+        "id": "sla0", 
+        "sla_key": "basic"
+      }
+    ], 
+    "vendor": "3", 
+    "version": "1", 
+    "vld": {
+      "number_of_endpoints": 0, 
+      "virtual_links": [
+        {
+          "alias": "SAP12:in", 
+          "connections": [
+            "domain#001:vnf#9:ext_1"
+          ], 
+          "connectivity_type": "E-LINE", 
+          "external_access": true, 
+          "leaf_requirement": "", 
+          "merge": false, 
+          "qos": {
+            "burst": "", 
+            "delay": "20", 
+            "flowclass": "dl_src=9c:5c:8e:af:2e:e0,dl_type=0x0800,nw_dst=192.168.1.156", 
+            "params": "", 
+            "peak": ""
+          }, 
+          "root_requirements": "", 
+          "sla_ref_id": "sla0", 
+          "vld_id": "vld0"
+        }, 
+        {
+          "alias": "SAP12:in", 
+          "connections": [
+            "domain#001:vnf#9:ext_1"
+          ], 
+          "connectivity_type": "E-LINE", 
+          "external_access": true, 
+          "leaf_requirement": "", 
+          "merge": false, 
+          "qos": {
+            "burst": "", 
+            "delay": "", 
+            "flowclass": "dl_src=9c:5c:8e:af:2e:e0,dl_type=0x0806,nw_dst=192.168.1.156", 
+            "params": "", 
+            "peak": ""
+          }, 
+          "root_requirements": "", 
+          "sla_ref_id": "sla0", 
+          "vld_id": "vld1"
+        }, 
+        {
+          "alias": "SAP12:in", 
+          "connections": [
+            "domain#001:vnf#1:ext_1"
+          ], 
+          "connectivity_type": "E-LINE", 
+          "external_access": true, 
+          "leaf_requirement": "", 
+          "merge": false, 
+          "qos": {
+            "burst": "", 
+            "delay": "", 
+            "flowclass": "dl_src=9c:5c:8e:af:2e:e0,dl_type=0x0800,nw_dst=192.168.1.90", 
+            "params": "", 
+            "peak": ""
+          }, 
+          "root_requirements": "", 
+          "sla_ref_id": "sla0", 
+          "vld_id": "vld2"
+        }, 
+        {
+          "alias": "sp-b1", 
+          "connections": [
+            "domain#001:vnf#9:ext_2", 
+            "domain#001:vnf#3:ext_1"
+          ], 
+          "connectivity_type": "E-LINE", 
+          "external_access": false, 
+          "leaf_requirement": "", 
+          "merge": false, 
+          "qos": {
+            "burst": "", 
+            "delay": "", 
+            "flowclass": "", 
+            "params": "", 
+            "peak": ""
+          }, 
+          "root_requirements": "", 
+          "sla_ref_id": "sla0", 
+          "vld_id": "vld3"
+        }, 
+        {
+          "alias": "sp-b2", 
+          "connections": [
+            "domain#001:vnf#9:ext_3", 
+            "domain#001:vnf#2:ext_1"
+          ], 
+          "connectivity_type": "E-LINE", 
+          "external_access": false, 
+          "leaf_requirement": "", 
+          "merge": false, 
+          "qos": {
+            "burst": "", 
+            "delay": "", 
+            "flowclass": "", 
+            "params": "", 
+            "peak": ""
+          }, 
+          "root_requirements": "", 
+          "sla_ref_id": "sla0", 
+          "vld_id": "vld4"
+        }, 
+        {
+          "alias": "color-sp", 
+          "connections": [
+            "domain#001:vnf#1:ext_1", 
+            "domain#001:vnf#9:ext_1"
+          ], 
+          "connectivity_type": "E-LINE", 
+          "external_access": false, 
+          "leaf_requirement": "", 
+          "merge": false, 
+          "qos": {
+            "burst": "", 
+            "delay": "", 
+            "flowclass": "", 
+            "params": "", 
+            "peak": ""
+          }, 
+          "root_requirements": "", 
+          "sla_ref_id": "sla0", 
+          "vld_id": "vld5"
+        }, 
+        {
+          "alias": "SAP12:out", 
+          "connections": [
+            "domain#001:vnf#3:ext_1"
+          ], 
+          "connectivity_type": "E-LINE", 
+          "external_access": true, 
+          "leaf_requirement": "", 
+          "merge": false, 
+          "qos": {
+            "burst": "", 
+            "delay": "20", 
+            "flowclass": "", 
+            "params": "", 
+            "peak": ""
+          }, 
+          "root_requirements": "", 
+          "sla_ref_id": "sla0", 
+          "vld_id": "vld6"
+        }, 
+        {
+          "alias": "SAP12:out", 
+          "connections": [
+            "domain#001:vnf#2:ext_1"
+          ], 
+          "connectivity_type": "E-LINE", 
+          "external_access": true, 
+          "leaf_requirement": "", 
+          "merge": false, 
+          "qos": {
+            "burst": "", 
+            "delay": "", 
+            "flowclass": "", 
+            "params": "", 
+            "peak": ""
+          }, 
+          "root_requirements": "", 
+          "sla_ref_id": "sla0", 
+          "vld_id": "vld7"
+        }
+      ]
+    }, 
+    "vnf_depedency": [], 
+    "vnf_dependency": [], 
+    "vnfds": [
+      "domain#001:vnf#9", 
+      "domain#001:vnf#1", 
+      "domain#001:vnf#2", 
+      "domain#001:vnf#3"
+    ], 
+    "vnffgd": {
+      "vnffgs": [
+        {
+          "dependent_virtual_links": [
+            "vld0", 
+            "vld1", 
+            "vld2", 
+            "vld3", 
+            "vld4", 
+            "vld5", 
+            "vld6", 
+            "vld7"
+          ], 
+          "network_forwarding_path": [
+            {
+              "connection_points": [
+                "ns_ext_SAP12:in", 
+                "domain#001:vnf#9:ext_1", 
+                "ns_ext_SAP12:in", 
+                "domain#001:vnf#9:ext_1", 
+                "ns_ext_SAP12:in", 
+                "domain#001:vnf#1:ext_1", 
+                "domain#001:vnf#9:ext_2", 
+                "domain#001:vnf#3:ext_1", 
+                "domain#001:vnf#9:ext_3", 
+                "domain#001:vnf#2:ext_1", 
+                "domain#001:vnf#1:ext_1", 
+                "domain#001:vnf#9:ext_1", 
+                "ns_ext_SAP12:out", 
+                "domain#001:vnf#3:ext_1", 
+                "ns_ext_SAP12:out", 
+                "domain#001:vnf#2:ext_1"
+              ], 
+              "constituent_vnfs": [
+                {
+                  "vnf_flavor_key_ref": "gold", 
+                  "vnf_ref_id": "3@001"
+                }, 
+                {
+                  "vnf_flavor_key_ref": "gold", 
+                  "vnf_ref_id": "2@001"
+                }, 
+                {
+                  "vnf_flavor_key_ref": "gold", 
+                  "vnf_ref_id": "9@001"
+                }, 
+                {
+                  "vnf_flavor_key_ref": "gold", 
+                  "vnf_ref_id": "1@001"
+                }
+              ], 
+              "graph": [
+                "vld0", 
+                "vld1", 
+                "vld2", 
+                "vld3", 
+                "vld4", 
+                "vld5", 
+                "vld6", 
+                "vld7"
+              ], 
+              "nfp_id": "nfp0"
+            }
+          ], 
+          "number_of_endpoints": 5, 
+          "number_of_virtual_links": 8, 
+          "vnffg_id": "vnffg0"
+        }
+      ]
+    }
+  }
+}
