@@ -72,7 +72,7 @@
         {
           "alias": "SAP1:in", 
           "connections": [
-            "domain#001:vnf#4:ext_1"
+            "domain#001:vnf#4-0:ext_1"
           ], 
           "connectivity_type": "E-LINE", 
           "external_access": true, 
@@ -92,8 +92,8 @@
         {
           "alias": "comp-decomp", 
           "connections": [
-            "domain#001:vnf#4:ext_1", 
-            "domain#001:vnf#5:ext_1"
+            "domain#001:vnf#4-0:ext_1", 
+            "domain#001:vnf#5-0:ext_1"
           ], 
           "connectivity_type": "E-LINE", 
           "external_access": false, 
@@ -113,8 +113,8 @@
         {
           "alias": "SAP2:out", 
           "connections": [
-            "domain#001:vnf#5:ext_1", 
-            "domain#001:vnf#7:ext_1"
+            "domain#001:vnf#5-0:ext_1", 
+            "domain#001:vnf#7-0:ext_1"
           ], 
           "connectivity_type": "E-LINE", 
           "external_access": true, 
@@ -134,7 +134,7 @@
         {
           "alias": "SAP2:in", 
           "connections": [
-            "domain#001:vnf#7:ext_1"
+            "domain#001:vnf#7-0:ext_1"
           ], 
           "connectivity_type": "E-LINE", 
           "external_access": true, 
@@ -154,7 +154,7 @@
         {
           "alias": "SAP1:out", 
           "connections": [
-            "domain#001:vnf#7:ext_1"
+            "domain#001:vnf#7-0:ext_1"
           ], 
           "connectivity_type": "E-LINE", 
           "external_access": true, 
@@ -176,9 +176,9 @@
     "vnf_depedency": [], 
     "vnf_dependency": [], 
     "vnfds": [
-      "domain#001:vnf#7", 
-      "domain#001:vnf#5", 
-      "domain#001:vnf#4"
+      "domain#001:vnf#7-0", 
+      "domain#001:vnf#5-0", 
+      "domain#001:vnf#4-0"
     ], 
     "vnffgd": {
       "vnffgs": [
@@ -194,16 +194,16 @@
             {
               "connection_points": [
                 "ns_ext_SAP1:in", 
-                "domain#001:vnf#4:ext_1", 
-                "domain#001:vnf#4:ext_1", 
-                "domain#001:vnf#5:ext_1", 
+                "domain#001:vnf#4-0:ext_1", 
+                "domain#001:vnf#4-0:ext_1", 
+                "domain#001:vnf#5-0:ext_1", 
                 "ns_ext_SAP2:out", 
-                "domain#001:vnf#5:ext_1", 
-                "domain#001:vnf#7:ext_1", 
+                "domain#001:vnf#5-0:ext_1", 
+                "domain#001:vnf#7-0:ext_1", 
                 "ns_ext_SAP2:in", 
-                "domain#001:vnf#7:ext_1", 
+                "domain#001:vnf#7-0:ext_1", 
                 "ns_ext_SAP1:out", 
-                "domain#001:vnf#7:ext_1"
+                "domain#001:vnf#7-0:ext_1"
               ], 
               "constituent_vnfs": [
                 {

@@ -7,39 +7,7 @@
   },
   "node_nfs": [
     {
-      "id": "compressor",
-      "name": "compressor",
-      "ports": [
-        {
-          "id": 1,
-          "addresses": {
-            "l3": [
-              {
-                "id": "private",
-                "provided": "192.168.0.1"
-              },
-              {
-                "id": "public",
-                "provided": "1.2.3.4"
-              }
-            ]
-          }
-        }
-      ],
-      "metadata": {
-        "image": "http://10.10.1.167:8080/NFS/files/PXaaS-180216.qcow2"
-      },
-      "functional_type": "comp",
-      "specification": {
-        "resources": {
-          "cpu": 1,
-          "mem": 2,
-          "storage": 8
-        }
-      }
-    },
-    {
-      "id": "forwarder",
+      "id": "forwarder_0",
       "name": "forwarder",
       "ports": [
         {
@@ -59,34 +27,37 @@
       }
     },
     {
-      "id": "decompressor",
+      "id": "decompressor_0",
       "name": "decompressor",
       "ports": [
         {
           "id": 1
-        },
-        {
-          "id": 2,
-          "sap": "INTERNET",
-          "addresses": {
-            "l4": "{'8088/tcp': ('1.2.3.4', 8088), '1935/tcp': ('', 1935), '8086/tcp': ('1.2.3.4', 8086), '8087/tcp': ('', 8087)}",
-            "l3": [
-              {
-                "id": "INTERNET-public",
-                "configure": "True",
-                "client": "dhcp-client",
-                "requested": "public"
-              }
-            ]
-          }
         }
       ],
       "metadata": {
-        "image": "https://5gex.tmit.bme.hu/vcdn:latest",
-        "environment": "{'WSE_LIC': 'ENGP4-ct4de-8EXrt-awhcd-E6tNV-fYbZE', 'WSE_MGR_USER': 'wowza', 'WSE_MGR_PASS': 'wowza'}",
-        "command": "/sbin/entrypoint.sh"
+        "image": "http://10.10.1.167:8080/NFS/files/PXaaS-180216.qcow2"
       },
       "functional_type": "decomp",
+      "specification": {
+        "resources": {
+          "cpu": 1,
+          "mem": 2,
+          "storage": 8
+        }
+      }
+    },
+    {
+      "id": "compressor_0",
+      "name": "compressor",
+      "ports": [
+        {
+          "id": 1
+        }
+      ],
+      "metadata": {
+        "image": "http://10.10.1.167:8080/NFS/files/PXaaS-180216.qcow2"
+      },
+      "functional_type": "comp",
       "specification": {
         "resources": {
           "cpu": 1,
@@ -118,38 +89,38 @@
   ],
   "edge_sg_nexthops": [
     {
+      "id": 5,
+      "src_node": "forwarder_0",
+      "src_port": 1,
+      "dst_node": "SAP1",
+      "dst_port": 1
+    },
+    {
       "id": 4,
       "src_node": "SAP2",
       "src_port": 1,
-      "dst_node": "forwarder",
+      "dst_node": "forwarder_0",
+      "dst_port": 1
+    },
+    {
+      "id": 3,
+      "src_node": "decompressor_0",
+      "src_port": 1,
+      "dst_node": "SAP2",
       "dst_port": 1
     },
     {
       "id": 2,
-      "src_node": "compressor",
+      "src_node": "compressor_0",
       "src_port": 1,
-      "dst_node": "decompressor",
-      "dst_port": 1
-    },
-    {
-      "id": 5,
-      "src_node": "forwarder",
-      "src_port": 1,
-      "dst_node": "SAP1",
+      "dst_node": "decompressor_0",
       "dst_port": 1
     },
     {
       "id": 1,
       "src_node": "SAP1",
       "src_port": 1,
-      "dst_node": "compressor",
-      "dst_port": 1
-    },
-    {
-      "id": 3,
-      "src_node": "decompressor",
-      "src_port": 1,
-      "dst_node": "SAP2",
+      "dst_node": "compressor_0",
       "dst_port": 1
     }
   ]

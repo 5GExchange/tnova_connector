@@ -1,0 +1,170 @@
+{
+  "parameters": {
+    "id": "Robot-2PIDs+color-vision",
+    "name": "Robot-2PIDs+color-vision",
+    "service_id": "Robot-2PIDs+color-vision",
+    "version": "1.0"
+  },
+  "node_nfs": [
+    {
+      "id": "balance_color_vision_0",
+      "name": "balance_color_vision",
+      "ports": [
+        {
+          "id": 1
+        }
+      ],
+      "metadata": {
+        "image": "http://nfs:8080/NFS/files/dummy_image.qcow2"
+      },
+      "functional_type": "balance_color_vision",
+      "specification": {
+        "resources": {
+          "cpu": 1,
+          "mem": 2,
+          "storage": 8
+        }
+      }
+    },
+    {
+      "id": "balance_server2_0",
+      "name": "balance_server2",
+      "ports": [
+        {
+          "id": 1
+        }
+      ],
+      "metadata": {
+        "image": "http://nfs:8080/NFS/files/dummy_image.qcow2"
+      },
+      "functional_type": "balance_server",
+      "specification": {
+        "resources": {
+          "cpu": 1,
+          "mem": 2,
+          "storage": 8
+        }
+      }
+    },
+    {
+      "id": "balance_server_0",
+      "name": "balance_server",
+      "ports": [
+        {
+          "id": 1
+        }
+      ],
+      "metadata": {
+        "image": "http://nfs:8080/NFS/files/dummy_image.qcow2"
+      },
+      "functional_type": "balance_server",
+      "specification": {
+        "resources": {
+          "cpu": 1,
+          "mem": 2,
+          "storage": 8
+        }
+      }
+    },
+    {
+      "id": "splitter_0",
+      "name": "splitter",
+      "ports": [
+        {
+          "id": 1
+        },
+        {
+          "id": 2
+        },
+        {
+          "id": 3
+        }
+      ],
+      "metadata": {
+        "image": "http://nfs:8080/NFS/files/dummy_image.qcow2"
+      },
+      "functional_type": "splitter",
+      "specification": {
+        "resources": {
+          "cpu": 1,
+          "mem": 2,
+          "storage": 8
+        }
+      }
+    }
+  ],
+  "node_saps": [
+    {
+      "id": "SAP12",
+      "name": "SAP12",
+      "ports": [
+        {
+          "id": 1
+        }
+      ]
+    }
+  ],
+  "edge_sg_nexthops": [
+    {
+      "id": 6,
+      "src_node": "balance_color_vision_0",
+      "src_port": 1,
+      "dst_node": "splitter_0",
+      "dst_port": 1
+    },
+    {
+      "id": 8,
+      "src_node": "balance_server2_0",
+      "src_port": 1,
+      "dst_node": "SAP12",
+      "dst_port": 1
+    },
+    {
+      "id": 7,
+      "src_node": "balance_server_0",
+      "src_port": 1,
+      "dst_node": "SAP12",
+      "dst_port": 1,
+      "delay": "20"
+    },
+    {
+      "id": 3,
+      "src_node": "SAP12",
+      "src_port": 1,
+      "dst_node": "balance_color_vision_0",
+      "dst_port": 1,
+      "flowclass": "dl_src=9c:5c:8e:af:2e:e0,dl_type=0x0800,nw_dst=192.168.1.90"
+    },
+    {
+      "id": 1,
+      "src_node": "SAP12",
+      "src_port": 1,
+      "dst_node": "splitter_0",
+      "dst_port": 1,
+      "flowclass": "dl_src=9c:5c:8e:af:2e:e0,dl_type=0x0800,nw_dst=192.168.1.156",
+      "delay": "20"
+    },
+    {
+      "id": 2,
+      "src_node": "SAP12",
+      "src_port": 1,
+      "dst_node": "splitter_0",
+      "dst_port": 1,
+      "flowclass": "dl_src=9c:5c:8e:af:2e:e0,dl_type=0x0806,nw_dst=192.168.1.156"
+    },
+    {
+      "id": 5,
+      "src_node": "splitter_0",
+      "src_port": 3,
+      "dst_node": "balance_server2_0",
+      "dst_port": 1
+    },
+    {
+      "id": 4,
+      "src_node": "splitter_0",
+      "src_port": 2,
+      "dst_node": "balance_server_0",
+      "dst_port": 1
+    }
+  ]
+}

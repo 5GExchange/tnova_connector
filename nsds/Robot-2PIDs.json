@@ -72,7 +72,7 @@
         {
           "alias": "SAP12:in", 
           "connections": [
-            "domain#001:vnf#9:ext_1"
+            "domain#001:vnf#9-0:ext_1"
           ], 
           "connectivity_type": "E-LINE", 
           "external_access": true, 
@@ -92,7 +92,7 @@
         {
           "alias": "SAP12:in", 
           "connections": [
-            "domain#001:vnf#9:ext_1"
+            "domain#001:vnf#9-0:ext_1"
           ], 
           "connectivity_type": "E-LINE", 
           "external_access": true, 
@@ -112,8 +112,8 @@
         {
           "alias": "sp-b1", 
           "connections": [
-            "domain#001:vnf#9:ext_2", 
-            "domain#001:vnf#3:ext_1"
+            "domain#001:vnf#9-0:ext_2", 
+            "domain#001:vnf#3-0:ext_1"
           ], 
           "connectivity_type": "E-LINE", 
           "external_access": false, 
@@ -133,8 +133,8 @@
         {
           "alias": "sp-b2", 
           "connections": [
-            "domain#001:vnf#9:ext_3", 
-            "domain#001:vnf#2:ext_1"
+            "domain#001:vnf#9-0:ext_3", 
+            "domain#001:vnf#2-0:ext_1"
           ], 
           "connectivity_type": "E-LINE", 
           "external_access": false, 
@@ -154,7 +154,7 @@
         {
           "alias": "SAP12:out", 
           "connections": [
-            "domain#001:vnf#3:ext_1"
+            "domain#001:vnf#3-0:ext_1"
           ], 
           "connectivity_type": "E-LINE", 
           "external_access": true, 
@@ -174,7 +174,7 @@
         {
           "alias": "SAP12:out", 
           "connections": [
-            "domain#001:vnf#2:ext_1"
+            "domain#001:vnf#2-0:ext_1"
           ], 
           "connectivity_type": "E-LINE", 
           "external_access": true, 
@@ -196,9 +196,9 @@
     "vnf_depedency": [], 
     "vnf_dependency": [], 
     "vnfds": [
-      "domain#001:vnf#3", 
-      "domain#001:vnf#2", 
-      "domain#001:vnf#9"
+      "domain#001:vnf#3-0", 
+      "domain#001:vnf#2-0", 
+      "domain#001:vnf#9-0"
     ], 
     "vnffgd": {
       "vnffgs": [
@@ -215,17 +215,17 @@
             {
               "connection_points": [
                 "ns_ext_SAP12:in", 
-                "domain#001:vnf#9:ext_1", 
+                "domain#001:vnf#9-0:ext_1", 
                 "ns_ext_SAP12:in", 
-                "domain#001:vnf#9:ext_1", 
-                "domain#001:vnf#9:ext_2", 
-                "domain#001:vnf#3:ext_1", 
-                "domain#001:vnf#9:ext_3", 
-                "domain#001:vnf#2:ext_1", 
+                "domain#001:vnf#9-0:ext_1", 
+                "domain#001:vnf#9-0:ext_2", 
+                "domain#001:vnf#3-0:ext_1", 
+                "domain#001:vnf#9-0:ext_3", 
+                "domain#001:vnf#2-0:ext_1", 
                 "ns_ext_SAP12:out", 
-                "domain#001:vnf#3:ext_1", 
+                "domain#001:vnf#3-0:ext_1", 
                 "ns_ext_SAP12:out", 
-                "domain#001:vnf#2:ext_1"
+                "domain#001:vnf#2-0:ext_1"
               ], 
               "constituent_vnfs": [
                 {
