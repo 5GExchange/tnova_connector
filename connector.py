@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Copyright 2016 Janos Czentye
+# Copyright 2017 Janos Czentye
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -213,6 +213,8 @@ def initiate_service ():
     service_mgr.set_service_status(id=si.id,
                                    status=ServiceInstance.STATUS_ERROR)
     return Response(status=httplib.NOT_FOUND)
+  app.logger.info("Enforce Service instance parameters on loaded service...")
+  app.logger.debug("Detected Service Instance id: %s" % si.id)
   # Set ADD mode
   sg.mode = NFFG.MODE_ADD
   app.logger.debug("Set mapping mode: %s" % sg.mode)

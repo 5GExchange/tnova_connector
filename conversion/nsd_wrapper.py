@@ -27,6 +27,7 @@ class NSWrapper(AbstractDescriptorWrapper):
   VNFDS_SEPARATOR = ':'
   VNFD_DOMAIN_PREFIX = 'domain#'
   VNFD_VNF_PREFIX = 'vnf#'
+  VNFD_VNF_NUM_SEPARATOR = '-'
   VNFD_NS_PREFIX = 'ns#'
   VNFD_EXTERNAL_PORT_PREFIX = 'ext_'
 
@@ -49,7 +50,7 @@ class NSWrapper(AbstractDescriptorWrapper):
     :rtype: list
     """
     try:
-      return [self.__vnfd_connection_point_parser(raw=vnf)[0:2]
+      return [self.__connection_point_parser(raw=vnf)[0:3]
               for vnf in self.data['vnfds']]
     except KeyError as e:
       self.log.error("Missing required field: %s for 'vnfds' in NSD: %s!"
@@ -57,7 +58,7 @@ class NSWrapper(AbstractDescriptorWrapper):
     except ValueError as e:
       self.log.error("Listed VNF id in 'vnfds': %s is not a valid integer!" % e)
 
-  def __vnfd_connection_point_parser (self, raw):
+  def __connection_point_parser (self, raw):
     """
     Parse, split and convert VNFD parts from NSD's list, "vnfds".
     Missing element substituted with None.
@@ -65,15 +66,21 @@ class NSWrapper(AbstractDescriptorWrapper):
     :param raw: raw ID in "vnfds" list
     :type raw: str
     :return: tuple of parsed domain, VNFD id and port
-    :rtype: (str, int, int)
+    :rtype: (str, int, int, int)
     """
-    domain, id, port = None, None, None
+    domain, id, num, port = None, None, None, None
+    self.log.debug("Parsing connection point: %s" % raw)
     for tag in raw.split(self.VNFDS_SEPARATOR):
       lower_tag = tag.lower()
       if lower_tag.startswith(self.VNFD_DOMAIN_PREFIX):
         domain = tag[len(self.VNFD_DOMAIN_PREFIX):]
       elif lower_tag.startswith(self.VNFD_VNF_PREFIX):
-        id = tag[len(self.VNFD_VNF_PREFIX):]
+        vnf_num = tag[len(self.VNFD_VNF_PREFIX):].split(
+          self.VNFD_VNF_NUM_SEPARATOR, 1)
+        if len(vnf_num) == 2:
+          id, num = vnf_num
+        else:
+          id = vnf_num.pop()
       elif lower_tag.startswith(self.VNFD_NS_PREFIX):
         id = tag[len(self.VNFD_NS_PREFIX):]
       elif lower_tag.startswith(self.VNFD_EXTERNAL_PORT_PREFIX):
@@ -83,8 +90,8 @@ class NSWrapper(AbstractDescriptorWrapper):
         id = tag
       else:
         self.log.warning("Unrecognized prefix in: %s" % tag)
-    self.log.debug("Found VNFD params - domain: %s, VNF: %s, port: %s"
-                   % (domain, id, port))
+    self.log.debug("Found VNFD params - domain: %s, VNF: %s, num: %s, port: %s"
+                   % (domain, id, num, port))
     try:
       id = int(id)
     except ValueError:
@@ -96,7 +103,14 @@ class NSWrapper(AbstractDescriptorWrapper):
       pass
     except ValueError:
       self.log.warining("Detected port: %s is not valid integer!" % port)
-    return domain, id, port
+    try:
+      num = int(num)
+    except TypeError:
+      # If num has remained None
+      pass
+    except ValueError:
+      self.log.warining("Detected num: %s is not valid integer!" % num)
+    return domain, id, num, port
 
   def get_saps (self):
     """
@@ -134,12 +148,12 @@ class NSWrapper(AbstractDescriptorWrapper):
     :param conn: connection point in raw string
     :type conn: str
     :return: tuple of node and port IDs
-    :rtype: (int, int)
+    :rtype: (int, int, int)
     """
-    domain, vnf_id, port = self.__vnfd_connection_point_parser(raw=conn)
+    domain, vnf_id, num, port = self.__connection_point_parser(raw=conn)
     if not all((vnf_id, port)):
       self.log.error("Missing VNF prefix: %s from connection: %s" % conn)
-    return vnf_id, port
+    return vnf_id, num, port
 
   def get_vlinks (self):
     """
@@ -165,25 +179,28 @@ class NSWrapper(AbstractDescriptorWrapper):
         try:
           hop['id'] = int(vlink['vld_id'])
         except ValueError:
-          hop['id'] = vlink['vld_id']
+          hop['id'] = str(vlink['vld_id'])
         # Inter-VNF link
         if vlink['external_access'] is False:
+          self.log.debug("Detected Inter-VNF link: %s" % hop['id'])
           if not len(vlink['connections']) == 2:
             self.log.error("Regular NF-NF link: %s must have 2 endpoint! "
-                             "Detected: %s" % (vlink['vld_id'],
-                                               len(vlink['connections'])))
+                           "Detected: %s" % (vlink['vld_id'],
+                                             len(vlink['connections'])))
             continue
           self.log.debug("Detected inter-VNF link: %s" % hop['id'])
           # Check src node/port
-          hop['src_node'], hop['src_port'] = self.__parse_vlink_connection(
-            vlink['connections'][0])
+          hop['src_node'], hop['src_node_num'], hop['src_port'] = \
+            self.__parse_vlink_connection(vlink['connections'][0])
           # Check dst node/port
-          hop['dst_node'], hop['dst_port'] = self.__parse_vlink_connection(
-            vlink['connections'][1])
+          hop['dst_node'], hop['dst_node_num'], hop['dst_port'] = \
+            self.__parse_vlink_connection(vlink['connections'][1])
         # External link, one of the endpoint is a SAP
         else:
+          self.log.debug("Detected external link: %s" % hop['id'])
           direction = None
-          node, port = self.__parse_vlink_connection(vlink['connections'][0])
+          node, num, port = self.__parse_vlink_connection(
+            vlink['connections'][0])
           sap_node, sap_port = vlink['alias'].split(':')[0], None
           # If explicit direction (in/out) is given: 
           if len(vlink['alias'].split(':')) > 1:
@@ -206,15 +223,18 @@ class NSWrapper(AbstractDescriptorWrapper):
             # Source SAP
             hop['src_node'], hop['src_port'] = sap_node, sap_port
             hop['dst_node'], hop['dst_port'] = node, port
+            hop['src_node_num'], hop['dst_node_num'] = None, num
             srcSAP_list.append(sap_node)
             self.log.debug("Detected starting SAP")
           else:
             # Destination SAP
             hop['src_node'], hop['src_port'] = node, port
             hop['dst_node'], hop['dst_port'] = sap_node, sap_port
+            hop['src_node_num'], hop['dst_node_num'] = num, None
             self.log.debug("Detected ending SAP")
-        self.log.debug("src: %s - %s" % (hop['src_node'], hop['src_port']))
-        self.log.debug("dst: %s - %s" % (hop['dst_node'], hop['dst_port']))
+        self.log.debug("Detected link:  SRC %s : %s  --->  DST %s : %s"
+                       % (hop['src_node'], hop['src_port'], hop['dst_node'],
+                          hop['dst_port']))
         # Ugly hack for processing delay requirement and flowclass on link
         if vlink['qos']['delay']:
           hop['delay'] = vlink['qos']['delay']
@@ -307,8 +327,8 @@ class NSWrapper(AbstractDescriptorWrapper):
     :type vlink_id: str
     :param index: index of link endpoint in 'connections' list
     :type index: int
-    :return: tuple of node id and port id
-    :rtype: tuple
+    :return: tuple of node id, num and port id
+    :rtype: (int, int, int)
     """
     try:
       for vld in self.data['vld']['virtual_links']:
@@ -318,7 +338,7 @@ class NSWrapper(AbstractDescriptorWrapper):
           except IndexError:
             return vld['alias'].split(':')[0], None
           # Get VNF node/port values
-          return self.__vnfd_connection_point_parser(src)[0:2]
+          return self.__connection_point_parser(src)[0:3]
     except KeyError as e:
       self.log.error("Missing required field: %s for 'vlink' in NSD: %s!"
                      % (e.message, self.id))

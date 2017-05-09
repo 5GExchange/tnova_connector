@@ -112,13 +112,18 @@ class TNOVAConverter(object):
     :return: None
     """
     # Add NFs
-    for domain, nf_id in ns.get_vnfs():
+    for domain, nf_id, num in ns.get_vnfs():
       vnf = vnfs.get_by_id(nf_id)
       if vnf is None:
         self.log.error(
           "VNFD with id: %s is not found in the VNFCatalogue!" % nf_id)
         raise MissingVNFDException(nf_id)
-      node_nf = nffg.add_nf(id=vnf.get_vnf_id(),
+      # Forge NF id to be unique within an NFFG
+      base_id = vnf.get_vnf_id()
+      self.log.debug('Found VNF with id: %s --> %s' % (nf_id, base_id))
+      if num is not None:
+        base_id = "%s_%s" % (base_id, num)
+      node_nf = nffg.add_nf(id=base_id,
                             name=vnf.name,
                             func_type=vnf.get_vnf_type(),
                             dep_type=vnf.get_deployment_type(),
@@ -287,6 +292,8 @@ class TNOVAConverter(object):
       src_node = vnfs.get_by_id(vlink['src_node'])
       if src_node is not None:
         src_node_id = src_node.get_vnf_id()
+        if vlink['src_node_num'] is not None:
+          src_node_id = "%s_%s" % (src_node_id, vlink['src_node_num'])
         src_port_id = vlink['src_port']
         src_port = nffg[src_node_id].ports[src_port_id]
       # If the id is not VNF Catalogue, it must be a SAP
@@ -297,6 +304,8 @@ class TNOVAConverter(object):
       dst_node = vnfs.get_by_id(vlink['dst_node'])
       if dst_node is not None:
         dst_node_id = dst_node.get_vnf_id()
+        if vlink['dst_node_num'] is not None:
+          dst_node_id = "%s_%s" % (dst_node_id, vlink['dst_node_num'])
         dst_port_id = vlink['dst_port']
         dst_port = nffg[dst_node_id].ports[dst_port_id]
       # If the id is not VNF Catalogue, it must be a SAP
@@ -335,7 +344,6 @@ class TNOVAConverter(object):
       # Create set from SLA ids referred in vlinks in NFP graph list
       req_id = {ns.get_vlink_sla_ref(id) for id in chain}
       # Only one SLA (aka requirement) must be referred through a NFP
-      print req_id
       if len(req_id) < 1:
         self.log.warning("No SLA id has detected in the NFP: %s! "
                          "Skip SLA processing..." % chain)
@@ -352,14 +360,18 @@ class TNOVAConverter(object):
           "SLA definition with id: %s was not found in detected SLAs: %s!" % (
             req_id, reqs))
         continue
-      src_node, src_port = ns.get_src_port(vlink_id=chain[0])
+      src_node, src_node_num, src_port = ns.get_src_port(vlink_id=chain[0])
+      if src_node_num is not None:
+        src_node_id = "%s_%s" % (src_node, src_node_num)
+      else:
+        src_node_id = src_node_num
       # If src_port is a valid port of a VNF
       if src_port is not None:
         try:
           src_port = int(src_port)
         except ValueError:
           pass
-        src = nffg[src_node].ports[src_port]
+        src = nffg[src_node_id].ports[src_port]
       # If src_node is a SAP but the default SAP port constant is set
       elif self.DEFAULT_SAP_PORT_ID is not None:
         src = nffg[src_node].ports[self.DEFAULT_SAP_PORT_ID]
@@ -367,14 +379,18 @@ class TNOVAConverter(object):
       else:
         src = nffg[src_node].ports.container[0]
       self.log.debug("Found src port object: %s" % src)
-      dst_node, dst_port = ns.get_dst_port(vlink_id=chain[-1])
+      dst_node, dst_node_num, dst_port = ns.get_dst_port(vlink_id=chain[-1])
+      if dst_node_num is not None:
+        dst_node_id = "%s_%s" % (dst_node, dst_node_num)
+      else:
+        dst_node_id = dst_node_num
       # If dst_port is a valid port of a VNF
       if dst_port is not None:
         try:
           dst_port = int(dst_port)
         except ValueError:
           pass
-        dst = nffg[dst_node].ports[dst_port]
+        dst = nffg[dst_node_id].ports[dst_port]
       # If dst_node is a SAP but the default SAP port constant is set
       elif self.DEFAULT_SAP_PORT_ID is not None:
         dst = nffg[dst_node].ports[self.DEFAULT_SAP_PORT_ID]
