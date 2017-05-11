@@ -68,6 +68,7 @@ class ServiceInstance(object):
     self.vnf_addresses = {}
     self.created_at = self.__touch()
     self.updated_at = self.__touch()
+    self.__nf_id_binding = {}
 
   @staticmethod
   def __touch ():
@@ -125,9 +126,32 @@ class ServiceInstance(object):
         nffg.service_id = nffg.id
       nffg.id = self.id
       nffg.mode = mode
+      nffg = self._tag_NF_ids(nffg=nffg, unique=self.id)
       return nffg
     except IOError:
       return None
+
+  def _tag_NF_ids (self, nffg, unique):
+    """
+    Modify NF ids with given `unique` tag and handle SG hops as well.
+     
+    :param nffg: NFFG object
+    :type nffg: :class:``
+    :param unique: 
+    :return: 
+    """
+    self.__nf_id_binding.update({nf.id: "%s@%s" % (nf.id, unique)
+                                 for nf in nffg.nfs})
+    raw = nffg.dump()
+    for old, new in self.__nf_id_binding.iteritems():
+      # decompressor_0 id contains the compressor_0 id --> use trick to consider
+      # the string apostrophe as well
+      raw = raw.replace('"%s"' % old, '"%s"' % new)
+    return NFFG.parse(raw_data=raw)
+
+  @property
+  def binding (self):
+    return self.__nf_id_binding
 
 
 class ServiceManager(object):

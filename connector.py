@@ -209,6 +209,8 @@ def initiate_service ():
     return Response(status=httplib.INTERNAL_SERVER_ERROR)
   app.logger.debug("Loading Service Descriptor from file: %s..." % ns_path)
   sg = si.load_sg_from_file()
+  app.logger.debug("Generated NF IDs:\n%s" % pprint.pformat(si.binding))
+  app.logger.log(VERBOSE, "Loaded Service Instance:\n%s" % sg.dump())
   if sg is None:
     service_mgr.set_service_status(id=si.id,
                                    status=ServiceInstance.STATUS_ERROR)
