@@ -140,7 +140,7 @@ class ServiceInstance(object):
     :param unique: 
     :return: 
     """
-    self.__nf_id_binding.update({nf.id: "%s@%s" % (nf.id, unique)
+    self.__nf_id_binding.update({nf.id: "%s_%s" % (nf.id, unique)
                                  for nf in nffg.nfs})
     raw = nffg.dump()
     for old, new in self.__nf_id_binding.iteritems():
