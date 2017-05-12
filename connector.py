@@ -51,7 +51,7 @@ SERVICE_NFFG_DIR = "services"  # dir name used for storing converted services
 
 # Monitoring related parameters
 MONITORING_URL = None
-MONITORING_TIMEOUT = 2  # sec
+MONITORING_TIMEOUT = 1  # sec
 
 # Communication related parameters
 USE_CALLBACK = False
@@ -70,11 +70,12 @@ NFFG_SERVICE_RPC = "sg"
 NFFG_TOPO_RPC = "topology"
 VIRTUALIZER_TOPO_RPC = "get-config"
 VIRTUALIZER_SERVICE_RPC = "edit-config"
+VIRTUALIZER_MAPPINGS_RPC = "mappings"
 
 # Other constants
 PWD = os.path.realpath(os.path.dirname(__file__))
 LOGGER_NAME = "TNOVAConnector"
-HTTP_GLOBAL_TIMEOUT = 10  # sec
+HTTP_GLOBAL_TIMEOUT = 3  # sec
 
 # Create REST-API handler app
 app = Flask(LOGGER_NAME)
@@ -536,24 +537,57 @@ def terminate_service (instance_id):
 
 
 #############################################################################
+# Proxy calls
+#############################################################################
+
+@app.route("/get-config", methods=['GET', 'POST'])
+def get_config ():
+  topo = _get_topology_view(force_virtualizer=True)
+  if topo is not None:
+    app.logger.log(VERBOSE, "Received topology:\n%s" % topo.xml())
+    return Response(status=httplib.OK,
+                    content_type="application/xml",
+                    response=topo.xml())
+  else:
+    return Response(status=httplib.INTERNAL_SERVER_ERROR)
+
+
+@app.route("/mappings", methods=['POST'])
+def mappings ():
+  body = request.data
+  if body is None:
+    app.logger.error("Missing request body!")
+    return Response(status=httplib.BAD_REQUEST)
+  mapping = _get_mappings(data=body)
+  if mapping is not None:
+    app.logger.log(VERBOSE, "Received mappings:\n%s" % mapping)
+    return Response(status=httplib.OK,
+                    content_type="application/xml",
+                    response=mapping)
+  else:
+    return Response(status=httplib.INTERNAL_SERVER_ERROR)
+
+
+#############################################################################
 # Helper functions
 #############################################################################
 
-def _get_topology_view ():
+def _get_topology_view (force_virtualizer=False):
   """
   Request and return with the topology provided by the RO.
 
   :return: requested and parser topology
   :rtype: :class:`Virtualizer` or :class:`NFFG`
   """
-  if USE_VIRTUALIZER_FORMAT:
+  if force_virtualizer or USE_VIRTUALIZER_FORMAT:
     topo_request_url = os.path.join(RO_URL, VIRTUALIZER_TOPO_RPC)
   else:
     topo_request_url = os.path.join(RO_URL, NFFG_TOPO_RPC)
   app.logger.debug("Send topo request to RO on: %s" % topo_request_url)
   try:
-    ret = requests.get(url=topo_request_url)
-    if USE_VIRTUALIZER_FORMAT:
+    ret = requests.get(url=topo_request_url,
+                       timeout=HTTP_GLOBAL_TIMEOUT)
+    if force_virtualizer or USE_VIRTUALIZER_FORMAT:
       try:
         topo = Virtualizer.parse_from_text(text=ret.text)
         app.logger.log(VERBOSE, "Received topology:\n%s" % topo.xml())
@@ -569,6 +603,19 @@ def _get_topology_view ():
       except Exception as e:
         app.logger.error("Something went wrong during topo parsing "
                          "into NFFG:\n%s" % e)
+  except ConnectionError:
+    app.logger.error("RO is not available!")
+
+
+def _get_mappings (data):
+  mappings_request_url = os.path.join(RO_URL, VIRTUALIZER_MAPPINGS_RPC)
+  app.logger.debug("Send mappings request to RO on: %s" % mappings_request_url)
+  try:
+    ret = requests.post(url=mappings_request_url,
+                        headers={"Content-Type": "application/xml"},
+                        data=data,
+                        timeout=HTTP_GLOBAL_TIMEOUT)
+    return ret.text
   except ConnectionError:
     app.logger.error("RO is not available!")
 
