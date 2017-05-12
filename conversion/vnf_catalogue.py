@@ -348,7 +348,7 @@ class VNFCatalogue(object):
     Return a registered VNF as a VNFWrapper given by the VNF id.
 
     :param id: VNF id
-    :type id: str
+    :type id: str or int
     :return: registered VNF or None
     :rtype: VNFWrapper
     """

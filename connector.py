@@ -188,13 +188,14 @@ def initiate_service ():
   app.logger.info("Call initiate_service() with path: POST /service")
   try:
     app.logger.debug("Parsing request body...")
-    params = json.loads(request.data)
-    app.logger.log(VERBOSE, "Parsed body:\n%s" % pprint.pformat(params))
-    if NS_ID_NAME not in params:
+    instantiate_params = json.loads(request.data)
+    app.logger.log(VERBOSE, "Parsed body:\n%s"
+                   % pprint.pformat(instantiate_params))
+    if NS_ID_NAME not in instantiate_params:
       app.logger.error(
         "Missing NSD id (%s) from service initiation request!" % NS_ID_NAME)
       return Response(status=httplib.BAD_REQUEST)
-    ns_id = str(params[NS_ID_NAME])
+    ns_id = str(instantiate_params[NS_ID_NAME])
     app.logger.info("Received service initiation with id: %s" % ns_id)
   except ValueError:
     app.logger.error("Received POST params are not valid JSON!")
@@ -210,7 +211,6 @@ def initiate_service ():
   app.logger.debug("Loading Service Descriptor from file: %s..." % ns_path)
   sg = si.load_sg_from_file()
   app.logger.debug("Generated NF IDs:\n%s" % pprint.pformat(si.binding))
-  app.logger.log(VERBOSE, "Loaded Service Instance:\n%s" % sg.dump())
   if sg is None:
     service_mgr.set_service_status(id=si.id,
                                    status=ServiceInstance.STATUS_ERROR)
@@ -221,12 +221,15 @@ def initiate_service ():
   sg.mode = NFFG.MODE_ADD
   app.logger.debug("Set mapping mode: %s" % sg.mode)
   params = {MESSAGE_ID_NAME: si.id}
+  app.logger.debug("Adapt placement criteria...")
+  converter.setup_placement_criteria(nffg=sg, params=instantiate_params)
   app.logger.debug("Using explicit message-id: %s" % params[MESSAGE_ID_NAME])
   # Setup callback if it's necessary
   if USE_CALLBACK:
     app.logger.debug("Set callback URL: %s" % callback_mgr.url)
     params[CALLBACK_NAME] = callback_mgr.url
   # Setup format-related parameters
+  app.logger.log(VERBOSE, "Loaded Service Instance:\n%s" % sg.dump())
   if USE_VIRTUALIZER_FORMAT:
     app.logger.info("Virtualizer format enabled!")
     # Prepare REST call parameters

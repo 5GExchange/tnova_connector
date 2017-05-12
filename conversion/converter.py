@@ -446,6 +446,47 @@ class TNOVAConverter(object):
     # Return with assembled NFFG
     return nffg
 
+  def setup_placement_criteria (self, nffg, params):
+    """
+    Setup customer SAP ids based on given `placement`.
+
+    :param nffg: service request
+    :type nffg: :class:`NFFG`
+    :param params: params dict received in HTTP request
+    :type params: dict
+    :return: None
+    """
+    if "placement" not in params:
+      return
+    for i, p in enumerate(params['placement']):
+      # placement format: <vnf_id>@<domain>-<num>
+      # VNF id format: <vnf_id>_<num>@<si_id>
+      if 'vnf' not in p.keys() or 'subnet' not in p.keys():
+        self.log.warning("Wrong placement criterion format: %s" % p)
+        continue
+      self.log.debug("Searching NF node for VNF: %s..." % p['vnf'])
+      vnf_id = p['vnf'].split('@', 1)[0]
+      num = p['vnf'].split('-')[-1]
+      try:
+        vnf_id = int(vnf_id)
+      except ValueError:
+        self.log.warning("Got VNF id: %s is not valid integer!" % vnf_id)
+        continue
+      converted_vnf_id = self.__catalogue.get_by_id(id=vnf_id).get_vnf_id()
+      base_nf_id = "%s_%s" % (converted_vnf_id, num)
+      self.log.debug("Found base NF name: %s" % base_nf_id)
+      nf = [nf for nf in nffg.nfs if str(nf.id).startswith(base_nf_id)]
+      if len(nf) != 1:
+        self.log.error("No unique NF was found for id: %s in %s"
+                       % (base_nf_id, nf))
+        continue
+      nf = nf.pop()
+      self.log.debug("Found NF: %s" % nf)
+      nf_port = nf.add_port(id="placement_%s" % i)
+      nf_port.sap = p['subnet']
+      nf_port.role = "consumer"
+      self.log.debug("Added consumer port: %s" % nf_port)
+
 
 if __name__ == "__main__":
   parser = argparse.ArgumentParser(
