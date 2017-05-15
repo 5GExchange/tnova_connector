@@ -176,9 +176,9 @@
     "vnf_depedency": [], 
     "vnf_dependency": [], 
     "vnfds": [
-      "domain#001:vnf#7-0", 
-      "domain#001:vnf#5-0", 
-      "domain#001:vnf#4-0"
+      "domain#001:vnf#7", 
+      "domain#001:vnf#5", 
+      "domain#001:vnf#4"
     ], 
     "vnffgd": {
       "vnffgs": [

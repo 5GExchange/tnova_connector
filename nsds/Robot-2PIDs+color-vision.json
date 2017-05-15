@@ -243,10 +243,10 @@
     "vnf_depedency": [], 
     "vnf_dependency": [], 
     "vnfds": [
-      "domain#001:vnf#9-0", 
-      "domain#001:vnf#1-0", 
-      "domain#001:vnf#2-0", 
-      "domain#001:vnf#3-0"
+      "domain#001:vnf#9", 
+      "domain#001:vnf#1", 
+      "domain#001:vnf#2", 
+      "domain#001:vnf#3"
     ], 
     "vnffgd": {
       "vnffgs": [
