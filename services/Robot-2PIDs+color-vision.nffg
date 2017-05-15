@@ -7,26 +7,6 @@
   },
   "node_nfs": [
     {
-      "id": "balance_color_vision_0",
-      "name": "balance_color_vision",
-      "ports": [
-        {
-          "id": 1
-        }
-      ],
-      "metadata": {
-        "image": "http://nfs:8080/NFS/files/dummy_image.qcow2"
-      },
-      "functional_type": "balance_color_vision",
-      "specification": {
-        "resources": {
-          "cpu": 1,
-          "mem": 2,
-          "storage": 8
-        }
-      }
-    },
-    {
       "id": "balance_server2_0",
       "name": "balance_server2",
       "ports": [
@@ -38,6 +18,26 @@
         "image": "http://nfs:8080/NFS/files/dummy_image.qcow2"
       },
       "functional_type": "balance_server",
+      "specification": {
+        "resources": {
+          "cpu": 1,
+          "mem": 2,
+          "storage": 8
+        }
+      }
+    },
+    {
+      "id": "balance_color_vision_0",
+      "name": "balance_color_vision",
+      "ports": [
+        {
+          "id": 1
+        }
+      ],
+      "metadata": {
+        "image": "http://nfs:8080/NFS/files/dummy_image.qcow2"
+      },
+      "functional_type": "balance_color_vision",
       "specification": {
         "resources": {
           "cpu": 1,
@@ -106,17 +106,17 @@
   ],
   "edge_sg_nexthops": [
     {
-      "id": 6,
-      "src_node": "balance_color_vision_0",
-      "src_port": 1,
-      "dst_node": "splitter_0",
-      "dst_port": 1
-    },
-    {
       "id": 8,
       "src_node": "balance_server2_0",
       "src_port": 1,
       "dst_node": "SAP12",
+      "dst_port": 1
+    },
+    {
+      "id": 6,
+      "src_node": "balance_color_vision_0",
+      "src_port": 1,
+      "dst_node": "splitter_0",
       "dst_port": 1
     },
     {
