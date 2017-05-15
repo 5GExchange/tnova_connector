@@ -21,7 +21,6 @@ import pprint
 import signal
 
 import requests
-import xmltodict
 from flask import Flask, Response, request
 from requests.exceptions import ConnectionError
 
@@ -33,8 +32,9 @@ from service.callback import CallbackManager
 from service.service_mgr import ServiceManager, ServiceInstance
 from util.colored_logger import VERBOSE, setup_flask_logging
 from virtualizer.virtualizer import Virtualizer
-
 # Listening port
+from virtualizer.virtualizer_mappings import Mappings
+
 LISTENING_PORT = 5000
 
 # Connector configuration parameters
@@ -545,8 +545,9 @@ def terminate_service (instance_id):
 def get_config ():
   topo = _get_topology_view(force_virtualizer=True)
   if topo is not None:
-    topo = json.dumps(xmltodict.parse(topo.xml()))
-    app.logger.debug("Converted response:\n%s" % topo)
+    # topo = topo.json()
+    # app.logger.debug("Converted response:\n%s" % topo)
+    topo = topo.xml()
     return Response(status=httplib.OK,
                     content_type="application/json",
                     response=topo)
@@ -561,10 +562,10 @@ def mappings ():
     app.logger.error("Missing request body!")
     return Response(status=httplib.BAD_REQUEST)
   mapping = _get_mappings(data=body)
-  print mapping
   if mapping is not None:
-    mapping = json.dumps(xmltodict.parse(mapping))
-    app.logger.log(VERBOSE, "Converted mappings:\n%s" % mapping)
+    # mapping = mapping.json()
+    # app.logger.log(VERBOSE, "Converted mappings:\n%s" % mapping)
+    mapping = mapping.xml()
     return Response(status=httplib.OK,
                     content_type="application/xml",
                     response=mapping)
@@ -619,11 +620,9 @@ def _get_mappings (data):
                         headers={"Content-Type": "application/xml"},
                         data=data,
                         timeout=HTTP_GLOBAL_TIMEOUT)
-    # print ret.text
-    # mapping = Virtualizer.parse_from_text(text=ret.text)
-    # app.logger.log(VERBOSE, "Received mapping:\n%s" % mapping.xml())
-    # return mapping
-    return ret.text
+    mapping = Mappings.parse_from_text(text=ret.text)
+    app.logger.log(VERBOSE, "Received mapping:\n%s" % mapping.xml())
+    return mapping
   except ConnectionError:
     app.logger.error("RO is not available!")
 
