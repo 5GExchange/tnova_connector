@@ -12,6 +12,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import itertools
 import logging
 
 from vnf_catalogue import AbstractDescriptorWrapper
@@ -52,6 +53,23 @@ class NSWrapper(AbstractDescriptorWrapper):
     try:
       return [self.__connection_point_parser(raw=vnf)[0:3]
               for vnf in self.data['vnfds']]
+    except KeyError as e:
+      self.log.error("Missing required field: %s for 'vnfds' in NSD: %s!"
+                     % (e.message, self.id))
+    except ValueError as e:
+      self.log.error("Listed VNF id in 'vnfds': %s is not a valid integer!" % e)
+
+  def get_vnf_instances (self):
+    """
+    Get the used VNF Instance ids converted to int from the 'vld' list.
+
+    :return: VNF instance ids
+    :rtype: list
+    """
+    try:
+      return [self.__connection_point_parser(raw=vnf)[0:3] for vnf in
+              {id.rsplit(':', 1)[0] for id in itertools.chain.from_iterable(
+                vl["connections"] for vl in self.data['vld']["virtual_links"])}]
     except KeyError as e:
       self.log.error("Missing required field: %s for 'vnfds' in NSD: %s!"
                      % (e.message, self.id))
