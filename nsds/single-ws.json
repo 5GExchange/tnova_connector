@@ -73,7 +73,7 @@
               "constituent_vnfs": [
                 {
                   "vnf_flavor_key_ref": "gold", 
-                  "vnf_ref_id": "11@001"
+                  "vnf_ref_id": "11@001-0"
                 }
               ], 
               "graph": [], 

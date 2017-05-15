@@ -208,15 +208,15 @@
               "constituent_vnfs": [
                 {
                   "vnf_flavor_key_ref": "gold", 
-                  "vnf_ref_id": "7@001"
+                  "vnf_ref_id": "7@001-0"
                 }, 
                 {
                   "vnf_flavor_key_ref": "gold", 
-                  "vnf_ref_id": "5@001"
+                  "vnf_ref_id": "5@001-0"
                 }, 
                 {
                   "vnf_flavor_key_ref": "gold", 
-                  "vnf_ref_id": "4@001"
+                  "vnf_ref_id": "4@001-0"
                 }
               ], 
               "graph": [

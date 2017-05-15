@@ -284,19 +284,19 @@
               "constituent_vnfs": [
                 {
                   "vnf_flavor_key_ref": "gold", 
-                  "vnf_ref_id": "3@001"
+                  "vnf_ref_id": "3@001-0"
                 }, 
                 {
                   "vnf_flavor_key_ref": "gold", 
-                  "vnf_ref_id": "2@001"
+                  "vnf_ref_id": "2@001-0"
                 }, 
                 {
                   "vnf_flavor_key_ref": "gold", 
-                  "vnf_ref_id": "9@001"
+                  "vnf_ref_id": "9@001-0"
                 }, 
                 {
                   "vnf_flavor_key_ref": "gold", 
-                  "vnf_ref_id": "1@001"
+                  "vnf_ref_id": "1@001-0"
                 }
               ], 
               "graph": [
