@@ -325,7 +325,8 @@ def initiate_service ():
           app.logger.warning("Monitoring component(%s) is unreachable!" %
                              MONITORING_URL)
     # Return the status code
-    return Response(status=_status)
+    return Response(status=_status,
+                    response=json.dumps(si.get_json()))
   except ConnectionError:
     app.logger.error("RO is not available!")
     # Something went wrong, status->error_creating
