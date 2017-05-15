@@ -159,7 +159,7 @@ class NSWrapper(AbstractDescriptorWrapper):
       self.log.error("Missing required field: %s for SAPs in "
                      "'connection_points' in NSD: %s!" % (e.message, self.id))
 
-  def __parse_vlink_connection (self, conn):
+  def parse_vlink_connection (self, conn):
     """
     Return parsed node and port ID of given connection point: ``conn``.
      
@@ -209,15 +209,15 @@ class NSWrapper(AbstractDescriptorWrapper):
           self.log.debug("Detected inter-VNF link: %s" % hop['id'])
           # Check src node/port
           hop['src_node'], hop['src_node_num'], hop['src_port'] = \
-            self.__parse_vlink_connection(vlink['connections'][0])
+            self.parse_vlink_connection(vlink['connections'][0])
           # Check dst node/port
           hop['dst_node'], hop['dst_node_num'], hop['dst_port'] = \
-            self.__parse_vlink_connection(vlink['connections'][1])
+            self.parse_vlink_connection(vlink['connections'][1])
         # External link, one of the endpoint is a SAP
         else:
           self.log.debug("Detected external link: %s" % hop['id'])
           direction = None
-          node, num, port = self.__parse_vlink_connection(
+          node, num, port = self.parse_vlink_connection(
             vlink['connections'][0])
           sap_node, sap_port = vlink['alias'].split(':')[0], None
           # If explicit direction (in/out) is given: 

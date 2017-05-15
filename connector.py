@@ -573,6 +573,21 @@ def mappings ():
     return Response(status=httplib.INTERNAL_SERVER_ERROR)
 
 
+@app.route("/placement-info", methods=['GET'])
+def placement_info ():
+  topo = _get_topology_view(force_virtualizer=True)
+  if topo is not None:
+    data = _get_internet_saps(virtualizer=topo)
+    if data is not None:
+      return Response(status=httplib.OK,
+                      content_type="application/json",
+                      response=json.dumps(data))
+    else:
+      return Response(status=httplib.INTERNAL_SERVER_ERROR)
+  else:
+    return Response(status=httplib.INTERNAL_SERVER_ERROR)
+
+
 #############################################################################
 # Helper functions
 #############################################################################
@@ -610,6 +625,21 @@ def _get_topology_view (force_virtualizer=False):
                          "into NFFG:\n%s" % e)
   except ConnectionError:
     app.logger.error("RO is not available!")
+
+
+def _get_internet_saps (virtualizer):
+  """
+  
+  :param virtualizer: 
+  :return: 
+  """
+  internet_saps = []
+  for node in virtualizer.nodes:
+    for port in node.ports:
+      if port.sap_data.role.get_as_text() == 'provider' and \
+         port.sap.get_as_text().startswith('INTERNET'):
+        internet_saps.append(port.sap.get_value())
+  return internet_saps
 
 
 def _get_mappings (data):
