@@ -112,7 +112,7 @@ class TNOVAConverter(object):
     :return: None
     """
     # Add NFs
-    for domain, nf_id, num in ns.get_vnfs():
+    for domain, nf_id, num in ns.get_vnf_instances():
       vnf = vnfs.get_by_id(nf_id)
       if vnf is None:
         self.log.error(
