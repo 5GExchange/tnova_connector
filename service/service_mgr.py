@@ -62,6 +62,7 @@ class ServiceInstance(object):
     self.id = instance_id if instance_id else str(uuid.uuid1())
     self.service_id = service_id  # Converted NFFG the service created from
     # The id of the service instance
+    self.sg = None
     self.name = name
     self.path = path
     self.__status = status
@@ -88,6 +89,14 @@ class ServiceInstance(object):
   def status (self, value):
     self.__status = value
     self.__touch()
+
+  @property
+  def get_sg (self):
+    return self.sg
+
+  @property
+  def binding (self):
+    return self.__nf_id_binding
 
   def get_json (self):
     """
@@ -125,11 +134,13 @@ class ServiceInstance(object):
       if nffg.service_id is None:
         nffg.service_id = nffg.id
       nffg.id = self.id
-      nffg.mode = mode
-      nffg = self._tag_NF_ids(nffg=nffg, unique=self.id)
-      return nffg
+      if mode is not None:
+        nffg.mode = mode
+      self.sg = self._tag_NF_ids(nffg=nffg, unique=self.id)
+      return self.sg
     except IOError:
-      return None
+      # return None
+      raise
 
   def _tag_NF_ids (self, nffg, unique):
     """
@@ -148,10 +159,6 @@ class ServiceInstance(object):
       # the string apostrophe as well
       raw = raw.replace('"%s"' % old, '"%s"' % new)
     return NFFG.parse(raw_data=raw)
-
-  @property
-  def binding (self):
-    return self.__nf_id_binding
 
 
 class ServiceManager(object):
@@ -308,16 +315,16 @@ class ServiceManager(object):
         self.log.error("Service conversion was failed! Service is not saved!")
         si.status = si.STATUS_ERROR
         return si
-    else:
-      try:
-        # Load the requested service descriptor3
-        sg = NFFG.parse_from_file(path)
-        self.log.debug("Service has been loaded!")
-      except IOError:
-        self.log.warning("NFFG file for service instance creation is not found "
-                         "in %s! Skip service processing..." % self.SERVICE_DIR)
-        si.status = si.STATUS_ERROR
-        return si
+    try:
+      self.log.debug("Loading Service Descriptor from file...")
+      # Load the requested service descriptor
+      sg = si.load_sg_from_file()
+      self.log.debug("Service has been loaded!")
+    except IOError:
+      self.log.warning("NFFG file for service instance creation is not found "
+                       "in %s! Skip service processing..." % self.SERVICE_DIR)
+      si.status = si.STATUS_ERROR
+      return si
     # Update Service Instance
     si.name = name if name else sg.name  # Inherited from NSD
     si.path = path

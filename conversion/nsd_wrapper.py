@@ -154,7 +154,6 @@ class NSWrapper(AbstractDescriptorWrapper):
       pass
     except ValueError:
       self.log.warining("Detected num: %s is not valid integer!" % num)
-    print domain, vnf_id, num
     return domain, vnf_id, num
 
   def get_saps (self):

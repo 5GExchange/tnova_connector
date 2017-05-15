@@ -210,8 +210,8 @@ def initiate_service ():
   if si is None or si.status == ServiceInstance.STATUS_ERROR:
     app.logger.error("Service instance creation has been failed!")
     return Response(status=httplib.INTERNAL_SERVER_ERROR)
-  app.logger.debug("Loading Service Descriptor from file: %s..." % ns_path)
-  sg = si.load_sg_from_file()
+  # sg = si.load_sg_from_file()
+  sg = si.sg
   app.logger.debug("Generated NF IDs:\n%s" % pprint.pformat(si.binding))
   if sg is None:
     service_mgr.set_service_status(id=si.id,
