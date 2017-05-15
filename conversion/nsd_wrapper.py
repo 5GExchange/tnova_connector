@@ -67,9 +67,8 @@ class NSWrapper(AbstractDescriptorWrapper):
     :rtype: list
     """
     try:
-      return [self.__connection_point_parser(raw=vnf)[0:3] for vnf in
-              {id.rsplit(':', 1)[0] for id in itertools.chain.from_iterable(
-                vl["connections"] for vl in self.data['vld']["virtual_links"])}]
+      return [self.vnf_ref_id_parser(raw=ref) for ref in
+              self.get_constituent_vnfs()]
     except KeyError as e:
       self.log.error("Missing required field: %s for 'vnfds' in NSD: %s!"
                      % (e.message, self.id))
@@ -129,6 +128,34 @@ class NSWrapper(AbstractDescriptorWrapper):
     except ValueError:
       self.log.warining("Detected num: %s is not valid integer!" % num)
     return domain, id, num, port
+
+  def vnf_ref_id_parser (self, raw):
+    """
+    
+    :param raw: 
+    :return: 
+    """
+    if '-' in raw:
+      vnf, num = raw.rsplit('-', 1)
+    else:
+      vnf, num = raw, None
+    if '@' in vnf:
+      vnf_id, domain = vnf.split('@', 1)
+    else:
+      vnf_id, domain = vnf, None
+    try:
+      vnf_id = int(vnf_id)
+    except ValueError:
+      self.log.warning("Detected ID: %s is not valid integer!" % vnf_id)
+    try:
+      num = int(num)
+    except TypeError:
+      # If num has remained None
+      pass
+    except ValueError:
+      self.log.warining("Detected num: %s is not valid integer!" % num)
+    print domain, vnf_id, num
+    return domain, vnf_id, num
 
   def get_saps (self):
     """
@@ -331,6 +358,26 @@ class NSWrapper(AbstractDescriptorWrapper):
       self.log.error(
         "Missing required field: %s for 'network_forwarding_path' in NFP: %s!"
         % (e.message, self.id))
+
+  def get_constituent_vnfs (self):
+    try:
+      if len(self.data['vnffgd']['vnffgs']) < 1:
+        self.log.error("No VNF-FG instance is detected!")
+        return
+      if len(self.data['vnffgd']['vnffgs']) > 1:
+        self.log.error("Only 1 VNF-FG instance is supported (detected: %s)!"
+                       % len(self.data['vnffgd']['vnffgs']))
+        self.log.warning("Using the first found VNF-FG: %s"
+                         % self.data['vnffgd']['vnffgs'][0]['vnffg_id'])
+      nfps = self.data['vnffgd']['vnffgs'][0]['network_forwarding_path']
+      refs = {cvnf['vnf_ref_id'] for cvnf in itertools.chain.from_iterable(
+        nfp['constituent_vnfs'] for nfp in nfps)}
+      return list(refs) if refs else []
+    except KeyError as e:
+      self.log.error(
+        "Missing required field: %s for 'network_forwarding_path' in NFP: %s!"
+        % (e.message, self.id))
+      return []
 
   def get_port_from_vlink (self, vlink_id, index):
     """
