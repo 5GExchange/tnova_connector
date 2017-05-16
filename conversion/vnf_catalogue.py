@@ -343,6 +343,12 @@ class VNFCatalogue(object):
   def get_registered_vnfs (self):
     return self.__catalogue.keys()
 
+  def get (self, id):
+    try:
+      return self[id]
+    except KeyError:
+      return None
+
   def get_by_id (self, id):
     """
     Return a registered VNF as a VNFWrapper given by the VNF id.
@@ -356,6 +362,19 @@ class VNFCatalogue(object):
       return self.request_vnf_from_remote_store(id)
     for vnf in self.__catalogue.itervalues():
       if vnf.id == id:
+        return vnf
+
+  def get_by_type (self, type):
+    """
+    Return a registered VNF as a VNFWrapper given by the VNF id.
+
+    :param type: VNF id
+    :type type: str or int
+    :return: registered VNF or None
+    :rtype: VNFWrapper
+    """
+    for vnf in self.__catalogue.itervalues():
+      if vnf.get_vnf_type() == type:
         return vnf
 
   def parse_vnf_catalogue_from_folder (self, catalogue_dir=None):

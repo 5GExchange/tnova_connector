@@ -185,7 +185,13 @@ def initiate_service ():
 
   Rule: /service
   Method: POST
-  Body: service request id in JSON object with key: "ns-id"
+  Body: e.g.
+  {
+    "callbackUrl": "http://172.16.46.129/serviceselection/service/selection/1",
+    "flavour": "basic",
+    "nap_id": "cwefvwewe",
+    "ns_id": "591ad8f5e4b05b9a04730cef"
+  }
 
   :return: HTTP Response
   :rtype: flask.Response
@@ -252,6 +258,8 @@ def initiate_service ():
     service_request_url = os.path.join(RO_URL, NFFG_SERVICE_RPC)
     headers = {"Content-Type": "application/json"}
     raw_data = sg.dump()
+  # Backup modified service graph
+  si.update_sg(sg=sg)
   # Sending service request
   app.logger.debug("Send service request to RO on: %s" % service_request_url)
   # Try to orchestrate the service instance
@@ -314,8 +322,23 @@ def initiate_service ():
         app.logger.debug("Send back RO result code: %s" % ret.status_code)
       # Use status code that received from ESCAPE
       _status = ret.status_code
-    # Notify Monitoring element if configured
     if service_mgr.get_service_status(si.id) == si.STATUS_START:
+      if 'callbackUrl' in instantiate_params:
+        cb_url = instantiate_params['callbackUrl']
+        data = _collect_si_callback_data(si=si,
+                                         req_params=instantiate_params)
+        app.logger.log(VERBOSE, "Collected callback data:\n%s"
+                       % pprint.pformat(data))
+        try:
+          requests.get(url=cb_url,
+                       headers={"Content-Type": "application/json"},
+                       data=data,
+                       timeout=HTTP_GLOBAL_TIMEOUT)
+        except ConnectionError:
+          app.logger.error("Failed to send callback to %s" % cb_url)
+      else:
+        app.logger.warning("No callback URL was defined in the request!")
+      # Notify Monitoring element if configured
       if MONITORING_URL:
         app.logger.info(
           "Monitoring notification is enabled! Send notification...")
@@ -596,6 +619,46 @@ def placement_info ():
 #############################################################################
 # Helper functions
 #############################################################################
+
+def _collect_si_callback_data (si, req_params):
+  data = si.get_json()
+  data['nsd_id'] = data.pop('ns-id')
+  data['descriptor_reference'] = data['nsd_id']
+  if 'callbackUrl' in req_params:
+    data['marketplace_callback'] = req_params['callbackUrl']
+    data['notification'] = req_params['callbackUrl']
+  else:
+    app.logger.warning("Missing callback URL: 'callbackUrl' "
+                       "from request parameters: %s!" % req_params)
+  if 'flavour' in req_params:
+    data['service_deployment_flavour'] = req_params['flavour']
+  else:
+    app.logger.warning("Missing flavour: 'flavour' "
+                       "from request parameters: %s!" % req_params)
+  vnf_addresses = data.pop('vnf_addresses', [])
+  sg = si.get_sg()
+  if sg is None:
+    app.logger.error("Service Graph is missing from Service Instance: %s!"
+                     % si)
+    return data
+  data['vnfrs'] = []
+  for nf in sg.nfs:
+    nf_item = dict(pop_id="N/A",  # PoP where the instance is deployed
+                   status="INSTANTIATED",  # default in case of ESCAPE
+                   vnfr_id=nf.id,  # instance ID of NF
+                   vnfi_id=[nf.id])  # ID of the VM once instantiated
+    vnf_wrapper = catalogue.get_by_type(nf.functional_type)
+    if vnf_wrapper is None:
+      app.logger.error("Missing VNF: %s!" % nf.functional_type)
+      continue
+    nf_item['vnfd_id'] = vnf_wrapper.id
+    if nf.id in vnf_addresses:
+      nf_item['vnf_addresses'] = vnf_addresses[nf.id]
+    else:
+      nf_item['vnf_addresses'] = {}
+    data['vnfrs'] = nf_item
+  return data
+
 
 def _replace_port (url, port):
   """

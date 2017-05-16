@@ -36,12 +36,12 @@ class ServiceInstance(object):
   Container class for a service instance.
   """
   # Status constants
-  STATUS_INIT = "init"  # between instantiation request and the provisioning
-  STATUS_INST = "instantiated"  # provisioned, instantiated but not
+  STATUS_INIT = "INIT"  # between instantiation request and the provisioning
+  STATUS_INST = "INSTANTIATED"  # provisioned, instantiated but not
   # running yet
-  STATUS_START = "start"  # when everything worked as it should be
-  STATUS_ERROR = "error_creating"  # in case of any error
-  STATUS_STOPPED = "stopped"
+  STATUS_START = "START"  # when everything worked as it should be
+  STATUS_ERROR = "ERROR_CREATING"  # in case of any error
+  STATUS_STOPPED = "STOPPED"
 
   def __init__ (self, service_id, instance_id=None, name=None, path=None,
                 status=STATUS_INIT):
@@ -90,9 +90,11 @@ class ServiceInstance(object):
     self.__status = value
     self.__touch()
 
-  @property
   def get_sg (self):
     return self.sg
+
+  def update_sg (self, sg):
+    self.sg = sg
 
   @property
   def binding (self):
