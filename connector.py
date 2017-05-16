@@ -577,6 +577,7 @@ def mappings ():
     return Response(status=httplib.INTERNAL_SERVER_ERROR)
 
 
+@app.route("/placement-info/", methods=['GET'])
 @app.route("/placement-info", methods=['GET'])
 def placement_info ():
   topo = _get_topology_view(force_virtualizer=True)
