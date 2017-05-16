@@ -375,7 +375,8 @@ class ServiceManager(object):
       return
     self.log.info("NSD: %s has been acquired from Service Catalog: %s" %
                   (ns_id, self.service_catalog_url))
-    self.log.log(VERBOSE, "Received body:\n%s" % pprint.pformat(response.json))
+    self.log.log(VERBOSE,
+                 "Received body:\n%s" % pprint.pformat(response.json()))
     return self.store_nsd(raw=response.text)
 
   def convert_service (self, nsd_file):

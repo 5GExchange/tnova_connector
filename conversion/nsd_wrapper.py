@@ -362,7 +362,7 @@ class NSWrapper(AbstractDescriptorWrapper):
     try:
       if len(self.data['vnffgd']['vnffgs']) < 1:
         self.log.error("No VNF-FG instance is detected!")
-        return
+        return []
       if len(self.data['vnffgd']['vnffgs']) > 1:
         self.log.error("Only 1 VNF-FG instance is supported (detected: %s)!"
                        % len(self.data['vnffgd']['vnffgs']))
