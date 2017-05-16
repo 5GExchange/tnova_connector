@@ -457,16 +457,17 @@ class TNOVAConverter(object):
     :return: None
     """
     if "placement" not in params:
+      self.log.warning("No placement was found in request params: %s" % params)
       return
-    for i, p in enumerate(params['placement']):
+    for i, placement in enumerate(params['placement']):
       # placement format: <vnf_id>@<domain>-<num>
       # VNF id format: <vnf_id>_<num>@<si_id>
-      if 'vnf' not in p.keys() or 'subnet' not in p.keys():
-        self.log.warning("Wrong placement criterion format: %s" % p)
+      if 'vnf' not in placement.keys() or 'subnet' not in placement.keys():
+        self.log.warning("Wrong placement criterion format: %s" % placement)
         continue
-      self.log.debug("Searching NF node for VNF: %s..." % p['vnf'])
-      vnf_id = p['vnf'].split('@', 1)[0]
-      num = p['vnf'].split('-')[-1]
+      self.log.debug("Searching NF node for VNF: %s..." % placement['vnf'])
+      vnf_id = placement['vnf'].split('@', 1)[0]
+      num = placement['vnf'].split('-')[-1]
       try:
         vnf_id = int(vnf_id)
       except ValueError:
@@ -482,10 +483,22 @@ class TNOVAConverter(object):
         continue
       nf = nf.pop()
       self.log.debug("Found NF: %s" % nf)
-      nf_port = nf.add_port(id="placement_%s" % i)
-      nf_port.sap = p['subnet']
-      nf_port.role = "consumer"
-      self.log.debug("Added consumer port: %s" % nf_port)
+      nf_port = [p for p in nf.ports
+                 if p.sap is not None and p.sap.startswith('INTERNET')]
+      if len(nf_port) > 1:
+        self.log.warning("Multiple INTERNET port was detected in NF: "
+                         "%s --> %s" % (nf.id, nf_port))
+      elif len(nf_port) < 1:
+        self.log.warning("No INTERNET port was detected in NF: %s" % nf.id)
+        nf_port = [nf.add_port(id=placement['subnet'],
+                               name="INTERNET")]
+        self.log.debug("Added arbitrary INTERNET port: %s" % nf_port)
+      else:
+        self.log.debug("Found INTERNET port: %s" % nf_port)
+      for port in nf_port:
+        port.role = "consumer"
+        port.sap = placement['subnet']
+        self.log.debug("Update %s with consumer id: %s" % (port, port.sap))
 
 
 if __name__ == "__main__":
