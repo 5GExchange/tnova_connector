@@ -2185,8 +2185,11 @@ class NFFGConverter(object):
     self.log.debug("Transfer service request ID...")
     base.id.set_value(request.id)
     base.name.set_value(request.name)
-    if base.nodes.node.length() > 1:
-      self.log.warning("Multiple BiSBiS node detected in the Virtualizer!")
+    if base.nodes.node.length() < 1:
+      self.log.warning("No BiSBiS node was detected!")
+      return base
+    elif base.nodes.node.length() > 1:
+      self.log.warning("Multiple BiSBiS nodes were detected in the Virtualizer!")
     sbb = base.nodes.node[base.nodes.node.keys().pop()]
     self.log.debug("Detected SBB node: %s" % sbb.id.get_value())
     # Add NFs
