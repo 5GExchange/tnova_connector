@@ -219,7 +219,6 @@ def initiate_service ():
   if si is None or si.status == ServiceInstance.STATUS_ERROR:
     app.logger.error("Service instance creation has been failed!")
     return Response(status=httplib.INTERNAL_SERVER_ERROR)
-  # sg = si.load_sg_from_file()
   sg = si.sg
   app.logger.debug("Generated NF IDs:\n%s" % pprint.pformat(si.binding))
   if sg is None:
@@ -324,7 +323,9 @@ def initiate_service ():
       _status = ret.status_code
     if service_mgr.get_service_status(si.id) == si.STATUS_START:
       if 'callbackUrl' in instantiate_params:
+        app.logger.debug("Collect callback info for service-selection...")
         cb_url = instantiate_params['callbackUrl']
+        app.logger.debug("Detected callback URL: %s" % cb_url)
         data = _collect_si_callback_data(si=si,
                                          req_params=instantiate_params)
         app.logger.log(VERBOSE, "Collected callback data:\n%s"
@@ -333,6 +334,7 @@ def initiate_service ():
           ret = requests.get(url=cb_url,
                              headers={"Content-Type": "application/json"},
                              data=data,
+                             allow_redirects=False,
                              timeout=HTTP_GLOBAL_TIMEOUT)
           if ret.status_code != httplib.OK:
             app.logger.warning("Received unexpected result for callback: "
