@@ -338,7 +338,9 @@ def initiate_service ():
                               data=data,
                               allow_redirects=False,
                               timeout=HTTP_GLOBAL_TIMEOUT)
-          if ret.status_code != httplib.OK:
+          if ret.status_code == httplib.OK:
+            app.logger.debug("Callback result: %s" % ret.text)
+          else:
             app.logger.warning("Received unexpected result for callback: "
                                "%s - %s" % (ret.status_code,
                                             ret.text if ret.text else ""))
@@ -632,6 +634,12 @@ def placement_info ():
 #############################################################################
 
 def _collect_si_callback_data (si, req_params):
+  """
+  
+  :param si: 
+  :param req_params: 
+  :return: 
+  """
   data = si.get_json()
   data['nsd_id'] = data.pop('ns-id')
   data['descriptor_reference'] = data['nsd_id']
