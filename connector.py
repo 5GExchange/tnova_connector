@@ -667,7 +667,7 @@ def _collect_si_callback_data (si, req_params):
       nf_item['vnf_addresses'] = vnf_addresses[nf.id]
     else:
       nf_item['vnf_addresses'] = {}
-    data['vnfrs'] = nf_item
+    data['vnfrs'].append(nf_item)
   return data
 
 
