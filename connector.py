@@ -333,11 +333,11 @@ def initiate_service ():
         app.logger.log(VERBOSE, "Collected callback data:\n%s"
                        % pprint.pformat(data))
         try:
-          ret = requests.get(url=cb_url,
-                             headers={"Content-Type": "application/json"},
-                             data=data,
-                             allow_redirects=False,
-                             timeout=HTTP_GLOBAL_TIMEOUT)
+          ret = requests.post(url=cb_url,
+                              headers={"Content-Type": "application/json"},
+                              data=data,
+                              allow_redirects=False,
+                              timeout=HTTP_GLOBAL_TIMEOUT)
           if ret.status_code != httplib.OK:
             app.logger.warning("Received unexpected result for callback: "
                                "%s - %s" % (ret.status_code,
