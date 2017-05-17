@@ -271,6 +271,7 @@ def initiate_service ():
                     headers=headers,
                     params=params,
                     data=raw_data,
+                    allow_redirects=False,
                     timeout=HTTP_GLOBAL_TIMEOUT)
       # Waiting for callback
       cb = callback_mgr.wait_for_callback(callback=cb)
@@ -303,6 +304,7 @@ def initiate_service ():
                           headers=headers,
                           params=params,
                           data=raw_data,
+                          allow_redirects=False,
                           timeout=HTTP_GLOBAL_TIMEOUT)
       # Check result
       if ret.status_code == httplib.ACCEPTED:
@@ -352,6 +354,7 @@ def initiate_service ():
         try:
           requests.put(url=MONITORING_URL,
                        params=params,
+                       allow_redirects=False,
                        timeout=MONITORING_TIMEOUT)
         except ConnectionError:
           app.logger.warning("Monitoring component(%s) is unreachable!" %
@@ -498,6 +501,7 @@ def terminate_service (instance_id):
                     headers=headers,
                     params=params,
                     data=raw_data,
+                    allow_redirects=False,
                     timeout=HTTP_GLOBAL_TIMEOUT)
       # Waiting for callback
       cb = callback_mgr.wait_for_callback(callback=cb)
@@ -535,6 +539,7 @@ def terminate_service (instance_id):
                           headers=headers,
                           params=params,
                           data=raw_data,
+                          allow_redirects=False,
                           timeout=HTTP_GLOBAL_TIMEOUT)
       # Check result
       if ret.status_code == httplib.ACCEPTED:
@@ -694,6 +699,7 @@ def _get_topology_view (force_virtualizer=False):
   app.logger.debug("Send topo request to RO on: %s" % topo_request_url)
   try:
     ret = requests.get(url=topo_request_url,
+                       allow_redirects=False,
                        timeout=HTTP_GLOBAL_TIMEOUT)
     if force_virtualizer or USE_VIRTUALIZER_FORMAT:
       try:
@@ -739,6 +745,7 @@ def _get_mappings (data):
     ret = requests.post(url=mappings_request_url,
                         headers={"Content-Type": "application/xml"},
                         data=data,
+                        allow_redirects=False,
                         timeout=HTTP_GLOBAL_TIMEOUT)
     mapping = Mappings.parse_from_text(text=ret.text)
     app.logger.log(VERBOSE, "Received mapping:\n%s" % mapping.xml())
