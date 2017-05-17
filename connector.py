@@ -335,7 +335,7 @@ def initiate_service ():
         try:
           ret = requests.post(url=cb_url,
                               headers={"Content-Type": "application/json"},
-                              data=data,
+                              data=json.dumps(data),
                               allow_redirects=False,
                               timeout=HTTP_GLOBAL_TIMEOUT)
           if ret.status_code == httplib.OK:
@@ -644,13 +644,13 @@ def _collect_si_callback_data (si, req_params):
   data['nsd_id'] = data.pop('ns-id')
   data['descriptor_reference'] = data['nsd_id']
   if 'callbackUrl' in req_params:
-    data['marketplace_callback'] = req_params['callbackUrl']
-    data['notification'] = req_params['callbackUrl']
+    data['marketplace_callback'] = str(req_params['callbackUrl'])
+    data['notification'] = str(req_params['callbackUrl'])
   else:
     app.logger.warning("Missing callback URL: 'callbackUrl' "
                        "from request parameters: %s!" % req_params)
   if 'flavour' in req_params:
-    data['service_deployment_flavour'] = req_params['flavour']
+    data['service_deployment_flavour'] = str(req_params['flavour'])
   else:
     app.logger.warning("Missing flavour: 'flavour' "
                        "from request parameters: %s!" % req_params)
