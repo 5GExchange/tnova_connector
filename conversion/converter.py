@@ -467,6 +467,8 @@ class TNOVAConverter(object):
         self.log.warning("Wrong placement criterion format: %s" % placement)
         continue
       if placement['subnet'] == self.DEFAULT_PLACEMENT_SUBNET:
+        self.log.debug("Detected default placement value: %s. "
+                       "Skip consumer SAP id setup!" % placement['subnet'])
         continue
       self.log.debug("Searching NF node for VNF: %s..." % placement['vnf'])
       vnf_id = placement['vnf'].split('@', 1)[0]
