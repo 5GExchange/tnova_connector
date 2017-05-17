@@ -32,6 +32,7 @@ class TNOVAConverter(object):
   LOGGER_NAME = "TNOVAConverter"
   # DEFAULT_SAP_PORT_ID = None  # None = generated an UUID by defaults
   DEFAULT_SAP_PORT_ID = 1
+  DEFAULT_PLACEMENT_SUBNET = "Automatic"
 
   def __init__ (self, logger=None, vnf_catalogue=None):
     """
@@ -456,7 +457,7 @@ class TNOVAConverter(object):
     :type params: dict
     :return: None
     """
-    if "placement" not in params:
+    if 'placement' not in params:
       self.log.warning("No placement was found in request params: %s" % params)
       return
     for i, placement in enumerate(params['placement']):
@@ -464,6 +465,8 @@ class TNOVAConverter(object):
       # VNF id format: <vnf_id>_<num>@<si_id>
       if 'vnf' not in placement.keys() or 'subnet' not in placement.keys():
         self.log.warning("Wrong placement criterion format: %s" % placement)
+        continue
+      if placement['subnet'] == self.DEFAULT_PLACEMENT_SUBNET:
         continue
       self.log.debug("Searching NF node for VNF: %s..." % placement['vnf'])
       vnf_id = placement['vnf'].split('@', 1)[0]
