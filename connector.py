@@ -662,7 +662,7 @@ def _collect_si_callback_data (si, req_params):
     if vnf_wrapper is None:
       app.logger.error("Missing VNF: %s!" % nf.functional_type)
       continue
-    nf_item['vnfd_id'] = vnf_wrapper.id
+    nf_item['vnfd_id'] = str(vnf_wrapper.id)
     if nf.id in vnf_addresses:
       nf_item['vnf_addresses'] = vnf_addresses[nf.id]
     else:
