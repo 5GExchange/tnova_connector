@@ -80,7 +80,7 @@ VIRTUALIZER_MAPPINGS_RPC = "mappings"
 # Other constants
 PWD = os.path.realpath(os.path.dirname(__file__))
 LOGGER_NAME = "TNOVAConnector"
-HTTP_GLOBAL_TIMEOUT = 20  # sec
+HTTP_GLOBAL_TIMEOUT = 30  # sec
 
 # Create REST-API handler app
 app = Flask(LOGGER_NAME)
