@@ -25,9 +25,9 @@
         },
         "vcpus": 1,
         "vswitch_capabilities": {
-          "version": "2.0",
+          "overlay_tunnel": "GRE",
           "type": "ovs",
-          "overlay_tunnel": "GRE"
+          "version": "2.0"
         },
         "data_processing_acceleration_library": "",
         "memory": 2,
@@ -37,7 +37,7 @@
         },
         "cpu_support_accelerator": "AES-NI"
       },
-      "vm_image": "http://10.10.1.167:8080/NFS/files/PXaaS-180216.qcow2",
+      "vm_image": "http://nfs:8080/NFS/files/dummy_image.qcow2",
       "vm_image_format": "qcow2",
       "networking_resources": "",
       "monitoring_parameters_specific": [
@@ -88,12 +88,12 @@
         }
       ],
       "id": "vdu0",
-      "alias": "decomp",
+      "alias": "balance_server",
       "controller": true,
       "connection_points": [
         {
-          "vlink_ref": "vl0",
-          "id": "CPzuei"
+          "vlink_ref": "vl1",
+          "id": "CP1e4v"
         }
       ],
       "monitoring_parameters": [
@@ -173,35 +173,16 @@
           "desc": "Zombie Processes"
         }
       ],
-      "vm_image_md5": "90f23ff2b1146e0a6a088ac1a96b7975",
+      "vm_image_md5": "1276481102f218c981e0324180bafd9f",
       "scale_in_out": {
         "minimum": 1,
         "maximum": 1
       }
     }
   ],
-  "name": "decompressor",
-  "created_at": "2016-06-02T13:24:34Z",
-  "modified_at": "2016-06-02T13:24:34Z",
-  "vlinks": [
-    {
-      "leaf_requirement": "10Mbps",
-      "connectivity_type": "E-LINE",
-      "vdu_reference": [
-        "vdu0"
-      ],
-      "external_access": true,
-      "connection_points_reference": [
-        "CPzuei"
-      ],
-      "access": true,
-      "alias": "1",
-      "root_requirement": "10Mbps",
-      "dhcp": true,
-      "id": "vl0",
-      "qos": ""
-    }
-  ],
+  "description": "Robot Balancer: PID Controller 2",
+  "created_at": "2017-05-21T16:22:18Z",
+  "modified_at": "2017-05-21T16:22:18Z",
   "trade": false,
   "descriptor_version": "1",
   "deployment_flavours": [
@@ -212,7 +193,7 @@
       "constraint": "",
       "flavour_key": "gold",
       "vlink_reference": [
-        "vl0"
+        "vl1"
       ],
       "id": "flavor0",
       "assurance_parameters": []
@@ -243,18 +224,37 @@
     }
   ],
   "billing_model": {
+    "model": "PAYG",
     "price": {
-      "min_per_period": 1,
-      "max_per_period": 1,
       "setup": 1,
+      "max_per_period": 1,
+      "min_per_period": 1,
       "unit": "EUR"
     },
-    "model": "PAYG",
     "period": "P1D"
   },
   "provider": "TEIC",
   "release": "T-NOVA",
+  "vlinks": [
+    {
+      "leaf_requirement": "10Gbps",
+      "connectivity_type": "E-LINE",
+      "qos": "",
+      "external_access": true,
+      "connection_points_reference": [
+        "CP1e4v"
+      ],
+      "access": false,
+      "alias": "1",
+      "dhcp": false,
+      "root_requirement": "10Gbps",
+      "vdu_reference": [
+        "vdu0"
+      ],
+      "id": "vl1"
+    }
+  ],
   "type": "vPXAAS",
-  "description": "Header decompressor",
-  "id": 5
+  "id": 2,
+  "name": "balance_server2"
 }

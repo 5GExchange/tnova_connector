@@ -1,0 +1,187 @@
+{
+  "provider_id": 4,
+  "vdu": [
+    {
+      "resource_requirements": {
+        "network_interface_bandwidth_unit": "",
+        "hypervisor_parameters": {
+          "version": "10002|12001|2.6.32-358.el6.x86_64",
+          "type": "QEMU-KVM"
+        },
+        "memory_unit": "GB",
+        "network_interface_card_capabilities": {
+          "SR-IOV": true,
+          "mirroring": false
+        },
+        "storage": {
+          "size_unit": "GB",
+          "persistence": false,
+          "size": 8
+        },
+        "network_interface_bandwidth": "",
+        "platform_pcie_parameters": {
+          "SR-IOV": true,
+          "device_pass_through": true
+        },
+        "vcpus": 1,
+        "vswitch_capabilities": {
+          "version": "2.0",
+          "type": "ovs",
+          "overlay_tunnel": "GRE"
+        },
+        "data_processing_acceleration_library": "",
+        "memory": 2,
+        "memory_parameters": {
+          "large_pages_required": false,
+          "numa_allocation_policy": ""
+        },
+        "cpu_support_accelerator": "AES-NI"
+      },
+      "bootstrap_script": "nodejs index.js",
+      "alias": "docker",
+      "variables": "",
+      "networking_resources": "3001",
+      "monitoring_parameters_specific": [],
+      "wc_notify": true,
+      "vm_image": "5gex.tmit.bme.hu/client_player:latest",
+      "controller": true,
+      "connection_points": [
+        {
+          "vlink_ref": "vl0",
+          "id": "CPaaut"
+        }
+      ],
+      "id": "vdu0",
+      "monitoring_parameters": [
+        {
+          "metric": "memory",
+          "unit": "INT",
+          "desc": "Memory"
+        },
+        {
+          "metric": "cpu",
+          "unit": "INT",
+          "desc": "CPU"
+        }
+      ],
+      "scale_in_out": {
+        "minimum": 1,
+        "maximum": 1
+      }
+    }
+  ],
+  "name": "videoPlayer",
+  "created_at": "2017-05-21T16:22:26Z",
+  "modified_at": "2017-05-21T16:22:26Z",
+  "vlinks": [
+    {
+      "leaf_requirement": "1Gbps",
+      "connectivity_type": "INTERNET",
+      "vdu_reference": [
+        "vdu0"
+      ],
+      "external_access": true,
+      "connection_points_reference": [
+        "CPaaut"
+      ],
+      "access": true,
+      "alias": "1",
+      "port_security_enabled": false,
+      "root_requirement": "1Gbps",
+      "dhcp": true,
+      "id": "vl0"
+    }
+  ],
+  "descriptor_version": "1",
+  "deployment_flavours": [
+    {
+      "vdu_reference": [
+        "vdu0"
+      ],
+      "constraint": "",
+      "flavour_key": "gold",
+      "vlink_reference": [
+        "vl0"
+      ],
+      "id": "flavor0",
+      "assurance_parameters": [
+        {
+          "violation": [
+            {
+              "interval": 300,
+              "breaches_count": 2
+            }
+          ],
+          "value": 10,
+          "penalty": {
+            "type": "Discount",
+            "expression": 1,
+            "validity": "P1D",
+            "unit": "INT"
+          },
+          "formula": "memory LT 10",
+          "rel_id": "param0",
+          "id": "memory",
+          "unit": "INT"
+        },
+        {
+          "violation": [
+            {
+              "interval": 300,
+              "breaches_count": 2
+            }
+          ],
+          "value": 80,
+          "penalty": {
+            "type": "Discount",
+            "expression": 1,
+            "validity": "P1D",
+            "unit": "INT"
+          },
+          "formula": "cpu LT 80",
+          "rel_id": "param1",
+          "id": "cpu",
+          "unit": "INT"
+        }
+      ]
+    }
+  ],
+  "version": "1",
+  "vnf_lifecycle_events": [
+    {
+      "authentication_username": "vagrant",
+      "driver": "http",
+      "authentication_type": "HTTPBasicAuth",
+      "authentication": "",
+      "flavor_id_ref": "flavor0",
+      "events": {
+        "start": {
+          "command": "/home/vagrant/scripts/start",
+          "template_file": "{\"controller\":\"get_attr[vdu0,PublicIp]\", \"vdu0\":\"get_attr[vdu1,PublicIp]\"}",
+          "template_file_format": "JSON"
+        },
+        "stop": {
+          "command": "/home/vagrant/scripts/stop",
+          "template_file": "{}",
+          "template_file_format": "JSON"
+        }
+      },
+      "vnf_container": "/home/vagrant/container/"
+    }
+  ],
+  "billing_model": {
+    "model": "PAYG",
+    "price": {
+      "setup": 5,
+      "max_per_period": 10,
+      "min_per_period": 10,
+      "unit": "EUR"
+    },
+    "period": "P1M"
+  },
+  "provider": "TEIC",
+  "release": "5GEx",
+  "type": "vCDN",
+  "id": 9,
+  "description": "vCDN video player"
+}
