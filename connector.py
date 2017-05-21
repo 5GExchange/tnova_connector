@@ -24,6 +24,7 @@ from urlparse import urlparse
 import requests
 from flask import Flask, Response, request
 from requests.exceptions import ConnectionError
+from requests.packages.urllib3.exceptions import TimeoutError
 
 from conversion.conversion import NFFGConverter
 from conversion.converter import TNOVAConverter
@@ -79,7 +80,7 @@ VIRTUALIZER_MAPPINGS_RPC = "mappings"
 # Other constants
 PWD = os.path.realpath(os.path.dirname(__file__))
 LOGGER_NAME = "TNOVAConnector"
-HTTP_GLOBAL_TIMEOUT = 3  # sec
+HTTP_GLOBAL_TIMEOUT = 20  # sec
 
 # Create REST-API handler app
 app = Flask(LOGGER_NAME)
@@ -373,6 +374,17 @@ def initiate_service ():
                     response=json.dumps(
                       {"error": "RO is not available!",
                        "RO": RO_URL}))
+  except TimeoutError:
+    app.logger.error("RO is not available within timeout: %s!"
+                     % HTTP_GLOBAL_TIMEOUT)
+    # Something went wrong, status->error_creating
+    service_mgr.set_service_status(id=si.id,
+                                   status=ServiceInstance.STATUS_ERROR)
+    return Response(status=httplib.INTERNAL_SERVER_ERROR,
+                    response=json.dumps(
+                      {"error": "RO exceeded timeout!",
+                       "RO": RO_URL,
+                       "timeout": HTTP_GLOBAL_TIMEOUT}))
   except:
     app.logger.exception(
       "Got unexpected exception during service initiation!")
