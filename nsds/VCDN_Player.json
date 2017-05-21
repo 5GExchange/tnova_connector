@@ -1,0 +1,218 @@
+{
+  "nsd": {
+    "auto_scale_policy": {
+      "basic": [], 
+      "criteria": []
+    }, 
+    "connection_points": [], 
+    "description": "test", 
+    "descriptor_version": "1", 
+    "id": "VCDN_Player",
+    "lifecycle_events": {
+      "scale_in": [], 
+      "scale_out": [], 
+      "start": [], 
+      "stop": []
+    }, 
+    "monitoring_parameters": [
+      {
+        "desc": "Memory consumed", 
+        "metric": "mem.used", 
+        "unit": "Bytes"
+      }, 
+      {
+        "desc": "Memory consumed", 
+        "metric": "mem.percent", 
+        "unit": "%"
+      }, 
+      {
+        "desc": "CPU", 
+        "metric": "cpu.percent", 
+        "unit": "%"
+      }, 
+      {
+        "desc": "Bytes transmitted", 
+        "metric": "tx.bytes", 
+        "unit": "Bytes"
+      }, 
+      {
+        "desc": "Bytes received", 
+        "metric": "rx.bytes", 
+        "unit": "Bytes"
+      }
+    ], 
+    "name": "VCDN_Player", 
+    "provider": "5GEx", 
+    "provider_id": "3", 
+    "sla": [
+      {
+        "assurance_parameters": [], 
+        "billing": {
+          "model": "PAYG", 
+          "price": {
+            "price_per_period": 1, 
+            "setup": 1, 
+            "unit": "USD"
+          }
+        }, 
+        "constituent_vnf": [
+          {
+            "number_of_instances": 1, 
+            "redundancy_model": "Active", 
+            "vnf_flavour_id_reference": "gold", 
+            "vnf_reference": "12@001"
+          }, 
+          {
+            "number_of_instances": 1, 
+            "redundancy_model": "Active", 
+            "vnf_flavour_id_reference": "gold", 
+            "vnf_reference": "13@001"
+          }
+        ], 
+        "id": "sla0", 
+        "sla_key": "basic"
+      }
+    ], 
+    "vendor": "3", 
+    "version": "1", 
+    "vld": {
+      "number_of_endpoints": 0, 
+      "virtual_links": [
+        {
+          "alias": "vcache-player", 
+          "connections": [
+            "domain#001:vnf#13-0:ext_2", 
+            "domain#001:vnf#12-0:ext_2"
+          ], 
+          "connectivity_type": "E-LINE", 
+          "external_access": false, 
+          "leaf_requirement": "", 
+          "merge": false, 
+          "qos": {
+            "burst": "", 
+            "delay": "20", 
+            "flowclass": "", 
+            "params": "", 
+            "peak": ""
+          }, 
+          "root_requirements": "", 
+          "sla_ref_id": "sla0", 
+          "vld_id": "vld0"
+        }, 
+        {
+          "alias": "player-vcache", 
+          "connections": [
+            "domain#001:vnf#12-0:ext_2", 
+            "domain#001:vnf#12-0:ext_1"
+          ], 
+          "connectivity_type": "E-LINE", 
+          "external_access": false, 
+          "leaf_requirement": "", 
+          "merge": false, 
+          "qos": {
+            "burst": "", 
+            "delay": "", 
+            "flowclass": "", 
+            "params": "", 
+            "peak": ""
+          }, 
+          "root_requirements": "", 
+          "sla_ref_id": "sla0", 
+          "vld_id": "vld1"
+        }, 
+        {
+          "alias": "SAP100:in", 
+          "connections": [
+            "domain#001:vnf#12-0:ext_1"
+          ], 
+          "connectivity_type": "E-LINE", 
+          "external_access": true, 
+          "leaf_requirement": "", 
+          "merge": false, 
+          "qos": {
+            "burst": "", 
+            "delay": "", 
+            "flowclass": "dl_type=0x0800,icmp", 
+            "params": "", 
+            "peak": ""
+          }, 
+          "root_requirements": "", 
+          "sla_ref_id": "sla0", 
+          "vld_id": "vld2"
+        }, 
+        {
+          "alias": "SAP100:out", 
+          "connections": [
+            "domain#001:vnf#12-0:ext_1"
+          ], 
+          "connectivity_type": "E-LINE", 
+          "external_access": true, 
+          "leaf_requirement": "", 
+          "merge": false, 
+          "qos": {
+            "burst": "", 
+            "delay": "", 
+            "flowclass": "dl_type=0x0800,icmp", 
+            "params": "", 
+            "peak": ""
+          }, 
+          "root_requirements": "", 
+          "sla_ref_id": "sla0", 
+          "vld_id": "vld3"
+        }
+      ]
+    }, 
+    "vnf_depedency": [], 
+    "vnf_dependency": [], 
+    "vnfds": [
+      "domain#001:vnf#12", 
+      "domain#001:vnf#13"
+    ], 
+    "vnffgd": {
+      "vnffgs": [
+        {
+          "dependent_virtual_links": [
+            "vld0", 
+            "vld1", 
+            "vld2", 
+            "vld3"
+          ], 
+          "network_forwarding_path": [
+            {
+              "connection_points": [
+                "domain#001:vnf#13-0:ext_2", 
+                "domain#001:vnf#12-0:ext_2", 
+                "domain#001:vnf#12-0:ext_2", 
+                "domain#001:vnf#12-0:ext_1", 
+                "ns_ext_SAP100:in", 
+                "domain#001:vnf#12-0:ext_1", 
+                "ns_ext_SAP100:out", 
+                "domain#001:vnf#12-0:ext_1"
+              ], 
+              "constituent_vnfs": [
+                {
+                  "vnf_flavor_key_ref": "gold", 
+                  "vnf_ref_id": "12@001-0"
+                }, 
+                {
+                  "vnf_flavor_key_ref": "gold", 
+                  "vnf_ref_id": "13@001-0"
+                }
+              ], 
+              "graph": [
+                "vld0", 
+                "vld1", 
+                "vld2", 
+                "vld3"
+              ], 
+              "nfp_id": "nfp0"
+            }
+          ], 
+          "number_of_endpoints": 2, 
+          "number_of_virtual_links": 4, 
+          "vnffg_id": "vnffg0"
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,109 @@
+{
+  "nsd": {
+    "auto_scale_policy": {
+      "basic": [], 
+      "criteria": []
+    }, 
+    "connection_points": [], 
+    "description": "CACHES", 
+    "descriptor_version": "1", 
+    "id": "VCDN_caches",
+    "lifecycle_events": {
+      "scale_in": [], 
+      "scale_out": [], 
+      "start": [], 
+      "stop": []
+    }, 
+    "monitoring_parameters": [
+      {
+        "desc": "Memory consumed", 
+        "metric": "mem.used", 
+        "unit": "Bytes"
+      }, 
+      {
+        "desc": "Memory consumed", 
+        "metric": "mem.percent", 
+        "unit": "%"
+      }, 
+      {
+        "desc": "CPU", 
+        "metric": "cpu.percent", 
+        "unit": "%"
+      }, 
+      {
+        "desc": "Bytes transmitted", 
+        "metric": "tx.bytes", 
+        "unit": "Bytes"
+      }, 
+      {
+        "desc": "Bytes received", 
+        "metric": "rx.bytes", 
+        "unit": "Bytes"
+      }
+    ], 
+    "name": "VCDN_caches", 
+    "provider": "5GEx", 
+    "provider_id": "3", 
+    "sla": [
+      {
+        "assurance_parameters": [], 
+        "billing": {
+          "model": "PAYG", 
+          "price": {
+            "price_per_period": 1, 
+            "setup": 1, 
+            "unit": "USD"
+          }
+        }, 
+        "constituent_vnf": [
+          {
+            "number_of_instances": 2, 
+            "redundancy_model": "Active", 
+            "vnf_flavour_id_reference": "gold", 
+            "vnf_reference": "11@001"
+          }
+        ], 
+        "id": "sla0", 
+        "sla_key": "basic"
+      }
+    ], 
+    "vendor": "3", 
+    "version": "1", 
+    "vld": {
+      "number_of_endpoints": 0, 
+      "virtual_links": []
+    }, 
+    "vnf_depedency": [], 
+    "vnf_dependency": [], 
+    "vnfds": [
+      "domain#001:vnf#11"
+    ], 
+    "vnffgd": {
+      "vnffgs": [
+        {
+          "dependent_virtual_links": [], 
+          "network_forwarding_path": [
+            {
+              "connection_points": [], 
+              "constituent_vnfs": [
+                {
+                  "vnf_flavor_key_ref": "gold", 
+                  "vnf_ref_id": "11@001-0"
+                }, 
+                {
+                  "vnf_flavor_key_ref": "gold", 
+                  "vnf_ref_id": "11@001-1"
+                }
+              ], 
+              "graph": [], 
+              "nfp_id": "nfp0"
+            }
+          ], 
+          "number_of_endpoints": 0, 
+          "number_of_virtual_links": 0, 
+          "vnffg_id": "vnffg0"
+        }
+      ]
+    }
+  }
+}
