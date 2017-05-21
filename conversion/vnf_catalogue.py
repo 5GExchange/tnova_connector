@@ -150,9 +150,8 @@ class VNFWrapper(AbstractDescriptorWrapper):
     """
     try:
       if len(self.data['vdu']) > 1:
-        self.log.error(
-          "Multiple VDU element are detected! Conversion does only support "
-          "simple VNFs!")
+        self.log.error("Multiple VDU element are detected! "
+                       "Conversion does only support simple VNFs!")
         return
       return self.data['vdu'][0]["alias"]
     except KeyError:

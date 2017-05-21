@@ -140,12 +140,6 @@ class TNOVAConverter(object):
           # INTERNET port is not external
           nf_port = node_nf.add_port(id=iport, sap="INTERNET")
           self.log.debug("Added new INTERNET port: %s" % nf_port)
-          # nf_port.l3.add_l3address(id="INTERNET-public",
-          #                          configure="True",
-          #                          client="dhcp-client",
-          #                          requested="public")
-          # self.log.debug("Added public IP address request to port: %s"
-          #                % nf_port)
         else:
           nf_port = node_nf.ports[iport]
           # Set SAP attribute for INTERNET port
@@ -437,6 +431,8 @@ class TNOVAConverter(object):
       self.__convert_sg_hops(nffg=nffg, ns=ns, vnfs=self.__catalogue)
       self.log.debug("Convert E2E Requirement edges...")
       self.__convert_e2e_reqs(nffg=nffg, ns=ns, vnfs=self.__catalogue)
+      self.log.debug("Extend request with optional translations...")
+      self.apply_extensions(nffg=nffg)
     except MissingVNFDException as e:
       self.log.error(e)
       return None
@@ -504,6 +500,40 @@ class TNOVAConverter(object):
         port.role = "consumer"
         port.sap = placement['subnet']
         self.log.debug("Update %s with consumer id: %s" % (port, port.sap))
+
+  def apply_extensions (self, nffg):
+    """
+    
+    :param nffg: 
+    :return: 
+    """
+    VCDN_ROLE_ID = "CACHE"
+    self.log.debug("Running vCDN port translations...")
+    nfs = [nf for nf in nffg.nfs]
+    for nf in nfs:
+      if nf.name.upper() == "VCDN_CACHE":
+        self.log.debug("Found vCDN NF: %s!" % nf.id)
+        if len(nf.ports) != 2:
+          self.log.warning("vCDN NF: %s should have exactly 2 ports not %s!"
+                           % (nf.id, len(nf.ports)))
+        for port in nf.ports:
+          if port.sap is None and port.role is None:
+            self.log.debug("Detected non-SAP port: %s" % port.id)
+            port.sap = VCDN_ROLE_ID
+            port.role = "provider"
+            self.log.debug("Set provider SAP id: %s for NF: %s" % (port.sap,
+                                                                   nf.id))
+      elif nf.functional_type.upper() == "FE2SAP":
+        self.log.debug("Found fe2sap NF: %s" % nf.id)
+        if len(nf.ports) != 2:
+          self.log.error("Helper NF: %s should have exactly 2 ports not %s!"
+                         % (nf.id, len(nf.ports)))
+          continue
+        sap_port = [p for p in nf.ports][-1]
+        sap_port.sap = VCDN_ROLE_ID
+        sap_port.role = "consumer"
+        self.log.debug("Set consumer SAP id: %s for NF: %s" % (sap_port.sap,
+                                                               nf.id))
 
 
 if __name__ == "__main__":
