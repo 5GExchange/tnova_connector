@@ -157,12 +157,25 @@ class TNOVAConverter(object):
                                value=self._parse_variables(value=value))
           self.log.debug("Found environment: %s",
                          node_nf.metadata['environment'])
-        # Add port bindings
         elif md == 'networking_resources':
+          # Add port bindings
           for iport in vnf.get_internet_ports():
             port = node_nf.ports[iport]
-            port.l4 = self._parse_binding(value=value)
-            self.log.debug("Detected port bindings: %s" % port.l4)
+            port.l4 = self._parse_port_bindings(value=value)
+            self.log.debug("Added port bindings: %s" % port.l4)
+          # Add IP assignments
+          ips = self._parse_ip_address_binding(value=value)
+          self.log.debug("Detected IP assignments: %s" % ips)
+          regular_ports = vnf.get_non_internet_ports()
+          if len(regular_ports) < len(ips):
+            self.log.warning("Detected more IP address: %s for assignment "
+                             "then available ports: %s!" % (ips, regular_ports))
+          for i, ip in enumerate(ips):
+            port_id = regular_ports[i]
+            bound_port = node_nf.ports[port_id]
+            bound_port.l3.add_l3address(id=ip, configure=True, requested=ip)
+            self.log.debug("Added IP assignment: port: %s --> %s" % (i, ip))
+
       self.log.info("Added NF: %s" % node_nf)
 
   @staticmethod
@@ -173,11 +186,24 @@ class TNOVAConverter(object):
     return str(envs).replace('"', "'")
 
   @staticmethod
-  def _parse_binding (value):
+  def _parse_port_bindings (value):
     ports = {}
-    ports.update(map(lambda x: ("%s/tcp" % x, ('', x)),
-                     [int(p) for p in value.replace(',', ' ').split()]))
+    splitted = []
+    for i in value.replace(',', ' ').split():
+      try:
+        splitted.append(int(i))
+      except ValueError:
+        pass
+    ports.update(map(lambda x: ("%s/tcp" % x, ('', x)), splitted))
     return str(ports).replace('"', "'")
+
+  @staticmethod
+  def _parse_ip_address_binding (value):
+    ip_addresses = []
+    for i in value.replace(',', ' ').split():
+      if len(i.split('.')) == 4:
+        ip_addresses.append(i)
+    return ip_addresses
 
   def __convert_saps (self, nffg, ns, vnfs):
     """

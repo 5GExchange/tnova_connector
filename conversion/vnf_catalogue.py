@@ -213,6 +213,31 @@ class VNFWrapper(AbstractDescriptorWrapper):
       self.log.error("Missing required field for 'ports' in VNF: %s!" % self.id)
       return ()
 
+  def get_non_internet_ports (self):
+    """
+
+    :return: 
+    """
+    try:
+      if len(self.data['vdu']) > 1:
+        self.log.error(
+          "Multiple VDU element are detected! Conversion does only support "
+          "simple VNFs!")
+        return
+      ports = []
+      for vlink in self.data["vlinks"]:
+        if str(vlink['connectivity_type']).upper() != 'INTERNET':
+          try:
+            port_id = int(vlink['alias'])
+          except ValueError:
+            port_id = vlink['alias']
+          ports.append(port_id)
+          self.log.debug("Detected non-INTERNET port: %s" % vlink['alias'])
+      return ports
+    except KeyError:
+      self.log.error("Missing required field for 'ports' in VNF: %s!" % self.id)
+      return ()
+
   def get_deployment_type (self):
     """
     Get the deployment_type value which come from the 'deployment_flavours'
