@@ -484,7 +484,7 @@ class VNFCatalogue(object):
                  "Received body:\n%s" % pprint.pformat(response.json()))
     vnfd = json.loads(response.text, object_hook=self.__vnfd_object_hook)
     if self.STORE_VNFD_LOCALLY:
-      self.register(id=vnf_id, vnfd=vnfd)
+      self.register(id=vnfd.get_vnf_name(), vnfd=vnfd)
     return vnfd
 
   @staticmethod
