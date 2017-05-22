@@ -130,6 +130,7 @@ class TNOVAConverter(object):
                             dep_type=vnf.get_deployment_type(),
                             **vnf.get_resources())
       self.log.debug("Create VNF: %s" % node_nf)
+      node_nf.add_metadata("store_id", nf_id)
       # Add ports to NF
       for port in vnf.get_ports():
         nf_port = node_nf.add_port(id=port)

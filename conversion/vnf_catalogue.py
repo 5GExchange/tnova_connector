@@ -436,11 +436,10 @@ class VNFCatalogue(object):
       with open(vnfd_file) as f:
         # Parse VNFD from JSOn files as VNFWrapper class
         vnfd = json.load(f, object_hook=self.__vnfd_object_hook)
-        vnfd.vnfd_file = vnfd_file
-        vnfd_id = os.path.splitext(vnf)[0]
-        if not self.registered(id=vnfd_id):
-          # Register VNF into catalogue
-          self.register(id=vnfd_id, vnfd=vnfd)
+      vnfd.vnfd_file = vnfd_file
+      vnfd_id = os.path.splitext(vnf)[0]
+      # Register VNF into catalogue
+      self.register(id=vnfd_id, vnfd=vnfd)
     return self
 
   def request_vnf_from_remote_store (self, vnf_id):
@@ -485,6 +484,8 @@ class VNFCatalogue(object):
     vnfd = json.loads(response.text, object_hook=self.__vnfd_object_hook)
     if self.STORE_VNFD_LOCALLY:
       self.register(id=vnfd.get_vnf_name(), vnfd=vnfd)
+    self.log.log(VERBOSE,
+                 "VNFCatalogue:\n%s" % pprint.pformat(self.__catalogue))
     return vnfd
 
   @staticmethod
