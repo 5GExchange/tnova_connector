@@ -3,3 +3,7 @@
 Dockerfile
 Jenkinsfile
 README.md
+vnf_catalogue/*
+log/*
+nsds/*
+services/*
