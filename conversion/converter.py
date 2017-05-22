@@ -120,7 +120,7 @@ class TNOVAConverter(object):
           "VNFD with id: %s is not found in the VNFCatalogue!" % nf_id)
         raise MissingVNFDException(nf_id)
       # Forge NF id to be unique within an NFFG
-      base_id = vnf.get_vnf_id()
+      base_id = vnf.get_vnf_name()
       self.log.debug('Found VNF with id: %s --> %s' % (nf_id, base_id))
       if num is not None:
         base_id = "%s_%s" % (base_id, num)
@@ -312,7 +312,7 @@ class TNOVAConverter(object):
       # Parse src params
       src_node = vnfs.get_by_id(vlink['src_node'])
       if src_node is not None:
-        src_node_id = src_node.get_vnf_id()
+        src_node_id = src_node.get_vnf_name()
         if vlink['src_node_num'] is not None:
           src_node_id = "%s_%s" % (src_node_id, vlink['src_node_num'])
         src_port_id = vlink['src_port']
@@ -324,7 +324,7 @@ class TNOVAConverter(object):
       # Parse dst params
       dst_node = vnfs.get_by_id(vlink['dst_node'])
       if dst_node is not None:
-        dst_node_id = dst_node.get_vnf_id()
+        dst_node_id = dst_node.get_vnf_name()
         if vlink['dst_node_num'] is not None:
           dst_node_id = "%s_%s" % (dst_node_id, vlink['dst_node_num'])
         dst_port_id = vlink['dst_port']
@@ -500,7 +500,7 @@ class TNOVAConverter(object):
       except ValueError:
         self.log.warning("Got VNF id: %s is not valid integer!" % vnf_id)
         continue
-      converted_vnf_id = self.__catalogue.get_by_id(id=vnf_id).get_vnf_id()
+      converted_vnf_id = self.__catalogue.get_by_id(id=vnf_id).get_vnf_name()
       base_nf_id = "%s_%s" % (converted_vnf_id, num)
       self.log.debug("Found base NF name: %s" % base_nf_id)
       nf = [nf for nf in nffg.nfs if str(nf.id).startswith(base_nf_id)]

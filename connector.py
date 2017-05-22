@@ -653,24 +653,26 @@ def _collect_si_callback_data (si, req_params):
   :return: 
   """
   data = si.get_json()
+  app.logger.debug("Collected service instance info:\n%s" % data)
   data['nsd_id'] = data.pop('ns-id')
   data['descriptor_reference'] = data['nsd_id']
   if 'callbackUrl' in req_params:
     data['marketplace_callback'] = str(req_params['callbackUrl'])
     data['notification'] = str(req_params['callbackUrl'])
+    app.logger.debug("Set callback URL: %s" % data['notification'])
   else:
     app.logger.warning("Missing callback URL: 'callbackUrl' "
                        "from request parameters: %s!" % req_params)
   if 'flavour' in req_params:
     data['service_deployment_flavour'] = str(req_params['flavour'])
+    app.logger.debug("Set flavour: %s" % data['service_deployment_flavour'])
   else:
     app.logger.warning("Missing flavour: 'flavour' "
                        "from request parameters: %s!" % req_params)
   vnf_addresses = data.pop('vnf_addresses', [])
   sg = si.get_sg()
   if sg is None:
-    app.logger.error("Service Graph is missing from Service Instance: %s!"
-                     % si)
+    app.logger.error("Service Graph is missing from Service Instance: %s!" % si)
     return data
   data['vnfrs'] = []
   for nf in sg.nfs:
@@ -679,12 +681,20 @@ def _collect_si_callback_data (si, req_params):
                    vnfr_id=nf.id,  # instance ID of NF
                    vnfi_id=[nf.id])  # ID of the VM once instantiated
     vnf_wrapper = catalogue.get_by_type(nf.functional_type)
+    try:
+      name, num, si_id = str(nf.id).rsplit('_', 2)
+    except:
+      name, num, si_id = None, None, None
+    vnf_wrapper = catalogue.get_by_name(name=name)
     if vnf_wrapper is None:
       app.logger.error("Missing VNF: %s!" % nf.functional_type)
       continue
     nf_item['vnfd_id'] = str(vnf_wrapper.id)
+    app.logger.debug("Detected VNFD id: %s for NF: %s" % (nf_item['vnfd_id'],
+                                                          nf.id))
     if nf.id in vnf_addresses:
       nf_item['vnf_addresses'] = vnf_addresses[nf.id]
+      app.logger.debug("Detected addresses: %s" % nf_item['vnf_addresses'])
     else:
       nf_item['vnf_addresses'] = {}
     data['vnfrs'].append(nf_item)

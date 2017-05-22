@@ -123,7 +123,7 @@ class VNFWrapper(AbstractDescriptorWrapper):
         "Missing required field for 'resources' in data:\n%s!" % self)
       return ()
 
-  def get_vnf_id (self):
+  def get_vnf_name (self):
     """
     Get the id of the NF which comes from the single VDU id.
 
@@ -137,7 +137,7 @@ class VNFWrapper(AbstractDescriptorWrapper):
           "simple VNFs!")
         return
       # return self.data['vdu'][0]["alias"]
-      return self.name
+      return str(self.name)
     except KeyError:
       self.log.error("Missing required field for 'id' in VNF: %s!" % self.id)
 
@@ -153,7 +153,7 @@ class VNFWrapper(AbstractDescriptorWrapper):
         self.log.error("Multiple VDU element are detected! "
                        "Conversion does only support simple VNFs!")
         return
-      return self.data['vdu'][0]["alias"]
+      return str(self.data['vdu'][0]["alias"])
     except KeyError:
       self.log.error("Missing required field for 'type' in VNF: %s!" % self.id)
 
@@ -314,6 +314,8 @@ class VNFCatalogue(object):
     """
     self.log.info("Initialize %s..." % self.__class__.__name__)
     self.parse_vnf_catalogue_from_folder()
+    self.log.log(VERBOSE, "VNFCatalogue:\n%s"
+                 % pprint.pformat(self.__catalogue))
 
   def __str__ (self):
     """
@@ -340,11 +342,11 @@ class VNFCatalogue(object):
     """
     if isinstance(vnfd, VNFWrapper):
       if id not in self.__catalogue:
-        self.__catalogue[id] = vnfd
         self.log.debug("Register VNFD with id: %s, name: %s" % (vnfd.id,
                                                                 vnfd.name))
       else:
-        self.log.debug("VNFD has been already registered with id: %s!" % id)
+        self.log.warning("Override already registered VNFS: %s!" % id)
+      self.__catalogue[id] = vnfd
       return True
     else:
       return False
@@ -399,7 +401,19 @@ class VNFCatalogue(object):
     """
     for vnf in self.__catalogue.itervalues():
       if vnf.get_vnf_type() == type:
+        self.log.debug("Found VNFD with type: %s in local catalogue" % type)
         return vnf
+
+  def get_by_name (self, name):
+    """
+    Return a registered VNF as a VNFWrapper given by the VNF id.
+
+    :param type: VNF id
+    :type type: str or int
+    :return: registered VNF or None
+    :rtype: VNFWrapper
+    """
+    return self.get(id=name)
 
   def parse_vnf_catalogue_from_folder (self, catalogue_dir=None):
     """
