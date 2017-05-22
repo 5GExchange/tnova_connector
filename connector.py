@@ -682,7 +682,7 @@ def _collect_si_callback_data (si, req_params):
                    vnfi_id=[nf.id])  # ID of the VM once instantiated
     # vnf_wrapper = catalogue.get_by_type(nf.functional_type)
     if nf.has_metadata("store_id"):
-      nf_item['vnfd_id'] = nf.get_matadata("store_id")
+      nf_item['vnfd_id'] = nf.get_metadata("store_id")
       app.logger.log("Detected VNFD id from metadata: %s"
                      % nf_item['vnfd_id'])
     else:
