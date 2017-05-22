@@ -683,8 +683,8 @@ def _collect_si_callback_data (si, req_params):
     # vnf_wrapper = catalogue.get_by_type(nf.functional_type)
     if nf.has_metadata("store_id"):
       nf_item['vnfd_id'] = nf.get_metadata("store_id")
-      app.logger.log("Detected VNFD id from metadata: %s"
-                     % nf_item['vnfd_id'])
+      app.logger.debug(
+        "Detected VNFD id from metadata: %s" % nf_item['vnfd_id'])
     else:
       try:
         name, num, si_id = str(nf.id).rsplit('_', 2)
@@ -695,9 +695,7 @@ def _collect_si_callback_data (si, req_params):
         app.logger.error("Missing VNF: %s!" % name)
         continue
       nf_item['vnfd_id'] = str(vnf_wrapper.id)
-      app.logger.log("Detected VNFD id from NF name: %s" % nf_item['vnfd_id'])
-    app.logger.debug("Detected VNFD id: %s for NF: %s" % (nf_item['vnfd_id'],
-                                                          nf.id))
+      app.logger.debug("Detected VNFD id from NF name: %s" % nf_item['vnfd_id'])
     if nf.id in vnf_addresses:
       nf_item['vnf_addresses'] = vnf_addresses[nf.id]
       app.logger.debug("Detected addresses: %s" % nf_item['vnf_addresses'])
