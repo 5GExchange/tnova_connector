@@ -680,16 +680,22 @@ def _collect_si_callback_data (si, req_params):
                    status="INSTANTIATED",  # default in case of ESCAPE
                    vnfr_id=nf.id,  # instance ID of NF
                    vnfi_id=[nf.id])  # ID of the VM once instantiated
-    vnf_wrapper = catalogue.get_by_type(nf.functional_type)
-    try:
-      name, num, si_id = str(nf.id).rsplit('_', 2)
-    except:
-      name, num, si_id = None, None, None
-    vnf_wrapper = catalogue.get_by_name(name=name)
-    if vnf_wrapper is None:
-      app.logger.error("Missing VNF: %s!" % nf.functional_type)
-      continue
-    nf_item['vnfd_id'] = str(vnf_wrapper.id)
+    # vnf_wrapper = catalogue.get_by_type(nf.functional_type)
+    if nf.has_metadata("store_id"):
+      nf_item['vnfd_id'] = nf.get_matadata("store_id")
+      app.logger.log("Detected VNFD id from metadata: %s"
+                     % nf_item['vnfd_id'])
+    else:
+      try:
+        name, num, si_id = str(nf.id).rsplit('_', 2)
+      except:
+        name, num, si_id = None, None, None
+      vnf_wrapper = catalogue.get_by_name(name=name)
+      if vnf_wrapper is None:
+        app.logger.error("Missing VNF: %s!" % name)
+        continue
+      nf_item['vnfd_id'] = str(vnf_wrapper.id)
+      app.logger.log("Detected VNFD id from NF name: %s" % nf_item['vnfd_id'])
     app.logger.debug("Detected VNFD id: %s for NF: %s" % (nf_item['vnfd_id'],
                                                           nf.id))
     if nf.id in vnf_addresses:
