@@ -138,7 +138,8 @@ class ServiceInstance(object):
       nffg.id = self.id
       if mode is not None:
         nffg.mode = mode
-      self.sg = self._tag_NF_ids(nffg=nffg, unique=self.id)
+      nffg = self._tag_NF_ids(nffg=nffg, unique=self.id)
+      self.sg = self._update_sg_hop_ids(nffg=nffg)
       return self.sg
     except IOError:
       # return None
@@ -162,6 +163,33 @@ class ServiceInstance(object):
       raw = raw.replace('"%s"' % old, '"%s"' % new)
     return NFFG.parse(raw_data=raw)
 
+  def _update_sg_hop_ids (self, nffg):
+    """
+
+    :param sg: 
+    :return: 
+    """
+    for hop in [sg for sg in nffg.sg_hops]:
+      if hop.id not in ServiceManager.sg_hop_cache:
+        new_id = hop.id
+      else:
+        for i in xrange(1, 4095):
+          if i not in ServiceManager.sg_hop_cache:
+            new_id = i
+            break
+        else:
+          return
+      ServiceManager.sg_hop_cache[new_id] = self.id
+      nffg.del_edge(src=hop.src, dst=hop.dst, id=hop.id)
+      nffg.add_sglink(src_port=hop.src,
+                      dst_port=hop.dst,
+                      id=new_id,
+                      flowclass=hop.flowclass,
+                      tag_info=hop.tag_info,
+                      delay=hop.delay,
+                      bandwidth=hop.bandwidth)
+    return nffg
+
 
 class ServiceManager(object):
   """
@@ -177,6 +205,8 @@ class ServiceManager(object):
   SERVICE_DIR = "services"
   SERVICE_CATALOG_ENABLED = False
   REQUEST_TIMEOUT = 3
+  # Global service graph id cache
+  sg_hop_cache = dict()
 
   def __init__ (self, converter, use_remote=False, service_catalog_url=None,
                 cache_dir=None, nsd_dir=None, logger=None):
@@ -322,6 +352,8 @@ class ServiceManager(object):
       # Load the requested service descriptor
       sg = si.load_sg_from_file()
       self.log.debug("Service has been loaded!")
+      self.log.log(VERBOSE, "SG hop cache:\n%s"
+                   % pprint.pformat(self.sg_hop_cache))
     except IOError:
       self.log.warning("NFFG file for service instance creation is not found "
                        "in %s! Skip service processing..." % self.SERVICE_DIR)
@@ -418,10 +450,26 @@ class ServiceManager(object):
     if id in self.__instances:
       si = self.get_service(id=id)
       del self.__instances[id]
+      self._remove_sg_hop_ids(si=si)
       si.status = ServiceInstance.STATUS_STOPPED
       return si
     else:
       self.log.warning("Service: %s is not found!" % id)
+
+  def _remove_sg_hop_ids (self, si):
+    print self.sg_hop_cache
+    ids = []
+    for id in self.sg_hop_cache:
+      if self.sg_hop_cache[id] == si.id:
+        ids.append(id)
+    # ids = [id for id, si_id in self.sg_hop_cache.itervalues() if si_id ==
+    # si.id]
+    for id in ids:
+      del self.sg_hop_cache[id]
+      self.log.debug("Removed hop id: %s from SG hop cache" % id)
+    self.log.log(VERBOSE, "SG hop cache:\n%s"
+                 % pprint.pformat(self.sg_hop_cache))
+    print self.sg_hop_cache
 
   def set_service_status (self, id, status):
     """

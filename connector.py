@@ -476,8 +476,8 @@ def terminate_service (instance_id):
     return Response(status=httplib.OK,
                     content_type="application/json",
                     response=json.dumps(resp))
-  app.logger.debug("Loading service request from file: %s..." % si.path)
-  sg = si.load_sg_from_file()
+  app.logger.debug("Loading service instance...")
+  sg = si.sg
   # Load NFFG from file
   if sg is None:
     app.logger.error("Service with id: %s is not found!" % instance_id)
