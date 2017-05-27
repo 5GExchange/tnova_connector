@@ -235,6 +235,7 @@ def initiate_service ():
   app.logger.debug("Adapt placement criteria...")
   converter.setup_placement_criteria(nffg=sg, params=instantiate_params)
   app.logger.debug("Using explicit message-id: %s" % params[MESSAGE_ID_NAME])
+  app.logger.debug("Request stat:\n%s" % sg.get_stat())
   # Setup callback if it's necessary
   if USE_CALLBACK:
     app.logger.debug("Set callback URL: %s" % callback_mgr.url)
