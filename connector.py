@@ -54,7 +54,7 @@ SERVICE_NFFG_DIR = "services"  # dir name used for storing converted services
 
 # Monitoring related parameters
 MONITORING_URL = None
-MONITORING_TIMEOUT = 1  # sec
+MONITORING_TIMEOUT = 2  # sec
 
 # Communication related parameters
 USE_CALLBACK = False
@@ -363,6 +363,10 @@ def initiate_service ():
         except ConnectionError:
           app.logger.warning("Monitoring component(%s) is unreachable!" %
                              MONITORING_URL)
+        except TimeoutError:
+          app.logger.warning("Monitoring component(%s) is not available within "
+                             "timeout: %s!!" % (MONITORING_URL,
+                                                MONITORING_TIMEOUT))
     # Return the status code
     return Response(status=_status,
                     response=json.dumps(si.get_json()))
