@@ -176,7 +176,7 @@ class NSWrapper(AbstractDescriptorWrapper):
       for cp in self.data['vnffgd']['vnffgs'][0]['network_forwarding_path'][0][
         'connection_points']:
         if cp.startswith(self.NS_EXTERNAL_PORT_PREFIX):
-          ext_point = cp.lstrip(self.NS_EXTERNAL_PORT_PREFIX)
+          ext_point = cp[len(self.NS_EXTERNAL_PORT_PREFIX):]
           if ext_point not in saps:
             saps.append(ext_point)
             self.log.debug("Found new SAP: %s" % ext_point)
