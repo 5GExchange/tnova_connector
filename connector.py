@@ -106,6 +106,13 @@ callback_mgr = None
 # Define REST API calls
 #############################################################################
 
+@app.before_request
+def request_logger ():
+  app.logger.info(">>> Got HTTP %s request: %s --> %s, body: %s"
+                  % (request.method, request.remote_addr, request.url,
+                     len(request.data)))
+
+
 @app.route("/nsd", methods=['POST'])
 def register_nsd ():
   """
@@ -120,7 +127,7 @@ def register_nsd ():
   :return: HTTP Response
   :rtype: :any:`flask.Response`
   """
-  app.logger.info("Call register_nsd() with path: POST /nsd")
+  app.logger.debug("Called register_nsd() with path: POST /nsd")
   try:
     path = service_mgr.store_nsd(raw=request.data)
     if path is None:
@@ -153,7 +160,7 @@ def register_vnfd ():
   :return: HTTP Response
   :rtype: :any:`flask.Response`
   """
-  app.logger.info("Call register_vnfd() with path: POST /vnfd")
+  app.logger.debug("Called register_vnfd() with path: POST /vnfd")
   try:
     app.logger.debug("Parsing request body...")
     data = json.loads(request.data)
@@ -197,7 +204,7 @@ def initiate_service ():
   :return: HTTP Response
   :rtype: flask.Response
   """
-  app.logger.info("Call initiate_service() with path: POST /service")
+  app.logger.debug("Called initiate_service() with path: POST /service")
   try:
     app.logger.debug("Parsing request body...")
     instantiate_params = json.loads(request.data)
@@ -421,8 +428,8 @@ def list_service_instances ():
   :return: HTTP Response
   :rtype: flask.Response
   """
-  app.logger.info(
-    "Call list_service_instances() with path: GET /ns-instances")
+  app.logger.debug(
+    "Called list_service_instances() with path: GET /ns-instances")
   if DYNAMIC_UPDATE_ENABLED:
     topo = _get_topology_view()
     if topo:
@@ -460,8 +467,8 @@ def terminate_service (instance_id):
   :return: HTTP Response 200 OK
   :rtype: flask.Response
   """
-  app.logger.info(
-    "Call terminate_service() with path: PUT /ns-instances/<id>/terminate")
+  app.logger.debug(
+    "Called terminate_service() with path: PUT /ns-instances/<id>/terminate")
   app.logger.info("Received service termination with id: %s" % instance_id)
   # Get managed service instance
   si = service_mgr.get_service(id=instance_id)
@@ -600,6 +607,7 @@ def terminate_service (instance_id):
 
 @app.route("/get-config", methods=['GET', 'POST'])
 def get_config ():
+  app.logger.debug("Called get_config() with path: GET,POST /get-config")
   topo = _get_topology_view(force_virtualizer=True)
   if topo is not None:
     # topo = topo.json()
@@ -614,6 +622,7 @@ def get_config ():
 
 @app.route("/mappings", methods=['POST'])
 def mappings ():
+  app.logger.debug("Called mappings() with path: POST /mappings")
   body = request.data
   if body is None:
     app.logger.error("Missing request body!")
@@ -633,6 +642,7 @@ def mappings ():
 @app.route("/placement-info/", methods=['GET'])
 @app.route("/placement-info", methods=['GET'])
 def placement_info ():
+  app.logger.debug("Called placement_info() with path: GET /placement-info")
   topo = _get_topology_view(force_virtualizer=True)
   if topo is not None:
     data = _get_internet_saps(virtualizer=topo)
@@ -840,7 +850,7 @@ def _shutdown ():
   """
   # Shutdown Callback Manager
   callback_mgr.shutdown()
-  # No correct way to shutdown Flask
+  # No correct way to shutdown Flask - WTF??
 
 
 def _sigterm_handler (sig, stack):
