@@ -33,6 +33,7 @@ from nffg_lib.nffg import NFFG
 from service.callback import CallbackManager
 from service.service_mgr import ServiceManager, ServiceInstance
 from util.colored_logger import VERBOSE, setup_flask_logging
+from util.trail import MessageDumper
 from virtualizer.virtualizer import Virtualizer
 # Listening port
 from virtualizer.virtualizer_mappings import Mappings
@@ -129,6 +130,7 @@ def register_nsd ():
   """
   app.logger.debug("Called register_nsd() with path: POST /nsd")
   try:
+    MessageDumper().dump_to_file(data=request.data, unique="nsd")
     path = service_mgr.store_nsd(raw=request.data)
     if path is None:
       Response(status=httplib.BAD_REQUEST)
@@ -162,6 +164,7 @@ def register_vnfd ():
   """
   app.logger.debug("Called register_vnfd() with path: POST /vnfd")
   try:
+    MessageDumper().dump_to_file(data=request.data, unique="vnfd")
     app.logger.debug("Parsing request body...")
     data = json.loads(request.data)
     app.logger.log(VERBOSE, "Parsed body:\n%s" % pprint.pformat(data))
@@ -206,6 +209,7 @@ def initiate_service ():
   """
   app.logger.debug("Called initiate_service() with path: POST /service")
   try:
+    MessageDumper().dump_to_file(data=request.data, unique="service")
     app.logger.debug("Parsing request body...")
     instantiate_params = json.loads(request.data)
     app.logger.log(VERBOSE, "Parsed body:\n%s"
@@ -282,6 +286,7 @@ def initiate_service ():
                     data=raw_data,
                     allow_redirects=False,
                     timeout=HTTP_GLOBAL_TIMEOUT)
+      MessageDumper().dump_to_file(data=raw_data, unique="service-out-RO")
       # Waiting for callback
       cb = callback_mgr.wait_for_callback(callback=cb)
       if cb.result_code == 0:
@@ -315,6 +320,7 @@ def initiate_service ():
                           data=raw_data,
                           allow_redirects=False,
                           timeout=HTTP_GLOBAL_TIMEOUT)
+      MessageDumper().dump_to_file(data=raw_data, unique="service-out-RO")
       # Check result
       if ret.status_code == httplib.ACCEPTED:
         app.logger.info("Service initiation has been forwarded with result: "
@@ -341,12 +347,14 @@ def initiate_service ():
                                          req_params=instantiate_params)
         app.logger.log(VERBOSE, "Collected callback data:\n%s"
                        % pprint.pformat(data))
+        raw_data = json.dumps(data)
         try:
           ret = requests.post(url=cb_url,
                               headers={"Content-Type": "application/json"},
-                              data=json.dumps(data),
+                              data=raw_data,
                               allow_redirects=False,
                               timeout=HTTP_GLOBAL_TIMEOUT)
+          MessageDumper().dump_to_file(data=raw_data, unique="service-callback")
           if ret.status_code == httplib.OK:
             app.logger.debug("Callback result: %s" % ret.text)
           else:
@@ -375,6 +383,8 @@ def initiate_service ():
                              "timeout: %s!!" % (MONITORING_URL,
                                                 MONITORING_TIMEOUT))
     # Return the status code
+    resp_data = json.dumps(si.get_json())
+    MessageDumper().dump_to_file(data=resp_data, unique="service-response")
     return Response(status=_status,
                     response=json.dumps(si.get_json()))
   except ConnectionError:
@@ -436,9 +446,12 @@ def list_service_instances ():
       service_mgr.update_si_addresses_from_ro(topo=topo)
   resp = service_mgr.get_services_status()
   app.logger.log(VERBOSE, "Sent response:\n%s" % pprint.pformat(resp))
+  response_data = json.dumps(resp)
+  MessageDumper().dump_to_file(data=response_data,
+                               unique="ns-instances-response")
   return Response(status=httplib.OK,
                   content_type="application/json",
-                  response=json.dumps(resp))
+                  response=response_data)
 
 
 @app.route("/ns-instances/<instance_id>/terminate", methods=['PUT'])
@@ -485,6 +498,8 @@ def terminate_service (instance_id):
     si = service_mgr.remove_service_instance(id=instance_id)
     resp = si.get_json()
     app.logger.log(VERBOSE, "Sent response:\n%s" % pprint.pformat(resp))
+    MessageDumper().dump_to_file(data=json.dumps(resp),
+                                 unique="terminate-response")
     return Response(status=httplib.OK,
                     content_type="application/json",
                     response=json.dumps(resp))
@@ -529,6 +544,7 @@ def terminate_service (instance_id):
                     data=raw_data,
                     allow_redirects=False,
                     timeout=HTTP_GLOBAL_TIMEOUT)
+      MessageDumper().dump_to_file(data=raw_data, unique="terminate-out-RO")
       # Waiting for callback
       cb = callback_mgr.wait_for_callback(callback=cb)
       if cb.result_code == 0:
@@ -548,6 +564,8 @@ def terminate_service (instance_id):
           # Get and send Response
           resp = si.get_json()
           app.logger.log(VERBOSE, "Sent response:\n%s" % pprint.pformat(resp))
+          MessageDumper().dump_to_file(data=json.dumps(resp),
+                                       unique="terminate-response")
           return Response(status=httplib.OK,
                           content_type="application/json",
                           response=json.dumps(resp))
@@ -567,6 +585,7 @@ def terminate_service (instance_id):
                           data=raw_data,
                           allow_redirects=False,
                           timeout=HTTP_GLOBAL_TIMEOUT)
+      MessageDumper().dump_to_file(data=raw_data, unique="terminate-out-RO")
       # Check result
       if ret.status_code == httplib.ACCEPTED:
         app.logger.info("Service termination has been forwarded with result: "
@@ -577,6 +596,8 @@ def terminate_service (instance_id):
         # Get and send Response
         resp = si.get_json()
         app.logger.log(VERBOSE, "Sent response:\n%s" % pprint.pformat(resp))
+        MessageDumper().dump_to_file(data=json.dumps(resp),
+                                     unique="terminate-response")
         return Response(status=httplib.OK,
                         content_type="application/json",
                         response=json.dumps(resp))
@@ -613,6 +634,7 @@ def get_config ():
     # topo = topo.json()
     # app.logger.debug("Converted response:\n%s" % topo)
     topo = topo.xml()
+    MessageDumper().dump_to_file(data=topo, unique="get-config-response")
     return Response(status=httplib.OK,
                     content_type="application/xml",
                     response=topo)
@@ -632,6 +654,7 @@ def mappings ():
     # mapping = mapping.json()
     # app.logger.log(VERBOSE, "Converted mappings:\n%s" % mapping)
     mapping = mapping.xml()
+    MessageDumper().dump_to_file(data=mapping, unique="mappings-response")
     return Response(status=httplib.OK,
                     content_type="application/xml",
                     response=mapping)
@@ -647,9 +670,12 @@ def placement_info ():
   if topo is not None:
     data = _get_internet_saps(virtualizer=topo)
     if data is not None:
+      resp_data = json.dumps(data)
+      MessageDumper().dump_to_file(data=resp_data,
+                                   unique="placement-info-response")
       return Response(status=httplib.OK,
                       content_type="application/json",
-                      response=json.dumps(data))
+                      response=resp_data)
     else:
       return Response(status=httplib.INTERNAL_SERVER_ERROR)
   else:
