@@ -4,6 +4,7 @@ Dockerfile
 Jenkinsfile
 README.md
 vnf_catalogue/*
-log/*
+log/trails/*
+log/*.log
 nsds/*
 services/*
