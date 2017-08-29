@@ -71,11 +71,15 @@ class MessageDumper(object):
 
   def __clear_trails (self):
     log.debug("Remove trails...")
-    for f in os.listdir(os.path.join(PROJECT_ROOT, self.DIR)):
-      if f != ".placeholder" and not f.startswith(time.strftime("%Y%m%d")):
-        # os.remove(os.path.join(PROJECT_ROOT, self.log_dir, f))
-        shutil.rmtree(os.path.join(PROJECT_ROOT, self.DIR, f),
-                      ignore_errors=True)
+    try:
+      for f in os.listdir(os.path.join(PROJECT_ROOT, self.DIR)):
+        if f != ".placeholder" and not f.startswith(time.strftime("%Y%m%d")):
+          # os.remove(os.path.join(PROJECT_ROOT, self.log_dir, f))
+          shutil.rmtree(os.path.join(PROJECT_ROOT, self.DIR, f),
+                        ignore_errors=True)
+    except OSError:
+      # trails folder is missing, nothing to clear
+      pass
 
   def dump_to_file (self, data, unique):
     if not isinstance(data, basestring):
