@@ -1003,7 +1003,8 @@ if __name__ == "__main__":
     log.info("Set RO URL from command line: %s" % RO_URL)
   elif 'RO_URL' in os.environ:
     RO_URL = os.environ.get('RO_URL')
-    log.info("Set RO's URL from environment variable (RO_URL): %s" % RO_URL)
+    log.info("Set RO's URL from environment variable "
+             "(RO_URL): %s" % RO_URL)
   else:
     log.info("Use default value for RO's URL: %s" % RO_URL)
   # Set VNF_STORE_URL
@@ -1014,9 +1015,8 @@ if __name__ == "__main__":
   elif 'VNF_STORE_URL' in os.environ:
     VNF_STORE_URL = os.environ.get('VNF_STORE_URL')
     USE_VNF_STORE = True
-    log.info(
-      "Set VNFStore's URL from environment variable (VNF_STORE_URL): %s" %
-      VNF_STORE_URL)
+    log.info("Set VNFStore's URL from environment variable "
+             "(VNF_STORE_URL): %s" % VNF_STORE_URL)
   else:
     log.info("Disable using remote VNF Store")
   # Set VNF_STORE_URL
@@ -1028,9 +1028,8 @@ if __name__ == "__main__":
   elif 'SERVICE_CATALOG_URL' in os.environ:
     SERVICE_CATALOG_URL = os.environ.get('SERVICE_CATALOG_URL')
     USE_SERVICE_CATALOG = True
-    log.info(
-      "Set Service Catalog's URL from environment variable (VNF_STORE_URL): %s"
-      % SERVICE_CATALOG_URL)
+    log.info("Set Service Catalog's URL from environment variable "
+             "(SERVICE_CATALOG_URL): %s" % SERVICE_CATALOG_URL)
   else:
     log.info("Disable using remote Service Catalog")
   # Set callbacks
@@ -1042,8 +1041,8 @@ if __name__ == "__main__":
   elif 'CALLBACK_URL' in os.environ:
     CALLBACK_URL = os.environ.get('CALLBACK_URL')
     USE_CALLBACK = True
-    log.info("Set using callbacks from environment variable (CALLBACK_URL): %s"
-             % CALLBACK_URL)
+    log.info("Set using callbacks from environment variable "
+             "(CALLBACK_URL): %s" % CALLBACK_URL)
   elif args.callback is None:
     CALLBACK_URL = args.callback
     USE_CALLBACK = True
