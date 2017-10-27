@@ -10,17 +10,12 @@ resource domain.
 
 Connector module is implemented entirely in Python.
 
-## Requirements
+### Requirements
 
 * Python 2.7.6+
 * NFFG 1.0
 
 ### Dependencies
-
-```bash
-sudo apt install python python-pip
-sudo -H pip install flask requests networkx
-```
 
 To clone the repository use the following command:
 
@@ -28,7 +23,14 @@ To clone the repository use the following command:
 git clone git@5gexgit.tmit.bme.hu:unify/tnova_connector.git
 ```
 
-If the NFFG submodule is not initialized, use the following command:
+For installing the Python dependencies, simply use the pip tool with the requirements.txt file:
+
+```bash
+sudo apt install python python-pip
+sudo -H pip install flask requests networkx
+```
+
+If the submodules are not initialized (NFFG and Virtualizer), use the following command:
 
 ```bash
 git submodule update --init
