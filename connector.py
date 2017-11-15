@@ -663,7 +663,6 @@ def mappings ():
 
 
 @app.route("/placement-info/", methods=['GET'])
-@app.route("/placement-info", methods=['GET'])
 def placement_info ():
   app.logger.debug("Called placement_info() with path: GET /placement-info")
   topo = _get_topology_view(force_virtualizer=True)
