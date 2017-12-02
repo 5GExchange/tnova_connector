@@ -775,6 +775,7 @@ def _get_topology_view (force_virtualizer=False):
     ret = requests.get(url=topo_request_url,
                        allow_redirects=False,
                        timeout=HTTP_GLOBAL_TIMEOUT)
+    MessageDumper().dump_to_file(data=ret.text, unique="RO-get-config")
     if force_virtualizer or USE_VIRTUALIZER_FORMAT:
       try:
         topo = Virtualizer.parse_from_text(text=ret.text)
@@ -821,6 +822,7 @@ def _get_mappings (data):
                         data=data,
                         allow_redirects=False,
                         timeout=HTTP_GLOBAL_TIMEOUT)
+    MessageDumper().dump_to_file(data=ret.text, unique="RO-mappings")
     mapping = Mappings.parse_from_text(text=ret.text)
     app.logger.log(VERBOSE, "Received mapping:\n%s" % mapping.xml())
     return mapping
@@ -847,13 +849,13 @@ def _convert_service_request (service_graph, delete=False):
     return
   if not delete:
     app.logger.debug("Start service request (INITIATE) conversion...")
-    nc = NFFGConverter(logger=app.logger, ensure_unique_id=False)
+    nc = NFFGConverter(logger=app.logger)
     srv_virtualizer = nc.convert_service_request_init(request=service_graph,
                                                       base=topo,
                                                       reinstall=False)
   else:
     app.logger.debug("Start service request (DELETE) conversion...")
-    nc = NFFGConverter(logger=app.logger, ensure_unique_id=False)
+    nc = NFFGConverter(logger=app.logger)
     srv_virtualizer = nc.convert_service_request_del(request=service_graph,
                                                      base=topo)
   app.logger.log(VERBOSE, "Converted request:\n%s" % srv_virtualizer.xml())
@@ -862,6 +864,7 @@ def _convert_service_request (service_graph, delete=False):
     # Avoid undesired "replace" for id and name
     topo.id.set_value(srv_virtualizer.id.get_value())
     topo.name.set_value(srv_virtualizer.name.get_value())
+    # srv_virtualizer = Virtualizer.parse_from_text(srv_virtualizer.xml())
     srv_virtualizer = topo.diff(srv_virtualizer)
     app.logger.log(VERBOSE, "Calculated diff:\n%s" % srv_virtualizer.xml())
   return srv_virtualizer
