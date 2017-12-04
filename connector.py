@@ -971,7 +971,6 @@ if __name__ == "__main__":
                       help="enable remote Service Catalog with given full URL, "
                            "default: %s" % SERVICE_CATALOG_URL)
   parser.add_argument("-t", "--timeout", action="store", type=int, metavar="t",
-                      default=HTTP_GLOBAL_TIMEOUT,
                       help="timeout in sec for HTTP communication, default: %ss"
                            % HTTP_GLOBAL_TIMEOUT)
   parser.add_argument("-v", "--virtualizer", action="store_true", default=False,
@@ -993,6 +992,11 @@ if __name__ == "__main__":
   log.setLevel(level=level)
   log.info("Set logging level: %s",
            logging.getLevelName(log.getEffectiveLevel()))
+
+  # Set timeout
+  if args.timeout:
+    log.info("Using explicit timeout value: %ss" % args.timeout)
+    HTTP_GLOBAL_TIMEOUT = args.timeout
 
   if args.port:
     LISTENING_PORT = args.port
