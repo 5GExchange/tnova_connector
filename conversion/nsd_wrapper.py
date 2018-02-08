@@ -196,7 +196,7 @@ class NSWrapper(AbstractDescriptorWrapper):
     """
     domain, vnf_id, num, port = self.__connection_point_parser(raw=conn)
     if not all((vnf_id, port)):
-      self.log.error("Missing VNF prefix: %s from connection: %s" % conn)
+      self.log.error("Parameter missing from connection: %s" % conn)
     return vnf_id, num, port
 
   def get_vlinks (self):
