@@ -119,7 +119,7 @@ class NSWrapper(AbstractDescriptorWrapper):
       # If port has remained None
       pass
     except ValueError:
-      self.log.warining("Detected port: %s is not valid integer!" % port)
+      self.log.warning("Detected port: %s is not valid integer!" % port)
     try:
       num = int(num)
     except TypeError:
