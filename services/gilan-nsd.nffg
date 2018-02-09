@@ -1,0 +1,160 @@
+{
+  "parameters": {
+    "id": "gilan-nsd", 
+    "name": "sd", 
+    "service_id": "gilan-nsd", 
+    "version": "1.0"
+  }, 
+  "node_nfs": [
+    {
+      "id": "router_mgmt_0", 
+      "name": "router_mgmt", 
+      "ports": [
+        {
+          "id": "provider", 
+          "sap_data": {
+            "technology": "GW"
+          }, 
+          "addresses": {
+            "l3": [
+              {
+                "id": "10.2.35.8", 
+                "configure": true, 
+                "requested": "10.2.35.8"
+              }
+            ]
+          }
+        }, 
+        {
+          "id": "mgmt", 
+          "addresses": {
+            "l3": [
+              {
+                "id": "192.168.253.2", 
+                "configure": true, 
+                "requested": "192.168.253.2"
+              }
+            ]
+          }
+        }
+      ], 
+      "metadata": {
+        "store_id": 8, 
+        "image": "router", 
+        "environment": "{'VARIABLE1': 'value1', 'VARIABLE2': 'value2'}"
+      }, 
+      "functional_type": "router", 
+      "specification": {
+        "resources": {
+          "cpu": 1, 
+          "mem": 2, 
+          "storage": 8
+        }
+      }
+    }, 
+    {
+      "id": "router_gw_0", 
+      "name": "router_gw", 
+      "ports": [
+        {
+          "id": "provider", 
+          "sap_data": {
+            "technology": "GW"
+          }, 
+          "addresses": {
+            "l3": [
+              {
+                "id": "10.2.35.12", 
+                "configure": true, 
+                "requested": "10.2.35.12"
+              }
+            ]
+          }
+        }, 
+        {
+          "id": "net_gw", 
+          "addresses": {
+            "l3": [
+              {
+                "id": "192.168.38.1", 
+                "configure": true, 
+                "requested": "192.168.38.1"
+              }
+            ]
+          }
+        }
+      ], 
+      "metadata": {
+        "store_id": 7, 
+        "image": "router", 
+        "environment": "{'VARIABLE1': 'value1', 'VARIABLE2': 'value2'}"
+      }, 
+      "functional_type": "router", 
+      "specification": {
+        "resources": {
+          "cpu": 1, 
+          "mem": 2, 
+          "storage": 8
+        }
+      }
+    }, 
+    {
+      "id": "vPGW_0", 
+      "name": "vPGW", 
+      "ports": [
+        {
+          "id": "provider", 
+          "addresses": {
+            "l2": "52:54:00:2d:f0:80", 
+            "l3": [
+              {
+                "id": "10.2.36.15", 
+                "configure": true, 
+                "requested": "10.2.36.15"
+              }
+            ]
+          }
+        }, 
+        {
+          "id": "mgmt", 
+          "addresses": {
+            "l2": "52:54:00:04:b2:31", 
+            "l3": [
+              {
+                "id": "192.168.253.15", 
+                "configure": true, 
+                "requested": "192.168.253.15"
+              }
+            ]
+          }
+        }, 
+        {
+          "id": "net_gw", 
+          "addresses": {
+            "l2": "52:54:00:21:b9:c1", 
+            "l3": [
+              {
+                "id": "192.168.38.10", 
+                "configure": true, 
+                "requested": "192.168.38.10"
+              }
+            ]
+          }
+        }
+      ], 
+      "metadata": {
+        "store_id": 9, 
+        "image": "vpgw", 
+        "environment": "{'VARIABLE1': 'value1', 'VARIABLE2': 'value2'}"
+      }, 
+      "functional_type": "vpgw", 
+      "specification": {
+        "resources": {
+          "cpu": 1, 
+          "mem": 2, 
+          "storage": 8
+        }
+      }
+    }
+  ]
+}
