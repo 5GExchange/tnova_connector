@@ -133,9 +133,19 @@ class TNOVAConverter(object):
       self.log.debug("Create VNF: %s" % node_nf)
       node_nf.add_metadata("store_id", nf_id)
       # Add ports to NF
-      for port in vnf.get_ports():
+      for port, data in vnf.get_ports():
         nf_port = node_nf.add_port(id=port)
         self.log.debug("Added NF port: %s" % nf_port)
+        if 'technology' in data:
+          nf_port.technology = data['technology']
+          self.log.debug("Added technology: %s" % nf_port.technology)
+        if 'mac' in data:
+          nf_port.l2 = data['mac']
+          self.log.debug("Added l2 address: %s" % nf_port.l2)
+        if 'ip' in data:
+          nf_port.l3.add_l3address(id=data['ip'], configure=True,
+                                   requested=data['ip'])
+          self.log.debug("Added l3 address: %s" % data['ip'])
       # Detect INTERNET ports
       for iport in vnf.get_internet_ports():
         if iport not in node_nf.ports:
@@ -275,7 +285,7 @@ class TNOVAConverter(object):
       trailer_num = int(trailer_num.group())  # Get matched data from Match obj
       # Check if the VLAN candidate is free
       if 0 < trailer_num < 4095 and \
-            trailer_num not in self.vlan_register.itervalues():
+         trailer_num not in self.vlan_register.itervalues():
         self.vlan_register[tag_id] = trailer_num
         self.log.debug(
           "Trailing number is a valid non-taken VLAN ID! Register %s ==> "

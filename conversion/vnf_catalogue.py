@@ -170,7 +170,7 @@ class VNFWrapper(AbstractDescriptorWrapper):
         self.log.error(
           "Multiple VDU element are detected! Conversion does only support "
           "simple VNFs!")
-        return
+        return ()
       ports = []
       # return self.data['vdu'][0]["connection_points"]
       for cp in self.data['vdu'][0]["connection_points"]:
@@ -181,7 +181,7 @@ class VNFWrapper(AbstractDescriptorWrapper):
               port_id = int(vlink['alias'])
             except ValueError:
               port_id = vlink['alias']
-            ports.append(port_id)
+            ports.append((port_id, cp))
             self.log.debug("Found VNF port: %s" % vlink['alias'])
       return ports
     except KeyError:

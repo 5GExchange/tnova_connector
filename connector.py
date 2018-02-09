@@ -41,7 +41,8 @@ from virtualizer.virtualizer_mappings import Mappings
 LISTENING_PORT = 5000
 
 # Connector configuration parameters
-RO_URL = "http://localhost:8008/escape"  # ESCAPE's top level REST-API
+RO_URL = "http://localhost:8888/escape/orchestration"  # ESCAPE's top level
+# REST-API
 
 USE_VNF_STORE = False  # enable dynamic VNFD acquiring from VNF Store
 VNF_STORE_URL = "http://localhost:8080/NFS/vnfds"
@@ -70,7 +71,6 @@ MESSAGE_ID_NAME = "message-id"
 CALLBACK_NAME = "call-back"
 
 # Service request related constants
-NFFG_SERVICE_PORT = 8008
 NFFG_SERVICE_RPC = "sg"
 NFFG_TOPO_RPC = "topology"
 VIRTUALIZER_SERVICE_PORT = 8888
@@ -775,6 +775,10 @@ def _get_topology_view (force_virtualizer=False):
     ret = requests.get(url=topo_request_url,
                        allow_redirects=False,
                        timeout=HTTP_GLOBAL_TIMEOUT)
+    if ret.status_code != 200:
+      app.logger.error(
+        "Something went wrong during requesting topo! Got %s" % ret.status_code)
+      return
     MessageDumper().dump_to_file(data=ret.text, unique="RO-get-config")
     if force_virtualizer or USE_VIRTUALIZER_FORMAT:
       try:
