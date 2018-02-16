@@ -246,7 +246,16 @@ def initiate_service ():
   app.logger.debug("Adapt placement criteria...")
   converter.setup_placement_criteria(nffg=sg, params=instantiate_params)
   app.logger.debug("Using explicit message-id: %s" % params[MESSAGE_ID_NAME])
-  app.logger.debug("Request stat:\n%s" % sg.get_stat())
+  app.logger.debug("Request topology view from RO...")
+  topo = _get_topology_view()
+  if topo is None:
+    app.logger.error("Topology view is missing!")
+    return Response(status=httplib.INTERNAL_SERVER_ERROR,
+                    response=json.dumps({"error": "RO is not available!",
+                                         "RO": RO_URL}))
+  service_mgr.update_sg_hops_from_ro(si=si, topo=topo,
+                                     virtualizer_enabled=USE_VIRTUALIZER_FORMAT)
+  sg = si.update_sg_hop_ids(log=log)
   # Setup callback if it's necessary
   if USE_CALLBACK:
     app.logger.debug("Set callback URL: %s" % callback_mgr.url)
@@ -258,7 +267,8 @@ def initiate_service ():
     # Prepare REST call parameters
     service_request_url = os.path.join(RO_URL, VIRTUALIZER_SERVICE_RPC)
     headers = {"Content-Type": "application/xml"}
-    virt_srv = _convert_service_request(service_graph=sg)
+    virt_srv = _convert_service_request(service_graph=sg,
+                                        virt_topo=topo)
     if virt_srv is None:
       service_mgr.set_service_status(id=si.id,
                                      status=ServiceInstance.STATUS_ERROR)
@@ -272,6 +282,7 @@ def initiate_service ():
     raw_data = sg.dump()
   # Backup modified service graph
   si.update_sg(sg=sg)
+  app.logger.debug("Request stat:\n%s" % sg.get_stat())
   # Sending service request
   app.logger.debug("Send service request to RO on: %s" % service_request_url)
   # Try to orchestrate the service instance
@@ -519,10 +530,19 @@ def terminate_service (instance_id):
     params[CALLBACK_NAME] = callback_mgr.url
   if USE_VIRTUALIZER_FORMAT:
     app.logger.info("Virtualizer format enabled!")
+    app.logger.debug("Request topology view from RO...")
+    virt_topo = _get_topology_view()
+    if virt_topo is None:
+      app.logger.error("Topology view is missing!")
+      return Response(status=httplib.INTERNAL_SERVER_ERROR,
+                      response=json.dumps({"error": "RO is not available!",
+                                           "RO": RO_URL}))
     # Prepare REST call parameters
     service_request_url = os.path.join(RO_URL, VIRTUALIZER_SERVICE_RPC)
     headers = {"Content-Type": "application/xml"}
-    virt_srv = _convert_service_request(service_graph=sg, delete=True)
+    virt_srv = _convert_service_request(service_graph=sg,
+                                        virt_topo=virt_topo,
+                                        delete=True)
     if virt_srv is None:
       return Response(status=httplib.INTERNAL_SERVER_ERROR,
                       response=json.dumps({"error": "RO is not available!",
@@ -834,7 +854,7 @@ def _get_mappings (data):
     app.logger.error("RO is not available!")
 
 
-def _convert_service_request (service_graph, delete=False):
+def _convert_service_request (service_graph, virt_topo, delete=False):
   """
   Convert given service request into Virtualizer format.
   Base Virtualizer is requested from RO.
@@ -846,30 +866,28 @@ def _convert_service_request (service_graph, delete=False):
   :return: converted service request
   :rtype: :class:`Virtualizer`
   """
-  app.logger.debug("Request topology view from RO...")
-  topo = _get_topology_view()
-  if topo is None:
+  if virt_topo is None:
     app.logger.error("Topology view is missing!")
     return
   if not delete:
     app.logger.debug("Start service request (INITIATE) conversion...")
     nc = NFFGConverter(logger=app.logger)
     srv_virtualizer = nc.convert_service_request_init(request=service_graph,
-                                                      base=topo,
+                                                      base=virt_topo,
                                                       reinstall=False)
   else:
     app.logger.debug("Start service request (DELETE) conversion...")
     nc = NFFGConverter(logger=app.logger)
     srv_virtualizer = nc.convert_service_request_del(request=service_graph,
-                                                     base=topo)
+                                                     base=virt_topo)
   app.logger.log(VERBOSE, "Converted request:\n%s" % srv_virtualizer.xml())
   if ENABLE_DIFF:
     app.logger.debug("Diff format enabled! Calculate diff...")
     # Avoid undesired "replace" for id and name
-    topo.id.set_value(srv_virtualizer.id.get_value())
-    topo.name.set_value(srv_virtualizer.name.get_value())
+    virt_topo.id.set_value(srv_virtualizer.id.get_value())
+    virt_topo.name.set_value(srv_virtualizer.name.get_value())
     # srv_virtualizer = Virtualizer.parse_from_text(srv_virtualizer.xml())
-    srv_virtualizer = topo.diff(srv_virtualizer)
+    srv_virtualizer = virt_topo.diff(srv_virtualizer)
     app.logger.log(VERBOSE, "Calculated diff:\n%s" % srv_virtualizer.xml())
   return srv_virtualizer
 

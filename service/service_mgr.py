@@ -138,8 +138,8 @@ class ServiceInstance(object):
       nffg.id = self.id
       if mode is not None:
         nffg.mode = mode
-      nffg = self._tag_NF_ids(nffg=nffg, unique=self.id)
-      self.sg = self._update_sg_hop_ids(nffg=nffg)
+      self.sg = self._tag_NF_ids(nffg=nffg, unique=self.id)
+      # self.sg = self._update_sg_hop_ids(nffg=nffg)
       return self.sg
     except IOError:
       # return None
@@ -163,32 +163,34 @@ class ServiceInstance(object):
       raw = raw.replace('"%s"' % old, '"%s"' % new)
     return NFFG.parse(raw_data=raw)
 
-  def _update_sg_hop_ids (self, nffg):
+  def update_sg_hop_ids (self, log):
     """
 
     :param sg: 
     :return: 
     """
-    for hop in [sg for sg in nffg.sg_hops]:
+    log.debug("Allocate SG hop ID for request...")
+    for hop in [sg for sg in self.sg.sg_hops]:
       if hop.id not in ServiceManager.sg_hop_cache:
         new_id = hop.id
       else:
-        for i in xrange(1, 4095):
+        for i in xrange(1, 1000000):
           if i not in ServiceManager.sg_hop_cache:
             new_id = i
             break
         else:
           return
       ServiceManager.sg_hop_cache[new_id] = self.id
-      nffg.del_edge(src=hop.src, dst=hop.dst, id=hop.id)
-      nffg.add_sglink(src_port=hop.src,
-                      dst_port=hop.dst,
-                      id=new_id,
-                      flowclass=hop.flowclass,
-                      tag_info=hop.tag_info,
-                      delay=hop.delay,
-                      bandwidth=hop.bandwidth)
-    return nffg
+      self.sg.del_edge(src=hop.src, dst=hop.dst, id=hop.id)
+      self.sg.add_sglink(src_port=hop.src,
+                         dst_port=hop.dst,
+                         id=new_id,
+                         flowclass=hop.flowclass,
+                         tag_info=hop.tag_info,
+                         delay=hop.delay,
+                         bandwidth=hop.bandwidth)
+      log.debug("Assigned ID: %s" % new_id)
+    return self.sg
 
 
 class ServiceManager(object):
@@ -556,6 +558,30 @@ class ServiceManager(object):
     for si in self.__instances.itervalues():
       ret.append(si.get_json())
     return ret
+
+  def update_sg_hops_from_ro (self, si, topo, virtualizer_enabled=False):
+    self.log.debug("Updating SG hop IDs from RO response...")
+    if not virtualizer_enabled:
+      for hop_id in [sg.id for sg in topo.sg_hops]:
+        try:
+          hop_id = int(hop_id)
+        except ValueError:
+          pass
+        if hop_id not in ServiceManager.sg_hop_cache:
+          self.log.debug("Found unknown SG hop ID: %s" % hop_id)
+          ServiceManager.sg_hop_cache[hop_id] = si.id
+    else:
+      for node in topo.nodes:
+        for flowentry in node.flowtable:
+          new_id = flowentry.id.get_value()
+          try:
+            new_id = int(new_id)
+          except ValueError:
+            pass
+          if new_id not in ServiceManager.sg_hop_cache:
+            self.log.debug("Found unknown SG hop ID: %s" % new_id)
+            ServiceManager.sg_hop_cache[new_id] = si.id
+    self.log.log(VERBOSE, "SG hop cache: %s" % ServiceManager.sg_hop_cache)
 
   def update_si_addresses_from_ro (self, topo):
     """
