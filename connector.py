@@ -23,7 +23,7 @@ from urlparse import urlparse
 
 import requests
 from flask import Flask, Response, request
-from requests.exceptions import ConnectionError
+from requests.exceptions import ConnectionError, ReadTimeout
 from requests.packages.urllib3.exceptions import TimeoutError
 
 from conversion.conversion import NFFGConverter
@@ -682,7 +682,7 @@ def mappings ():
     return Response(status=httplib.INTERNAL_SERVER_ERROR)
 
 
-@app.route("/placement-info/", methods=['GET'])
+@app.route("/placement-info/", methods=['GET'], strict_slashes=False)
 def placement_info ():
   app.logger.debug("Called placement_info() with path: GET /placement-info")
   topo = _get_topology_view(force_virtualizer=True)
@@ -816,7 +816,7 @@ def _get_topology_view (force_virtualizer=False):
       except Exception as e:
         app.logger.error("Something went wrong during topo parsing "
                          "into NFFG:\n%s" % e)
-  except ConnectionError:
+  except (ConnectionError, ReadTimeout):
     app.logger.error("RO is not available!")
 
 
@@ -832,6 +832,11 @@ def _get_internet_saps (virtualizer):
       if port.sap_data.role.get_as_text() == 'provider' and \
          port.sap.get_as_text().startswith('INTERNET'):
         internet_saps.append(port.sap.get_value())
+    for vnf in node.NF_instances:
+      for port in vnf.ports:
+        if port.sap_data.role.get_as_text() == 'provider' and \
+           port.sap.get_as_text().startswith('INTERNET'):
+          internet_saps.append(port.sap.get_value())
   return internet_saps
 
 
