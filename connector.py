@@ -56,7 +56,7 @@ SERVICE_NFFG_DIR = "services"  # dir name used for storing converted services
 
 # Monitoring related parameters
 MONITORING_URL = None
-MONITORING_TIMEOUT = 2  # sec
+MONITORING_TIMEOUT = 5  # sec
 
 # Communication related parameters
 USE_CALLBACK = False

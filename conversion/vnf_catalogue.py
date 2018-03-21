@@ -281,7 +281,7 @@ class VNFCatalogue(object):
   VNF_CATALOGUE_DIR = "vnf_catalogue"
   VNF_STORE_ENABLED = False
   STORE_VNFD_LOCALLY = True
-  REQUEST_TIMEOUT = 1
+  REQUEST_TIMEOUT = 5
 
   def __init__ (self, use_remote=False, vnf_store_url=None, cache_dir=None,
                 logger=None):
