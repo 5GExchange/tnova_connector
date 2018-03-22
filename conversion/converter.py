@@ -533,7 +533,7 @@ class TNOVAConverter(object):
       self.log.debug("Found NF: %s" % nf)
       nf_port = [p for p in nf.ports
                  if p.sap is not None and p.sap.startswith(
-          'INTERNET' and p.role != "consumer")]
+          'INTERNET') and p.role != "consumer"]
       if len(nf_port) > 1:
         self.log.warning("Multiple INTERNET port was detected in NF: "
                          "%s --> %s" % (nf.id, nf_port))
