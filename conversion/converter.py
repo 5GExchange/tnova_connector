@@ -136,9 +136,15 @@ class TNOVAConverter(object):
       for port, data in vnf.get_ports():
         nf_port = node_nf.add_port(id=port)
         self.log.debug("Added NF port: %s" % nf_port)
+        if 'sap' in data:
+          nf_port.sap = data['sap']
+          self.log.debug("Added sap: %s" % nf_port.sap)
         if 'technology' in data:
           nf_port.technology = data['technology']
           self.log.debug("Added technology: %s" % nf_port.technology)
+        if 'role' in data:
+          nf_port.role = data['role']
+          self.log.debug("Added role: %s" % nf_port.role)
         if 'mac' in data:
           nf_port.l2 = data['mac']
           self.log.debug("Added l2 address: %s" % nf_port.l2)
