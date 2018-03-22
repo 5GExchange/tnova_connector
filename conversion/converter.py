@@ -570,17 +570,17 @@ class TNOVAConverter(object):
             port.role = "provider"
             self.log.debug("Set provider SAP id: %s for NF: %s" % (port.sap,
                                                                    nf.id))
-      elif nf.functional_type.upper() == "FE2SAP":
-        self.log.debug("Found fe2sap NF: %s" % nf.id)
-        if len(nf.ports) != 2:
-          self.log.error("Helper NF: %s should have exactly 2 ports not %s!"
-                         % (nf.id, len(nf.ports)))
-          continue
-        sap_port = [p for p in nf.ports][-1]
-        sap_port.sap = VCDN_ROLE_ID
-        sap_port.role = "consumer"
-        self.log.debug("Set consumer SAP id: %s for NF: %s" % (sap_port.sap,
-                                                               nf.id))
+      # elif nf.functional_type.upper() == "FE2SAP":
+      #   self.log.debug("Found fe2sap NF: %s" % nf.id)
+      #   if len(nf.ports) != 2:
+      #     self.log.error("Helper NF: %s should have exactly 2 ports not %s!"
+      #                    % (nf.id, len(nf.ports)))
+      #     continue
+      #   sap_port = [p for p in nf.ports][-1]
+      #   sap_port.sap = VCDN_ROLE_ID
+      #   sap_port.role = "consumer"
+      #   self.log.debug("Set consumer SAP id: %s for NF: %s" % (sap_port.sap,
+      #                                                          nf.id))
 
 
 if __name__ == "__main__":
