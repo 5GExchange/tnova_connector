@@ -829,13 +829,11 @@ def _get_internet_saps (virtualizer):
   internet_saps = []
   for node in virtualizer.nodes:
     for port in node.ports:
-      if port.sap_data.role.get_as_text() == 'provider' and \
-         port.sap.get_as_text().startswith('INTERNET'):
+      if port.sap_data.role.get_as_text() == 'provider':
         internet_saps.append(port.sap.get_value())
     for vnf in node.NF_instances:
       for port in vnf.ports:
-        if port.sap_data.role.get_as_text() == 'provider' and \
-           port.sap.get_as_text().startswith('INTERNET'):
+        if port.sap_data.role.get_as_text() == 'provider':
           internet_saps.append(port.sap.get_value())
   return internet_saps
 
