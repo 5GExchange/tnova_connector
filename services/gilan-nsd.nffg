@@ -1,7 +1,7 @@
 {
   "parameters": {
     "id": "gilan-nsd", 
-    "name": "sd", 
+    "name": "GiLAN", 
     "service_id": "gilan-nsd", 
     "version": "1.0"
   }, 
@@ -39,7 +39,7 @@
         }
       ], 
       "metadata": {
-        "store_id": 8, 
+        "store_id": 17, 
         "image": "router", 
         "environment": "{'VARIABLE1': 'value1', 'VARIABLE2': 'value2'}"
       }, 
@@ -72,6 +72,13 @@
           }
         }, 
         {
+          "id": "providerSap", 
+          "sap": "INTERNET:10.2.36.0/24", 
+          "sap_data": {
+            "role": "provider"
+          }
+        }, 
+        {
           "id": "net_gw", 
           "addresses": {
             "l3": [
@@ -85,7 +92,7 @@
         }
       ], 
       "metadata": {
-        "store_id": 7, 
+        "store_id": 16, 
         "image": "router", 
         "environment": "{'VARIABLE1': 'value1', 'VARIABLE2': 'value2'}"
       }, 
@@ -134,16 +141,16 @@
             "l2": "52:54:00:21:b9:c1", 
             "l3": [
               {
-                "id": "192.168.38.10", 
+                "id": "192.168.38.15", 
                 "configure": true, 
-                "requested": "192.168.38.10"
+                "requested": "192.168.38.15"
               }
             ]
           }
         }
       ], 
       "metadata": {
-        "store_id": 9, 
+        "store_id": 18, 
         "image": "vpgw", 
         "environment": "{'VARIABLE1': 'value1', 'VARIABLE2': 'value2'}"
       }, 

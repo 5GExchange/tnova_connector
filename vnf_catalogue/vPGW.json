@@ -1,220 +1,206 @@
 {
-  "billing_model": {
-    "model": "PAYG",
-    "period": "P2W",
-    "price": {
-      "max_per_period": 233,
-      "min_per_period": 233,
-      "setup": 122,
-      "unit": "EUR"
-    }
-  },
-  "created_at": "2018-02-09T14:10:17Z",
-  "deployment_flavours": [
-    {
-      "assurance_parameters": [],
-      "constraint": "",
-      "flavour_key": "gold",
-      "id": "flavor0",
-      "vdu_reference": [
-        "vdu0"
-      ],
-      "vlink_reference": [
-        "vl0",
-        "vl1",
-        "vl2"
-      ]
-    }
-  ],
-  "description": "GiLAN virtual PGW",
-  "descriptor_version": "1",
-  "domain": "1",
-  "id": 9,
-  "modified_at": "2018-02-09T14:10:17Z",
-  "name": "vPGW",
-  "provider": "5GEX",
-  "provider_id": 4,
-  "release": "5GEx",
-  "type": "vpgw",
+  "domain": "003",
   "vdu": [
     {
-      "$$hashKey": "object:1239",
-      "alias": "vpgw",
-      "connection_points": [
-        {
-          "id": "provider",
-          "ip": "10.2.36.15",
-          "mac": "52:54:00:2d:f0:80",
-          "vlink_ref": "vl0"
-        },
-        {
-          "id": "mgmt",
-          "ip": "192.168.253.15",
-          "mac": "52:54:00:04:b2:31",
-          "vlink_ref": "vl1"
-        },
-        {
-          "id": "net_gw",
-          "ip": "192.168.38.10",
-          "mac": "52:54:00:21:b9:c1",
-          "vlink_ref": "vl2"
-        }
-      ],
-      "controller": false,
-      "id": "vdu0",
-      "monitoring_parameters": [
-        {
-          "$$hashKey": "object:1303",
-          "desc": "Memory consumed",
-          "metric": "mem_used",
-          "unit": "Bytes"
-        },
-        {
-          "$$hashKey": "object:1304",
-          "desc": "Memory consumed",
-          "metric": "mem_percent",
-          "unit": "%"
-        },
-        {
-          "$$hashKey": "object:1305",
-          "desc": "CPU",
-          "metric": "cpu_percent",
-          "unit": "%"
-        },
-        {
-          "$$hashKey": "object:1306",
-          "desc": "Bytes transmitted",
-          "metric": "tx_bytes",
-          "unit": "Bytes"
-        },
-        {
-          "$$hashKey": "object:1307",
-          "desc": "Rountrip time",
-          "metric": "RTT (ms)",
-          "unit": "Bytes"
-        },
-        {
-          "$$hashKey": "object:1308",
-          "desc": "Throughput",
-          "metric": "Throughput (kbps)",
-          "unit": "Bytes"
-        },
-        {
-          "$$hashKey": "object:1309",
-          "desc": "Bytes received",
-          "metric": "rx_bytes",
-          "unit": "Bytes"
-        }
-      ],
-      "monitoring_parameters_specific": [],
-      "networking_resources": "",
       "resource_requirements": {
-        "cpu_support_accelerator": "AES-NI",
-        "data_processing_acceleration_library": "",
+        "network_interface_bandwidth_unit": "",
         "hypervisor_parameters": {
-          "type": "QEMU-KVM",
-          "version": "10002|12001|2.6.32-358.el6.x86_64"
-        },
-        "memory": 2,
-        "memory_parameters": {
-          "large_pages_required": false,
-          "numa_allocation_policy": ""
+          "version": "10002|12001|2.6.32-358.el6.x86_64",
+          "type": "QEMU-KVM"
         },
         "memory_unit": "GB",
-        "network_interface_bandwidth": "",
-        "network_interface_bandwidth_unit": "",
         "network_interface_card_capabilities": {
           "SR-IOV": true,
           "mirroring": false
         },
+        "storage": {
+          "size_unit": "GB",
+          "persistence": false,
+          "size": 8
+        },
+        "network_interface_bandwidth": "",
         "platform_pcie_parameters": {
           "SR-IOV": true,
           "device_pass_through": true
-        },
-        "storage": {
-          "persistence": false,
-          "size": 8,
-          "size_unit": "GB"
         },
         "vcpus": 1,
         "vswitch_capabilities": {
           "overlay_tunnel": "GRE",
           "type": "ovs",
           "version": "2.0"
-        }
+        },
+        "data_processing_acceleration_library": "",
+        "memory": 2,
+        "memory_parameters": {
+          "large_pages_required": false,
+          "numa_allocation_policy": ""
+        },
+        "cpu_support_accelerator": "AES-NI"
       },
-      "scale_in_out": {
-        "maximum": 1,
-        "minimum": 1
-      },
-      "variables": "VARIABLE1=value1\nVARIABLE2=value2",
+      "$$hashKey": "object:1239",
+      "alias": "vpgw",
+      "variables": "VARIABLE1\u003dvalue1\nVARIABLE2\u003dvalue2",
+      "networking_resources": "",
+      "monitoring_parameters_specific": [],
+      "wc_notify": true,
       "vm_image": "vpgw",
-      "wc_notify": true
+      "controller": false,
+      "connection_points": [
+        {
+          "ip": "10.2.36.15",
+          "mac": "52:54:00:2d:f0:80",
+          "id": "provider",
+          "vlink_ref": "vl0"
+        },
+        {
+          "ip": "192.168.253.15",
+          "mac": "52:54:00:04:b2:31",
+          "id": "mgmt",
+          "vlink_ref": "vl1"
+        },
+        {
+          "ip": "192.168.38.15",
+          "mac": "52:54:00:21:b9:c1",
+          "id": "net_gw",
+          "vlink_ref": "vl2"
+        }
+      ],
+      "id": "vdu0",
+      "monitoring_parameters": [
+        {
+          "metric": "mem_used",
+          "$$hashKey": "object:1303",
+          "unit": "Bytes",
+          "desc": "Memory consumed"
+        },
+        {
+          "metric": "mem_percent",
+          "$$hashKey": "object:1304",
+          "unit": "%",
+          "desc": "Memory consumed"
+        },
+        {
+          "metric": "cpu_percent",
+          "$$hashKey": "object:1305",
+          "unit": "%",
+          "desc": "CPU"
+        },
+        {
+          "metric": "tx_bytes",
+          "$$hashKey": "object:1306",
+          "unit": "Bytes",
+          "desc": "Bytes transmitted"
+        },
+        {
+          "metric": "RTT (ms)",
+          "$$hashKey": "object:1307",
+          "unit": "Bytes",
+          "desc": "Rountrip time"
+        },
+        {
+          "metric": "Throughput (kbps)",
+          "$$hashKey": "object:1308",
+          "unit": "Bytes",
+          "desc": "Throughput"
+        },
+        {
+          "metric": "rx_bytes",
+          "$$hashKey": "object:1309",
+          "unit": "Bytes",
+          "desc": "Bytes received"
+        }
+      ],
+      "scale_in_out": {
+        "minimum": 1,
+        "maximum": 1
+      }
     }
   ],
-  "version": "1",
+  "description": "GiLAN virtual PGW",
+  "created_at": "2018-03-22T16:04:07Z",
+  "modified_at": "2018-03-22T16:04:07Z",
+  "provider_id": 4,
   "vlinks": [
     {
-      "access": false,
+      "leaf_requirement": "1Gbps",
+      "connectivity_type": "E-LINE",
+      "vdu_reference": [
+        "vdu0"
+      ],
       "alias": "provider",
       "connection_points_reference": [
         "provider"
       ],
-      "connectivity_type": "E-LINE",
-      "dhcp": false,
-      "external_access": true,
-      "id": "vl0",
-      "leaf_requirement": "1Gbps",
       "net_segment": "10.2.0.0/16",
-      "port_security_enabled": false,
+      "access": false,
+      "external_access": true,
+      "dhcp": false,
       "root_requirement": "1Gbps",
-      "vdu_reference": [
-        "vdu0"
-      ]
+      "port_security_enabled": false,
+      "id": "vl0"
     },
     {
-      "access": false,
+      "leaf_requirement": "10Mbps",
+      "connectivity_type": "E-LINE",
+      "vdu_reference": [
+        "vdu0"
+      ],
       "alias": "mgmt",
       "connection_points_reference": [
         "mgmt"
       ],
-      "connectivity_type": "E-LINE",
-      "dhcp": false,
-      "external_access": true,
-      "id": "vl1",
-      "leaf_requirement": "10Mbps",
       "net_segment": "192.168.38.1/24",
-      "port_security_enabled": false,
+      "access": false,
+      "external_access": true,
+      "dhcp": false,
       "root_requirement": "10Mbps",
-      "vdu_reference": [
-        "vdu0"
-      ]
+      "port_security_enabled": false,
+      "id": "vl1"
     },
     {
-      "access": false,
+      "leaf_requirement": "10Mbps",
+      "connectivity_type": "E-LINE",
+      "vdu_reference": [
+        "vdu0"
+      ],
       "alias": "net_gw",
       "connection_points_reference": [
         "net_gw"
       ],
-      "connectivity_type": "E-LINE",
-      "dhcp": false,
-      "external_access": true,
-      "id": "vl2",
-      "leaf_requirement": "10Mbps",
       "net_segment": "192.168.38.0/24",
-      "port_security_enabled": false,
+      "access": false,
+      "external_access": true,
+      "dhcp": false,
       "root_requirement": "10Mbps",
-      "vdu_reference": [
-        "vdu0"
-      ]
+      "port_security_enabled": false,
+      "id": "vl2"
     }
   ],
+  "descriptor_version": "1",
+  "deployment_flavours": [
+    {
+      "vdu_reference": [
+        "vdu0"
+      ],
+      "constraint": "",
+      "flavour_key": "gold",
+      "vlink_reference": [
+        "vl0",
+        "vl1",
+        "vl2"
+      ],
+      "id": "flavor0",
+      "assurance_parameters": []
+    }
+  ],
+  "version": "1",
   "vnf_lifecycle_events": [
     {
-      "authentication": "",
-      "authentication_type": "HTTPBasicAuth",
       "authentication_username": "vagrant",
       "driver": "http",
+      "authentication_type": "HTTPBasicAuth",
+      "authentication": "",
+      "flavor_id_ref": "flavor0",
       "events": {
         "start": {
           "command": "/home/vagrant/scripts/start",
@@ -227,8 +213,22 @@
           "template_file_format": "JSON"
         }
       },
-      "flavor_id_ref": "flavor0",
       "vnf_container": "/home/vagrant/container/"
     }
-  ]
+  ],
+  "billing_model": {
+    "price": {
+      "min_per_period": 233,
+      "max_per_period": 233,
+      "setup": 122,
+      "unit": "EUR"
+    },
+    "model": "PAYG",
+    "period": "P2W"
+  },
+  "provider": "5GEX",
+  "release": "5GEx",
+  "type": "vpgw",
+  "name": "vPGW",
+  "id": 18
 }
