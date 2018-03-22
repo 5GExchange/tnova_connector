@@ -532,7 +532,8 @@ class TNOVAConverter(object):
       nf = nf.pop()
       self.log.debug("Found NF: %s" % nf)
       nf_port = [p for p in nf.ports
-                 if p.sap is not None and p.sap.startswith('INTERNET')]
+                 if p.sap is not None and p.sap.startswith(
+          'INTERNET' and p.role != "consumer")]
       if len(nf_port) > 1:
         self.log.warning("Multiple INTERNET port was detected in NF: "
                          "%s --> %s" % (nf.id, nf_port))
@@ -544,6 +545,10 @@ class TNOVAConverter(object):
       else:
         self.log.debug("Found INTERNET port: %s" % nf_port)
       for port in nf_port:
+        if port.role is not None and port.role != "consumer":
+          self.log.warning("Found role: %s for port: %s! Skip overriding" %
+                           (port.role, port))
+          continue
         port.role = "consumer"
         port.sap = placement['subnet']
         self.log.debug("Update %s with consumer id: %s" % (port, port.sap))
