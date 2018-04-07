@@ -826,16 +826,16 @@ def _get_internet_saps (virtualizer):
   :param virtualizer: 
   :return: 
   """
-  internet_saps = []
+  internet_saps = set()
   for node in virtualizer.nodes:
     for port in node.ports:
       if port.sap_data.role.get_as_text() == 'provider':
-        internet_saps.append(port.sap.get_value())
+        internet_saps.add(port.sap.get_value())
     for vnf in node.NF_instances:
       for port in vnf.ports:
         if port.sap_data.role.get_as_text() == 'provider':
-          internet_saps.append(port.sap.get_value())
-  return internet_saps
+          internet_saps.add(port.sap.get_value())
+  return list(internet_saps)
 
 
 def _get_mappings (data):
