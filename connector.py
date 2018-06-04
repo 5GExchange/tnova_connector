@@ -245,6 +245,7 @@ def initiate_service ():
   params = {MESSAGE_ID_NAME: si.id}
   app.logger.debug("Adapt placement criteria...")
   converter.setup_placement_criteria(nffg=sg, params=instantiate_params)
+  # converter.setup_metadata(nffg=sg, params=instantiate_params)
   app.logger.debug("Using explicit message-id: %s" % params[MESSAGE_ID_NAME])
   app.logger.debug("Request topology view from RO...")
   topo = _get_topology_view()

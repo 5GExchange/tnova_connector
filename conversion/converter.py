@@ -34,6 +34,7 @@ class TNOVAConverter(object):
   # DEFAULT_SAP_PORT_ID = None  # None = generated an UUID by defaults
   DEFAULT_SAP_PORT_ID = 1
   DEFAULT_PLACEMENT_SUBNET = "Automatic"
+  ANTIAFFINITY_CONSTRAINT = "antiaffinity"
 
   def __init__ (self, logger=None, vnf_catalogue=None):
     """
@@ -552,6 +553,82 @@ class TNOVAConverter(object):
         port.role = "consumer"
         port.sap = placement['subnet']
         self.log.debug("Update %s with consumer id: %s" % (port, port.sap))
+
+  def setup_metadata (self, nffg, params):
+    """
+    Add metadata (k-v pairs) for VNF instances. Only antiaffinity is supported!
+
+    :param nffg: service request
+    :type nffg: :class:`NFFG`
+    :param params: params dict received in HTTP request
+    :type params: dict
+    :return: None
+    """
+    if 'params' not in params:
+      self.log.warning("No extra data parameters were found in request: %s" %
+                       params)
+      return
+    for i, metadata in enumerate(params['params']):
+      # instance: <vnf_id>@<domain>-<num> or uuid of the NS
+      # key: antiaffinity (currently only antiaffinity support)
+      # value: <vnf_id>@<domain>-<num>
+      # VNF id format: <vnf_id>_<num>_<si_id>
+      if metadata['key'] != self.ANTIAFFINITY_CONSTRAINT:
+        self.log.debug("Not supported metadata key: %s. Skip processing." %
+                       metadata['key'])
+        continue
+      # Searching NF node
+      self.log.debug("Searching NF node for VNF: %s..." % metadata['instance'])
+      vnf_id = metadata['instance'].split('@', 1)[0]
+      num = metadata['instance'].split('-')[-1]
+      try:
+        vnf_id = int(vnf_id)
+      except ValueError:
+        self.log.warning("Got VNF id: %s is not valid integer!" % vnf_id)
+        continue
+      converted_vnf_id = self.__catalogue.get_by_id(id=vnf_id).get_vnf_name()
+      base_nf_id = "%s_%s" % (converted_vnf_id, num)
+      self.log.debug("Found base NF name: %s" % base_nf_id)
+      nf = [nf for nf in nffg.nfs if str(nf.id).startswith(base_nf_id)]
+      if len(nf) != 1:
+        self.log.error("No unique NF was found for id: %s in %s"
+                       % (base_nf_id, nf))
+        continue
+      nf = nf.pop()
+      self.log.debug("Found NF: %s" % nf)
+      # Searching other NF node, target of antiaffinity constraint
+      self.log.debug("Searching target NF node of antiaffinity constraint "
+                     "for VNF: %s..." % metadata['value'])
+      vnf_aaff_id = metadata['value'].split('@', 1)[0]
+      num_aaff = metadata['value'].split('-')[-1]
+      try:
+        vnf_aaff_id = int(vnf_aaff_id)
+      except ValueError:
+        self.log.warning("Got target VNF id: %s is not valid integer!"
+                         % vnf_aaff_id)
+        continue
+      c_vnf_aaff_id = self.__catalogue.get_by_id(id=vnf_aaff_id).get_vnf_name()
+      base_nf_aaff_id = "%s_%s" % (c_vnf_aaff_id, num_aaff)
+      self.log.debug("Found target base NF name: %s" % base_nf_aaff_id)
+      nf_aaff = [nf for nf in nffg.nfs if str(nf.id).startswith(base_nf_aaff_id)]
+      if len(nf_aaff) != 1:
+        self.log.error("No unique target NF was found for id: %s in %s"
+                       % (base_nf_aaff_id, nf))
+        continue
+      nf_aaff = nf_aaff.pop()
+      self.log.debug("Found target NF: %s" % nf_aaff)
+      # Setup antiaffinity constraint
+      for j in range(1,10):
+        # Search next free id
+        if nf.constraints.has_antiaffinity(j):
+          continue
+        else:
+          nf.constraints.add_antiaffinity(j, str(nf_aaff.id))
+          self.log.debug("Antiaffinity constraint added "
+                         "for NF: %s -- target NF: %s)" % (nf, nf_aaff))
+      else:
+        self.log.error("Max number of allowed antiafinity constraints exceeded"
+                       "with NF: %s -- target NF: %s" % (nf, nf_aaff))
 
   def apply_extensions (self, nffg):
     """
