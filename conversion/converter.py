@@ -610,7 +610,7 @@ class TNOVAConverter(object):
       c_vnf_aaff_id = self.__catalogue.get_by_id(id=vnf_aaff_id).get_vnf_name()
       base_nf_aaff_id = "%s_%s" % (c_vnf_aaff_id, num_aaff)
       self.log.debug("Found target base NF name: %s" % base_nf_aaff_id)
-      nf_aaff = [nf for nf in nffg.nfs if str(nf.id).startswith(base_nf_aaff_id)]
+      nf_aaff = [n for n in nffg.nfs if str(n.id).startswith(base_nf_aaff_id)]
       if len(nf_aaff) != 1:
         self.log.error("No unique target NF was found for id: %s in %s"
                        % (base_nf_aaff_id, nf))
