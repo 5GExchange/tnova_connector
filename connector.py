@@ -887,6 +887,9 @@ def _convert_service_request (service_graph, virt_topo, delete=False):
   app.logger.log(VERBOSE, "Converted request:\n%s" % srv_virtualizer.xml())
   if ENABLE_DIFF:
     app.logger.debug("Diff format enabled! Calculate diff...")
+    # Avoid undesired replace from different relative/absolute leafrefs
+    virt_topo.convert_leafrefs_to_relative_path()
+    srv_virtualizer.convert_leafrefs_to_relative_path()
     # Avoid undesired "replace" for id and name
     virt_topo.id.set_value(srv_virtualizer.id.get_value())
     virt_topo.name.set_value(srv_virtualizer.name.get_value())
