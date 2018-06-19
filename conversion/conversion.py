@@ -2652,9 +2652,9 @@ class NFFGConverter(object):
     else:
       self.log.debug("No base Virtualizer is given! Generating SingleBiSBiS...")
       base = self._generate_sbb_base(request=request)
-    self.log.debug("Transfer service request ID...")
-    base.id.set_value(request.id)
-    base.name.set_value(request.name)
+    # self.log.debug("Transfer service request ID...")
+    # base.id.set_value(request.id)
+    # base.name.set_value(request.name)
     if base.nodes.node.length() < 1:
       self.log.warning("No BiSBiS node was detected!")
       return base
@@ -2718,7 +2718,12 @@ class NFFGConverter(object):
       meta_value = str(value) if value is not None else None
       base.metadata.add(item=virt_lib.MetadataMetadata(key=meta_key,
                                                        value=meta_value))
-    base.bind(relative=True)
+    self.log.info("Add service id: %s as metadata..." % request.id)
+    base.metadata.add(item=virt_lib.MetadataMetadata(key="service_id",
+                                                     value=request.id))
+    base.metadata.add(item=virt_lib.MetadataMetadata(key="service_name",
+                                                     value=request.name))
+    # base.bind(relative=True)
     return base
 
   def convert_service_request_del (self, request, base):
