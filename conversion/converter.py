@@ -626,7 +626,7 @@ class TNOVAConverter(object):
           nf.constraints.add_antiaffinity(j, str(nf_aaff.id))
           self.log.debug("Antiaffinity constraint added "
                          "for NF: %s -- target NF: %s)" % (nf, nf_aaff))
-          return
+          break
       else:
         self.log.error("Max number of allowed antiafinity constraints exceeded"
                        "with NF: %s -- target NF: %s" % (nf, nf_aaff))
