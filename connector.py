@@ -24,7 +24,7 @@ from urlparse import urlparse
 import requests
 from flask import Flask, Response, request
 from requests.exceptions import ConnectionError, ReadTimeout
-from requests.packages.urllib3.exceptions import TimeoutError
+from urllib3.exceptions import TimeoutError
 
 from conversion.conversion import NFFGConverter
 from conversion.converter import TNOVAConverter
@@ -73,7 +73,6 @@ CALLBACK_NAME = "call-back"
 # Service request related constants
 NFFG_SERVICE_RPC = "sg"
 NFFG_TOPO_RPC = "topology"
-VIRTUALIZER_SERVICE_PORT = 8888
 VIRTUALIZER_TOPO_RPC = "get-config"
 VIRTUALIZER_SERVICE_RPC = "edit-config"
 VIRTUALIZER_MAPPINGS_RPC = "mappings"
@@ -786,9 +785,7 @@ def _get_topology_view (force_virtualizer=False):
   :rtype: :class:`Virtualizer` or :class:`NFFG`
   """
   if force_virtualizer or USE_VIRTUALIZER_FORMAT:
-    topo_request_url = _replace_port(url=os.path.join(RO_URL,
-                                                      VIRTUALIZER_TOPO_RPC),
-                                     port=VIRTUALIZER_SERVICE_PORT)
+    topo_request_url = os.path.join(RO_URL, VIRTUALIZER_TOPO_RPC)
   else:
     topo_request_url = os.path.join(RO_URL, NFFG_TOPO_RPC)
   app.logger.debug("Send topo request to RO on: %s" % topo_request_url)
@@ -840,9 +837,7 @@ def _get_internet_saps (virtualizer):
 
 
 def _get_mappings (data):
-  mappings_request_url = _replace_port(url=os.path.join(RO_URL,
-                                                        VIRTUALIZER_MAPPINGS_RPC),
-                                       port=VIRTUALIZER_SERVICE_PORT)
+  mappings_request_url = url = os.path.join(RO_URL, VIRTUALIZER_MAPPINGS_RPC)
   app.logger.debug("Send mappings request to RO on: %s" % mappings_request_url)
   try:
     ret = requests.post(url=mappings_request_url,
