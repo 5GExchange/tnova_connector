@@ -18,6 +18,7 @@ import json
 import logging
 import os
 import pprint
+import re
 import signal
 from urlparse import urlparse
 
@@ -682,6 +683,50 @@ def mappings ():
     return Response(status=httplib.INTERNAL_SERVER_ERROR)
 
 
+@app.route("/mapping-info/<service_id>", methods=['GET', 'POST'])
+def mapping_info (service_id):
+  app.logger.debug(
+    "Called mapping_info() with path: GET /mapping-info/<service_id>")
+  app.logger.info("Received mapping-info with id: %s" % service_id)
+  response = {"service_id": service_id}
+  # Get the internal Service Instance
+  si = service_mgr.get_service(id=service_id)
+  if si is None:
+    app.logger.error("Service with id: %s is missing!" % service_id)
+    return Response(status=httplib.OK,
+                    content_type="application/json",
+                    response=response)
+  # Generate the mappings request for the SI
+  mappings_req = si.generate_mappings_request()
+  mappings = _get_mappings(data=mappings_req.xml())
+  if mappings is None:
+    app.logger.error("Mapping response from RO is missing!!")
+    return Response(status=httplib.OK,
+                    content_type="application/json",
+                    response=response)
+  response["mapping"] = []
+  NODE_NF_PATTERN = r'.*nodes/node\[id=(.*?)\]/NF_instances/node\[id=(.*?)\]'
+  mapping_regex = re.compile(NODE_NF_PATTERN)
+  for mapping in mappings:
+    t_path = mapping.target.object.get_value()
+    t_domain = mapping.target.domain.get_value()
+    node, nf = mapping_regex.match(t_path).group(1, 2)
+    domain, url = t_domain.split('@', 1)
+    response["mapping"].append({"bisbis": {"url": url,
+                                           "domain": domain,
+                                           "id": node},
+                                "nf": {"id": nf,
+                                       "ports": [{"id": p.id} for p in
+                                                 si.sg[nf].ports]}
+                                })
+  resp_data = json.dumps(response)
+  MessageDumper().dump_to_file(data=resp_data,
+                               unique="mapping-info")
+  return Response(status=httplib.OK,
+                  content_type="application/json",
+                  response=resp_data)
+
+
 @app.route("/placement-info/", methods=['GET'], strict_slashes=False)
 def placement_info ():
   app.logger.debug("Called placement_info() with path: GET /placement-info")
@@ -837,7 +882,7 @@ def _get_internet_saps (virtualizer):
 
 
 def _get_mappings (data):
-  mappings_request_url = url = os.path.join(RO_URL, VIRTUALIZER_MAPPINGS_RPC)
+  mappings_request_url = os.path.join(RO_URL, VIRTUALIZER_MAPPINGS_RPC)
   app.logger.debug("Send mappings request to RO on: %s" % mappings_request_url)
   try:
     ret = requests.post(url=mappings_request_url,
@@ -846,9 +891,9 @@ def _get_mappings (data):
                         allow_redirects=False,
                         timeout=HTTP_GLOBAL_TIMEOUT)
     MessageDumper().dump_to_file(data=ret.text, unique="RO-mappings")
-    mapping = Mappings.parse_from_text(text=ret.text)
-    app.logger.log(VERBOSE, "Received mapping:\n%s" % mapping.xml())
-    return mapping
+    mappings = Mappings.parse_from_text(text=ret.text)
+    app.logger.log(VERBOSE, "Received mapping:\n%s" % mappings.xml())
+    return mappings
   except ConnectionError:
     app.logger.error("RO is not available!")
 
