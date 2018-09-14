@@ -37,7 +37,7 @@ from util.colored_logger import VERBOSE, setup_flask_logging
 from util.trail import MessageDumper
 from virtualizer.virtualizer import Virtualizer
 # Listening port
-from virtualizer.virtualizer_mappings import Mappings
+from virtualizer.virtualizer_mappings import Mappings, Mapping
 
 LISTENING_PORT = 5000
 
@@ -683,6 +683,27 @@ def mappings ():
     return Response(status=httplib.INTERNAL_SERVER_ERROR)
 
 
+def _generate_mappings_request (nffg):
+  _mappings = Mappings()
+  node_id = [n.id for n in nffg.infras]
+  if len(node_id) != 1:
+    app.logger.info("Can't define node name from infra node list: %s" % node_id)
+    return _mappings
+  node_id = node_id.pop()
+  app.logger.debug("Found node ID for /mapping: %s" % node_id)
+  slice_id_tag = RO_URL.split('/')
+  if slice_id_tag[-2] == "ro":
+    app.logger.debug("Found slice ID for /mappings: %s" % slice_id_tag[-1])
+    slice_id_tag = "[id=%s]" % slice_id_tag[-1]
+  else:
+    app.logger.warning("Using NO slice for /mapping...")
+    slice_id_tag = ""
+  M_TEMPLATE = "/virtualizer%s/nodes/node[id=%s]/NF_instances/node[id=%s]"
+  for nf in nffg.nfs:
+    _mappings.add(Mapping(object=M_TEMPLATE % (slice_id_tag, node_id, nf.id)))
+  return _mappings
+
+
 @app.route("/mapping-info/<service_id>", methods=['GET', 'POST'])
 def mapping_info (service_id):
   app.logger.debug(
@@ -697,7 +718,7 @@ def mapping_info (service_id):
                     content_type="application/json",
                     response=response)
   # Generate the mappings request for the SI
-  mappings_req = si.generate_mappings_request()
+  mappings_req = _generate_mappings_request(nffg=si.sg)
   mappings = _get_mappings(data=mappings_req.xml())
   if mappings is None:
     app.logger.error("Mapping response from RO is missing!!")

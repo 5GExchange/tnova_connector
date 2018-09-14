@@ -29,7 +29,6 @@ from conversion.vnf_catalogue import MissingVNFDException
 from nffg_lib.nffg import NFFG
 from util.colored_logger import VERBOSE
 from virtualizer.virtualizer import Virtualizer
-from virtualizer.virtualizer_mappings import Mappings, Mapping
 
 
 class ServiceInstance(object):
@@ -192,13 +191,6 @@ class ServiceInstance(object):
                          bandwidth=hop.bandwidth)
       log.debug("Assigned ID: %s" % new_id)
     return self.sg
-
-  def generate_mappings_request (self):
-    mappings = Mappings()
-    M_TEMPLATE = "/virtualizer/nodes/node[id=%s]/NF_instances/node[id=%s]"
-    for nf in self.sg.nfs:
-      mappings.add(Mapping(object=M_TEMPLATE % ("SingleBiSBiS", nf.id)))
-    return mappings
 
 
 class ServiceManager(object):
