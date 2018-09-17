@@ -729,13 +729,17 @@ def mapping_info (service_id):
     t_domain = mapping.target.domain.get_value()
     node, nf = mapping_regex.match(t_path).group(1, 2)
     domain, url = t_domain.split('@', 1)
-    response["mapping"].append({"bisbis": {"url": url,
-                                           "domain": domain,
-                                           "id": node},
-                                "nf": {"id": nf,
-                                       "ports": [{"id": p.id} for p in
-                                                 si.sg[nf].ports]}
-                                })
+    nf_entry = {"bisbis": {"url": url,
+                           "domain": domain,
+                           "id": node},
+                "nf": {"id": nf,
+                       "ports": []}}
+    try:
+      for p in si.sg[nf].ports:
+        nf_entry["nf"]["ports"].append({"id", p.id})
+    except Exception:
+      app.logger.warning("Port not found for NF: %s" % nf)
+    response["mapping"].append(nf_entry)
   resp_data = json.dumps(response)
   MessageDumper().dump_to_file(data=resp_data,
                                unique="mapping-info")
