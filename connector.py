@@ -685,11 +685,7 @@ def mappings ():
 
 def _generate_mappings_request (nffg):
   _mappings = Mappings()
-  node_id = [n.id for n in nffg.infras]
-  if len(node_id) != 1:
-    app.logger.info("Can't define node name from infra node list: %s" % node_id)
-    return _mappings
-  node_id = node_id.pop()
+  node_id = "SingleBiSBiS"
   app.logger.debug("Found node ID for /mapping: %s" % node_id)
   slice_id_tag = RO_URL.split('/')
   if slice_id_tag[-2] == "ro":
