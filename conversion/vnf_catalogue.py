@@ -19,7 +19,7 @@ import os
 import pprint
 
 import requests
-from requests.exceptions import ConnectionError, Timeout
+from requests.exceptions import Timeout, RequestException
 
 from util.colored_logger import VERBOSE
 
@@ -469,7 +469,7 @@ class VNFCatalogue(object):
         "Request timeout: %ss exceeded! VNF Store: %s is unreachable!" % (
           self.REQUEST_TIMEOUT, self.vnf_store_url))
       raise MissingVNFDException(vnf_id=vnf_id)
-    except ConnectionError as e:
+    except RequestException as e:
       self.log.error(str(e))
       raise MissingVNFDException(vnf_id=vnf_id)
     if not response.ok:

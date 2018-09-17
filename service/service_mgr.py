@@ -22,8 +22,7 @@ import pprint
 import uuid
 
 import requests
-from requests import Timeout
-from requests.exceptions import ConnectionError
+from requests import Timeout, RequestException
 
 from conversion.vnf_catalogue import MissingVNFDException
 from nffg_lib.nffg import NFFG
@@ -399,7 +398,7 @@ class ServiceManager(object):
                      "unreachable!" % (self.REQUEST_TIMEOUT,
                                        self.service_catalog_url))
       return
-    except ConnectionError as e:
+    except RequestException as e:
       self.log.error(str(e))
       return
     if not response.ok:

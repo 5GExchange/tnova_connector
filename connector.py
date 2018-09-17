@@ -24,7 +24,7 @@ from urlparse import urlparse
 
 import requests
 from flask import Flask, Response, request
-from requests.exceptions import ConnectionError, ReadTimeout
+from requests.exceptions import RequestException
 from urllib3.exceptions import TimeoutError
 
 from conversion.conversion import NFFGConverter
@@ -373,7 +373,7 @@ def initiate_service ():
             app.logger.warning("Received unexpected result for callback: "
                                "%s - %s" % (ret.status_code,
                                             ret.text if ret.text else ""))
-        except ConnectionError:
+        except RequestException:
           app.logger.error("Failed to send callback to %s" % cb_url)
       else:
         app.logger.warning("No callback URL was defined in the request!")
@@ -387,7 +387,7 @@ def initiate_service ():
                        params=params,
                        allow_redirects=False,
                        timeout=MONITORING_TIMEOUT)
-        except ConnectionError:
+        except RequestException:
           app.logger.warning("Monitoring component(%s) is unreachable!" %
                              MONITORING_URL)
         except TimeoutError:
@@ -399,7 +399,7 @@ def initiate_service ():
     MessageDumper().dump_to_file(data=resp_data, unique="service-response")
     return Response(status=_status,
                     response=json.dumps(si.get_json()))
-  except ConnectionError:
+  except RequestException:
     app.logger.error("RO is not available!")
     # Something went wrong, status->error_creating
     service_mgr.set_service_status(id=si.id,
@@ -631,7 +631,7 @@ def terminate_service (instance_id):
         app.logger.debug("Send back RO result code: %s" % ret.status_code)
         # Use status code that received from ESCAPE
         return Response(status=ret.status_code)
-  except ConnectionError:
+  except RequestException:
     app.logger.error("RO(%s) is not available!" % RO_URL)
     return Response(status=httplib.INTERNAL_SERVER_ERROR,
                     response=json.dumps(
@@ -880,7 +880,7 @@ def _get_topology_view (force_virtualizer=False):
       except Exception as e:
         app.logger.error("Something went wrong during topo parsing "
                          "into NFFG:\n%s" % e)
-  except (ConnectionError, ReadTimeout):
+  except RequestException:
     app.logger.error("RO is not available!")
 
 
@@ -915,7 +915,7 @@ def _get_mappings (data):
     mappings = Mappings.parse_from_text(text=ret.text)
     app.logger.log(VERBOSE, "Received mapping:\n%s" % mappings.xml())
     return mappings
-  except ConnectionError:
+  except RequestException:
     app.logger.error("RO is not available!")
 
 
