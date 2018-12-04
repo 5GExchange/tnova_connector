@@ -1,0 +1,7 @@
+[submodule "nffg_lib"]
+	path = nffg_lib
+	url = git@github.com:5GExchange/nffg.git
+	branch = master
+[submodule "virtualizer"]
+	path = virtualizer
+	url = git@github.com:5GExchange/virtualizer.git

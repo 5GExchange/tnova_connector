@@ -1,5 +1,5 @@
 urllib3
 networkx~=1.11
 flask~=0.12.2
-requests~=2.18.4
+requests~=2.20.0
 wrapt~=1.10.11
